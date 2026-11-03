@@ -1,0 +1,1548 @@
+"""
+Main: точка входа, фоновый рендер и диспетчер интерфейса Xerox Zine Studio.
+"""
+
+import copy
+import logging
+import os
+import queue
+import random
+import sys
+import threading
+import time
+import tkinter as tk
+from tkinter import colorchooser, filedialog, messagebox, simpledialog, ttk
+
+import cv2
+import numpy as np
+from PIL import Image, ImageDraw, ImageOps, ImageTk
+
+import appdata
+import config
+import manifestos
+import pdf_writer
+import presets
+import project_io
+import ui_components
+from engine import ZineGraphicEngine
+from manifest_dialog import ManifestoDialog
+from ui_components import (
+    ACCENT, BG, FG, FIELD, FONT, FONT_BOLD, FONT_SMALL, LINE, MUTED, PANEL, PANEL2, VIEW_BG,
+    CollapsibleSection, CropCanvas, InteractivePanZoomCanvas, LabeledSlider, ProgressDialog,
+    ToastNotification, enable_mousewheel_scroll, make_button, setup_ttk_style,
+)
+
+APP_ID = "mitra.xerox.zinestudio"
+MAX_SOURCE_SIDE = 2600
+AUTOSAVE_MS = 120_000
+HISTORY_LIMIT = 60
+PRESET_HINT = "Выберите пресет…"
+log = logging.getLogger("zine")
+HINT = "ЛКМ — двигать вид  ·  колесо — зум  ·  Shift+ЛКМ — поставить подпись"
+
+HELP_TEXT = """Ctrl+O — загрузить фото (можно выбрать сразу несколько: каждое станет страницей)
+Ctrl+S — экспорт PNG
+Ctrl+Shift+S — сохранить проект (.zine)
+Ctrl+Z / Ctrl+Y — отменить / вернуть
+Ctrl+Shift+O — открыть проект (.zine)
+Ctrl+R — Remix (случайный стиль и цитата)
+Ctrl+N — новая страница
+Ctrl+M — библиотека манифестов
+Перетащите фото или .zine в окно — они откроются
+Ctrl+D — дублировать страницу
+Ctrl+0 — вписать превью в окно
+Ctrl+1 — масштаб 100%
+
+В превью: ЛКМ — двигать, колесо — зум, Shift+ЛКМ — поставить подпись
+(ближайшую к курсору: верхнюю или нижнюю).
+В левой панели: потяните мышью по фото — выделить кадр, двойной клик — сбросить.
+Двойной клик по ползунку возвращает значение по умолчанию."""
+
+
+def enable_windows_integration():
+    """Чёткий интерфейс на HiDPI и своя иконка в панели задач."""
+    if sys.platform != "win32":
+        return
+    try:
+        import ctypes
+        try:
+            ctypes.windll.shcore.SetProcessDpiAwareness(1)
+        except Exception:
+            ctypes.windll.user32.SetProcessDPIAware()
+        ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(APP_ID)
+    except Exception:
+        pass
+
+
+def read_image_bgr(path):
+    """Читает фото через Pillow: учитывает поворот из EXIF, прозрачность и кириллицу в пути."""
+    with Image.open(path) as im:
+        im = ImageOps.exif_transpose(im)
+        if im.mode in ("RGBA", "LA", "P"):
+            im = im.convert("RGBA")
+            bg = Image.new("RGB", im.size, (255, 255, 255))
+            bg.paste(im, mask=im.split()[3])
+            im = bg
+        else:
+            im = im.convert("RGB")
+        if max(im.size) > MAX_SOURCE_SIDE:
+            im.thumbnail((MAX_SOURCE_SIDE, MAX_SOURCE_SIDE), Image.Resampling.LANCZOS)
+        return cv2.cvtColor(np.array(im), cv2.COLOR_RGB2BGR)
+
+
+class RenderWorker(threading.Thread):
+    """Рендер в отдельном потоке: из очереди берётся только самое свежее задание."""
+
+    def __init__(self, engine, results):
+        super().__init__(daemon=True)
+        self.engine = engine
+        self.results = results
+        self._cond = threading.Condition()
+        self._job = None
+
+    def submit(self, job):
+        with self._cond:
+            self._job = job
+            self._cond.notify()
+
+    def run(self):
+        while True:
+            with self._cond:
+                while self._job is None:
+                    self._cond.wait()
+                job, self._job = self._job, None
+            token, cv_img, state = job
+            t0 = time.time()
+            try:
+                img, bits = self.engine.render_zine_page(cv_img, state)
+                self.results.put(("ok", token, img, bits, time.time() - t0))
+            except Exception as exc:  # ошибка показывается пользователю, а не глотается
+                log.exception("ошибка рендера")
+                self.results.put(("err", token, f"{type(exc).__name__}: {exc}", None, 0.0))
+
+
+class XeroxZineStudioApp:
+    def __init__(self, root, open_path=None):
+        self.root = root
+        self.settings = appdata.Settings()
+        self.sc = max(1.0, root.winfo_fpixels("1i") / 96.0)  # масштаб Windows (125%, 150%...)
+        ui_components.UI_SCALE = self.sc
+        self.thumb_box = (self.px(58), self.px(86))
+
+        self.dirty = False
+        self.project_path = None
+        self._rev = 0
+        self._autosave_rev = 0
+        self._autosave_busy = False
+        self._autosave_thread = None
+        self.hist, self.hist_idx, self._hist_after = [], 0, None
+
+        self._setup_window()
+        setup_ttk_style(root)
+        self._update_title()
+
+        self.engine = ZineGraphicEngine()
+        self.results = queue.Queue()
+        self.worker = RenderWorker(self.engine, self.results)
+        self.worker.start()
+
+        self.final_poster = None
+        self.stencil_1bit = None
+        self.render_token = 0
+        self._loading = False
+        self._busy = False
+
+        self.pages = []
+        self.page_thumbs = []
+        self.page_btns = []
+        self.cur_page_idx = 0
+        self.images = {}
+        self.cur_img_key = None
+        self._img_counter = 0
+        self.crop = [0.0, 0.0, 1.0, 1.0]
+        self.seed = config.DEFAULT_STATE["seed"]
+        self.custom_colors = config.DEFAULT_STATE["custom_colors"]
+
+        self.vars = {}
+        self._loading = True  # Tk-виджеты пишут в переменные при создании: рендерить рано
+        self._build_ui()
+        self._loading = False
+        self._bind_hotkeys()
+        self._init_first_page()
+
+        root.report_callback_exception = self._on_tk_exception
+        root.protocol("WM_DELETE_WINDOW", self.on_close)
+        self._setup_dnd()
+        root.after(30, self._poll_results)
+        root.after(AUTOSAVE_MS, self._autosave_tick)
+        if open_path:
+            root.after(200, lambda: self._open_from_cli(open_path))
+        else:
+            root.after(400, self._offer_recovery)
+
+    # ------------------------------------------------------------------ окно
+    def px(self, n):
+        return int(round(n * self.sc))
+
+    def _setup_window(self):
+        r = self.root
+        r.configure(bg=BG)
+        sw, sh = r.winfo_screenwidth(), r.winfo_screenheight()
+        w, h = min(self.px(1600), sw - 40), min(self.px(980), sh - 90)
+        r.geometry(f"{w}x{h}+{max(0, (sw - w) // 2)}+{max(0, (sh - h) // 3)}")
+        r.minsize(min(self.px(1100), sw - 40), min(self.px(620), sh - 90))
+        try:
+            if sys.platform == "win32":
+                r.iconbitmap(default=config.resource_path("icon.ico"))
+        except Exception:
+            pass
+        try:
+            self._icon = tk.PhotoImage(file=config.resource_path("icon.png"))
+            r.iconphoto(True, self._icon)
+        except Exception:
+            pass
+
+    # ------------------------------------------------------------------ переменные
+    def _var(self, key):
+        default = config.DEFAULT_STATE[key]
+        cls = tk.BooleanVar if isinstance(default, bool) else tk.IntVar if isinstance(default, int) else tk.DoubleVar if isinstance(default, float) else tk.StringVar
+        v = cls(value=default)
+        v.trace_add("write", self._on_var_changed)
+        self.vars[key] = v
+        return v
+
+    def _on_var_changed(self, *_):
+        if not self._loading:
+            self.preset_var.set(PRESET_HINT)  # стиль изменён вручную: имя пресета больше не верно
+            self.schedule_render()
+
+    def _slider(self, parent, key, text, from_, to, res=1):
+        s = LabeledSlider(parent, text, self._var(key), from_, to, res=res, default=config.DEFAULT_STATE[key])
+        s.pack(fill=tk.X, pady=1)
+
+    def _label(self, parent, text):
+        tk.Label(parent, text=text, bg=PANEL2, fg=MUTED, font=FONT_SMALL, anchor="w").pack(fill=tk.X, pady=(4, 1))
+
+    def _combo(self, parent, key, label, mapping):
+        self._label(parent, label)
+        var = self._var(key)
+        inverse = {v: k for k, v in mapping.items()}
+        shown = tk.StringVar(value=inverse.get(var.get(), next(iter(mapping))))
+        cb = ttk.Combobox(parent, textvariable=shown, values=list(mapping), state="readonly", font=FONT)
+        cb.pack(fill=tk.X, pady=(0, 3))
+
+        def picked(_e):
+            var.set(mapping[shown.get()])
+            cb.selection_clear()
+
+        cb.bind("<<ComboboxSelected>>", picked)
+        var.trace_add("write", lambda *a: shown.set(inverse.get(var.get(), shown.get())))
+        return cb
+
+    def _check(self, parent, key, text, command=None):
+        cb = tk.Checkbutton(
+            parent, text=text, variable=self._var(key), bg=PANEL2, fg=FG, selectcolor=FIELD,
+            activebackground=PANEL2, activeforeground=ACCENT, bd=0, highlightthickness=0,
+            font=FONT, anchor="w", cursor="hand2", command=command,
+        )
+        cb.pack(fill=tk.X, pady=1)
+        return cb
+
+    def _text_box(self, parent):
+        t = tk.Text(
+            parent, height=3, bg=FIELD, fg=FG, insertbackground=ACCENT, font=("Consolas", 9), relief="flat",
+            highlightthickness=1, highlightbackground=LINE, highlightcolor=ACCENT, padx=6, pady=4, wrap="word",
+        )
+        t.pack(fill=tk.X, pady=(0, 3))
+        t.bind("<KeyRelease>", lambda e: self.schedule_render())
+        t.bind("<<Paste>>", lambda e: self.root.after_idle(self.schedule_render))
+        t.bind("<<Cut>>", lambda e: self.root.after_idle(self.schedule_render))
+        for seq in ("<Control-o>", "<Control-O>"):  # в Text это «вставить строку» - не нужно
+            t.bind(seq, lambda e: (self.load_image(), "break")[1])
+        return t
+
+    # ------------------------------------------------------------------ интерфейс
+    def _build_ui(self):
+        self._build_menu()
+
+        status = tk.Frame(self.root, bg="#0e0e0e")
+        status.pack(side=tk.BOTTOM, fill=tk.X)
+        tk.Label(status, text=HINT, bg="#0e0e0e", fg=MUTED, font=FONT_SMALL, anchor="w", padx=8, pady=3).pack(side=tk.LEFT)
+        self.status_var = tk.StringVar(value="")
+        tk.Label(status, textvariable=self.status_var, bg="#0e0e0e", fg=ACCENT, font=FONT_SMALL, anchor="e", padx=8).pack(side=tk.RIGHT)
+
+        paned = tk.PanedWindow(self.root, orient=tk.HORIZONTAL, bg=BG, sashwidth=6, sashrelief="flat", bd=0)
+        paned.pack(fill=tk.BOTH, expand=True, padx=4, pady=4)
+
+        self._build_source_column(paned)
+        self._build_settings_column(paned)
+        self._build_viewport_column(paned)
+
+    def _build_menu(self):
+        menu_bar = tk.Menu(self.root)
+        f = tk.Menu(menu_bar, tearoff=0)
+        f.add_command(label="Новый проект", command=self.new_project)
+        f.add_command(label="Загрузить фото...", command=self.load_image, accelerator="Ctrl+O")
+        f.add_separator()
+        f.add_command(label="Сохранить проект", command=self.save_project, accelerator="Ctrl+Shift+S")
+        f.add_command(label="Сохранить проект как...", command=self.save_project_as)
+        f.add_command(label="Открыть проект (.zine)...", command=self.open_project, accelerator="Ctrl+Shift+O")
+        f.add_separator()
+        f.add_command(label="Экспорт страницы в PNG...", command=self.export_png, accelerator="Ctrl+S")
+        f.add_command(label="Экспорт всех страниц в PNG...", command=self.export_all_png)
+        f.add_command(label="Экспорт 1-bit трафарета (PNG)...", command=self.export_stencil)
+        f.add_command(label="Экспорт книги в PDF...", command=self.export_multipage_pdf)
+        f.add_command(label="Экспорт PDF для печати (A4, поля 10 мм)...", command=self.export_pdf_a4)
+        f.add_command(label="Экспорт 8-page мини-зина (A4)...", command=self.export_mini_zine)
+        f.add_separator()
+        f.add_command(label="Выход", command=self.on_close)
+        menu_bar.add_cascade(label="Файл", menu=f)
+
+        e = tk.Menu(menu_bar, tearoff=0)
+        e.add_command(label="Отменить", command=self.undo, accelerator="Ctrl+Z")
+        e.add_command(label="Вернуть", command=self.redo, accelerator="Ctrl+Y")
+        menu_bar.add_cascade(label="Правка", menu=e)
+
+        self._style_menu = tk.Menu(menu_bar, tearoff=0)
+        menu_bar.add_cascade(label="Стиль", menu=self._style_menu)
+
+        t = tk.Menu(menu_bar, tearoff=0)
+        t.add_command(label="Библиотека манифестов...", command=self.open_manifesto_library, accelerator="Ctrl+M")
+        t.add_command(label="Случайный манифест", command=self.random_quote)
+        t.add_command(label="Сохранить текст страницы в «Мои манифесты»", command=self.save_current_manifesto)
+        menu_bar.add_cascade(label="Манифесты", menu=t)
+
+        p = tk.Menu(menu_bar, tearoff=0)
+        p.add_command(label="Новая страница", command=self.add_page, accelerator="Ctrl+N")
+        p.add_command(label="Дублировать страницу", command=self.duplicate_page, accelerator="Ctrl+D")
+        p.add_command(label="Сдвинуть влево", command=lambda: self.move_page(-1))
+        p.add_command(label="Сдвинуть вправо", command=lambda: self.move_page(1))
+        p.add_command(label="Удалить страницу", command=self.delete_page)
+        menu_bar.add_cascade(label="Страницы", menu=p)
+
+        h = tk.Menu(menu_bar, tearoff=0)
+        h.add_command(label="Горячие клавиши", command=self.show_help, accelerator="F1")
+        h.add_command(label="Открыть журнал ошибок", command=self.show_log)
+        h.add_command(label="Лицензии третьих сторон", command=self.show_licenses)
+        h.add_command(label="О программе", command=self.show_about)
+        menu_bar.add_cascade(label="Справка", menu=h)
+        self.root.config(menu=menu_bar)
+
+    def _build_source_column(self, paned):
+        col = tk.Frame(paned, bg=PANEL)
+        paned.add(col, width=self.px(270), minsize=self.px(220), stretch="never")
+        tk.Label(col, text="ФОТО СТРАНИЦЫ", bg=PANEL, fg=MUTED, font=FONT_BOLD, anchor="w").pack(fill=tk.X, padx=8, pady=(8, 2))
+        make_button(col, "📂  Загрузить фото", self.load_image, kind="primary").pack(fill=tk.X, padx=8, pady=4)
+        tools = tk.Frame(col, bg=PANEL)
+        tools.pack(fill=tk.X, padx=8)
+        for text, kind in (("↺ 90°", "ccw"), ("↻ 90°", "cw"), ("⇋ Зеркало", "flip")):
+            make_button(tools, text, lambda k=kind: self.transform_photo(k)).pack(side=tk.LEFT, padx=(0, 4), pady=2)
+        self.src_info = tk.Label(col, text="", bg=PANEL, fg=MUTED, font=FONT_SMALL, anchor="w", justify="left", wraplength=self.px(240))
+        self.src_info.pack(fill=tk.X, padx=8)
+        self.canvas_crop = CropCanvas(col)
+        self.canvas_crop.pack(fill=tk.BOTH, expand=True, padx=8, pady=6)
+        self.canvas_crop.on_crop_changed = self._on_crop_changed
+        tk.Label(
+            col, text="Потяните мышью по фото — выделить кадр.\nДвойной клик — сбросить.", bg=PANEL, fg=MUTED,
+            font=FONT_SMALL, justify="left", anchor="w",
+        ).pack(fill=tk.X, padx=8, pady=(0, 8))
+
+    def _build_settings_column(self, paned):
+        col = tk.Frame(paned, bg=PANEL)
+        paned.add(col, width=self.px(440), minsize=self.px(380), stretch="never")
+        self.c_settings = tk.Canvas(col, bg=PANEL, highlightthickness=0)
+        sb = ttk.Scrollbar(col, orient="vertical", style="Dark.Vertical.TScrollbar", command=self.c_settings.yview)
+        self.f_settings = tk.Frame(self.c_settings, bg=PANEL)
+        self.f_settings.bind("<Configure>", lambda e: self.c_settings.configure(scrollregion=self.c_settings.bbox("all")))
+        win = self.c_settings.create_window((0, 0), window=self.f_settings, anchor="nw")
+        self.c_settings.bind("<Configure>", lambda e: self.c_settings.itemconfigure(win, width=e.width))
+        self.c_settings.configure(yscrollcommand=sb.set)
+        sb.pack(side=tk.RIGHT, fill=tk.Y)
+        self.c_settings.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+
+        self._build_settings_controls(self.f_settings)
+        enable_mousewheel_scroll(self.f_settings, self.c_settings)
+        enable_mousewheel_scroll(self.c_settings, self.c_settings)
+
+    def _section(self, parent, title):
+        s = CollapsibleSection(parent, title=title)
+        s.pack(fill=tk.X, padx=6, pady=3)
+        return s.content
+
+    def _build_settings_controls(self, p):
+        row = tk.Frame(p, bg=PANEL)
+        row.pack(fill=tk.X, padx=6, pady=(6, 2))
+        tk.Label(row, text="СТИЛЬ", bg=PANEL, fg=MUTED, font=FONT_BOLD).pack(side=tk.LEFT, padx=(2, 6))
+        self.preset_var = tk.StringVar(value=PRESET_HINT)
+        self.preset_combo = ttk.Combobox(row, textvariable=self.preset_var, state="readonly", font=FONT)
+        self.preset_combo.pack(side=tk.LEFT, fill=tk.X, expand=True)
+        self.preset_combo.bind("<<ComboboxSelected>>", self._on_preset_selected)
+        make_button(row, "＋ Сохранить", self.save_preset).pack(side=tk.LEFT, padx=(6, 0))
+        self._refresh_presets()
+
+        # 1. Формат и сетка
+        c = self._section(p, "1. ФОРМАТ И СЕТКА")
+        self._combo(c, "format", "Формат холста", {k: k for k in config.CANVAS_FORMATS})
+        self._combo(c, "layout", "Раскладка кадров", config.LAYOUTS)
+        self._slider(c, "rows", "Строк / копий", 3, 16)
+        self._slider(c, "tilt", "Наклон кадров (°)", 0.0, 5.0, 0.2)
+
+        # 2. Фото и кадры
+        c = self._section(p, "2. ФОТО И КАДРЫ")
+        self._combo(c, "fit_mode", "Как класть фото в кадр", config.FIT_MODES)
+        self._slider(c, "bright", "Яркость фото", 0.6, 2.0, 0.05)
+        self._slider(c, "edge_x", "Рваный край по X", 0, 50)
+        self._slider(c, "edge_y", "Рваный край по Y", 0, 50)
+        self._slider(c, "loss", "Потеря качества копий", 0, 100)
+        self._check(c, "censor", "Чёрная полоса на глазах (поиск лиц)", command=self._on_censor_toggle)
+        self._check(c, "sticker", "Вырезка-стикер (тёмный объект на светлом фоне)")
+        make_button(c, "🎲  Другие края и пыль", self.reshuffle_seed, kind="secondary").pack(fill=tk.X, pady=(6, 0))
+
+        # 3. Растр и тонер
+        c = self._section(p, "3. РАСТР И ТОНЕР")
+        self._combo(c, "dither", "Тип растра", config.DITHERS)
+        self._slider(c, "dot_size", "Размер точки растра", 3, 22)
+        self._slider(c, "angle", "Угол растра (°)", 0, 90)
+        self._slider(c, "contrast", "Контраст", 1.0, 4.5, 0.1)
+        self._slider(c, "noise", "Шум тонера", 0, 100)
+        self._slider(c, "streaks", "Полосы сканера", 0, 100)
+        self._slider(c, "misreg", "Приводка (сдвиг краски)", 0, 12)
+        self._slider(c, "copier_edge", "Тень края копира", 0, 100)
+
+        # 4. Палитра
+        c = self._section(p, "4. ПАЛИТРА (RISOGRAPH)")
+        self._combo(c, "palette", "Бумага / краска", {k: k for k in list(config.RISO_PALETTES) + [config.CUSTOM_PALETTE]})
+        row = tk.Frame(c, bg=PANEL2)
+        row.pack(fill=tk.X, pady=(2, 2))
+        self.sw_paper = tk.Label(row, width=6, bg="#ffffff", relief="flat", highlightthickness=1, highlightbackground=LINE)
+        self.sw_ink = tk.Label(row, width=6, bg="#000000", relief="flat", highlightthickness=1, highlightbackground=LINE)
+        self.sw_paper.pack(side=tk.LEFT, ipady=6)
+        self.sw_ink.pack(side=tk.LEFT, padx=(4, 8), ipady=6)
+        make_button(row, "Бумага…", lambda: self._pick_color(0)).pack(side=tk.LEFT, padx=2)
+        make_button(row, "Краска…", lambda: self._pick_color(1)).pack(side=tk.LEFT, padx=2)
+        self._check(c, "invert", "Инвертировать цвета")
+        self.vars["palette"].trace_add("write", lambda *a: self._update_swatches())
+        self.vars["invert"].trace_add("write", lambda *a: self._update_swatches())
+
+        # 5. Текст
+        c = self._section(p, "5. МАНИФЕСТЫ И ТИПОГРАФИКА")
+        self._label(c, "Верхняя надпись")
+        self.txt_top = self._text_box(c)
+        self._label(c, "Нижняя надпись")
+        self.txt_bot = self._text_box(c)
+        make_button(c, "📚  Библиотека манифестов…", self.open_manifesto_library, kind="primary").pack(fill=tk.X, pady=(2, 3))
+        make_button(c, "🎲  Случайный манифест", self.random_quote, kind="secondary").pack(fill=tk.X, pady=(0, 4))
+        self._combo(c, "font", "Шрифт", {k: k for k in config.FONT_FILES})
+        self._combo(c, "tstyle", "Подложка", config.TEXT_STYLES)
+        self._combo(c, "text_align", "Выравнивание", config.TEXT_ALIGNS)
+        self._slider(c, "font_size", "Размер шрифта", 14, 120)
+        self._slider(c, "txt_x", "Позиция X (%)", 2, 85)
+        self._slider(c, "txt_y1", "Верхняя надпись Y (%)", 2, 50)
+        self._slider(c, "txt_y2", "Нижняя надпись Y (%)", 30, 95)
+        self._slider(c, "text_rot", "Поворот надписи (°)", -45.0, 45.0, 1.0)
+
+    def _build_viewport_column(self, paned):
+        col = tk.Frame(paned, bg=VIEW_BG)
+        paned.add(col, minsize=self.px(520), stretch="always")
+
+        hud = tk.Frame(col, bg="#141414")
+        hud.pack(fill=tk.X, padx=4, pady=(4, 2))
+        make_button(hud, "⛶  Вписать", lambda: self.viewport.fit_to_view(), kind="secondary").pack(side=tk.LEFT, padx=2, pady=3)
+        make_button(hud, "1:1", lambda: self.viewport.reset_100_percent(), kind="secondary").pack(side=tk.LEFT, padx=2)
+        self.zoom_lbl = tk.Label(hud, text="100%", bg="#141414", fg=MUTED, font=FONT_SMALL, width=6)
+        self.zoom_lbl.pack(side=tk.LEFT)
+        make_button(hud, "🎲  Remix", self.apply_surprise, kind="pink").pack(side=tk.LEFT, padx=6)
+
+        make_button(hud, "💾  Сохранить PNG", self.export_png, kind="primary").pack(side=tk.RIGHT, padx=4)
+        self.export_scale = tk.StringVar(value=self.settings.get("export_scale", "2×"))
+        self.export_scale.trace_add("write", lambda *a: self.settings.set("export_scale", self.export_scale.get()))
+        ttk.Combobox(hud, textvariable=self.export_scale, values=["1×", "2×", "3×"], width=4, state="readonly", font=FONT).pack(side=tk.RIGHT, padx=2)
+        tk.Label(hud, text="Экспорт:", bg="#141414", fg=MUTED, font=FONT_SMALL).pack(side=tk.RIGHT, padx=(6, 2))
+
+        self.viewport = InteractivePanZoomCanvas(col)
+        self.viewport.pack(fill=tk.BOTH, expand=True, padx=4, pady=2)
+        self.viewport.on_text_click_relocate = self._on_canvas_text_relocate
+        self.viewport.on_transform_changed = lambda z: self.zoom_lbl.config(text=f"{z * 100:.0f}%")
+        self.toast = ToastNotification(self.viewport)
+
+        strip = tk.Frame(col, bg="#141414")
+        strip.pack(fill=tk.X, padx=4, pady=2)
+        tk.Label(strip, text="СТРАНИЦЫ", bg="#141414", fg=MUTED, font=FONT_BOLD, anchor="w").pack(fill=tk.X, padx=6, pady=(3, 0))
+        self.strip_canvas = tk.Canvas(strip, bg="#141414", highlightthickness=0, height=self.thumb_box[1] + self.px(40))
+        self.strip_scroll = ttk.Scrollbar(strip, orient="horizontal", style="Dark.Horizontal.TScrollbar", command=self.strip_canvas.xview)
+        self.strip_canvas.configure(xscrollcommand=self.strip_scroll.set)
+        self.strip_canvas.pack(fill=tk.X)
+        self.strip_scroll.pack(fill=tk.X)
+        self.f_page_btns = tk.Frame(self.strip_canvas, bg="#141414")
+        self.strip_canvas.create_window((0, 0), window=self.f_page_btns, anchor="nw")
+        self.f_page_btns.bind("<Configure>", lambda e: self.strip_canvas.configure(scrollregion=self.strip_canvas.bbox("all")))
+
+        ctl = tk.Frame(col, bg="#141414")
+        ctl.pack(fill=tk.X, padx=4, pady=(0, 4))
+        make_button(ctl, "+ Новая", self.add_page, kind="primary").pack(side=tk.LEFT, padx=3, pady=4)
+        make_button(ctl, "Дублировать", self.duplicate_page).pack(side=tk.LEFT, padx=2)
+        make_button(ctl, "◀", lambda: self.move_page(-1)).pack(side=tk.LEFT, padx=(8, 1))
+        make_button(ctl, "▶", lambda: self.move_page(1)).pack(side=tk.LEFT, padx=1)
+        make_button(ctl, "Удалить", self.delete_page, kind="danger").pack(side=tk.LEFT, padx=(8, 2))
+
+    def _bind_hotkeys(self):
+        r = self.root
+        for seq, fn in (
+            ("<Control-o>", self.load_image), ("<Control-O>", self.open_project),
+            ("<Control-s>", self.export_png), ("<Control-S>", self.save_project),
+            ("<Control-r>", self.apply_surprise), ("<Control-n>", self.add_page),
+            ("<Control-d>", self.duplicate_page),
+            ("<Control-m>", self.open_manifesto_library), ("<Control-z>", self.undo), ("<Control-y>", self.redo), ("<Control-Z>", self.redo), ("<Control-Key-0>", lambda: self.viewport.fit_to_view()),
+            ("<Control-Key-1>", lambda: self.viewport.reset_100_percent()), ("<F1>", self.show_help),
+        ):
+            r.bind(seq, lambda e, f=fn: (f(), "break")[1])
+
+    # ------------------------------------------------------------------ состояние
+    @property
+    def cv_img(self):
+        return self.images.get(self.cur_img_key)
+
+    def _snapshot_state(self):
+        s = {k: v.get() for k, v in self.vars.items()}
+        s.update(
+            txt_top=self.txt_top.get("1.0", tk.END).strip(),
+            txt_bottom=self.txt_bot.get("1.0", tk.END).strip(),
+            custom_colors=[list(c) for c in self.custom_colors],
+            crop=list(self.crop),
+            seed=self.seed,
+            img=self.cur_img_key,
+        )
+        return s
+
+    def _set_text(self, widget, text):
+        widget.delete("1.0", tk.END)
+        widget.insert("1.0", text)
+
+    def _apply_state(self, s):
+        self._loading = True
+        self.preset_var.set(PRESET_HINT)  # у каждой страницы свой стиль; apply_preset подставит имя после
+        try:
+            for key, var in self.vars.items():
+                value = s.get(key, config.DEFAULT_STATE[key])
+                if key == "layout":
+                    value = config.LAYOUT_ALIASES.get(value, value)
+                try:
+                    var.set(value)
+                except (tk.TclError, ValueError):
+                    var.set(config.DEFAULT_STATE[key])
+            self._set_text(self.txt_top, s.get("txt_top", ""))
+            self._set_text(self.txt_bot, s.get("txt_bottom", ""))
+            colors = s.get("custom_colors", config.DEFAULT_STATE["custom_colors"])
+            self.custom_colors = (tuple(colors[0]), tuple(colors[1]))
+            self.crop = list(s.get("crop", [0.0, 0.0, 1.0, 1.0]))
+            self.seed = int(s.get("seed", config.DEFAULT_STATE["seed"]))
+            key = s.get("img")
+            self.cur_img_key = key if key in self.images else None
+        finally:
+            self._loading = False
+        self._update_swatches()
+        self._sync_source_preview()
+        self.schedule_render(dirty=False)
+
+    def _init_first_page(self):
+        q = manifestos.builtin()[0]
+        self._set_text(self.txt_top, q["top"])
+        self._set_text(self.txt_bot, q["bottom"])
+        self.pages = [self._snapshot_state()]
+        self.page_thumbs = [None]
+        self._update_swatches()
+        self._sync_source_preview()
+        self._refresh_page_strip()
+        self._reset_history()
+        self.schedule_render(dirty=False)
+
+    # ------------------------------------------------------------------ палитра
+    def _palette_colors(self):
+        name = self.vars["palette"].get()
+        if name == config.CUSTOM_PALETTE:
+            paper, ink = self.custom_colors
+        else:
+            paper, ink = config.RISO_PALETTES.get(name, config.RISO_PALETTES["Classic B&W (Xerox)"])
+        return (ink, paper) if self.vars["invert"].get() else (paper, ink)
+
+    def _update_swatches(self):
+        paper, ink = self._palette_colors()
+        self.sw_paper.config(bg="#%02x%02x%02x" % tuple(paper))
+        self.sw_ink.config(bg="#%02x%02x%02x" % tuple(ink))
+
+    def _pick_color(self, which):
+        current = list(self.custom_colors)
+        if self.vars["palette"].get() != config.CUSTOM_PALETTE:
+            current = list(config.RISO_PALETTES.get(self.vars["palette"].get(), current))
+        rgb, _hex = colorchooser.askcolor(color="#%02x%02x%02x" % tuple(current[which]), title="Цвет", parent=self.root)
+        if not rgb:
+            return
+        current[which] = tuple(int(v) for v in rgb)
+        self.custom_colors = (tuple(current[0]), tuple(current[1]))
+        if self.vars["palette"].get() == config.CUSTOM_PALETTE:
+            self._update_swatches()
+            self.schedule_render()
+        else:
+            self.vars["palette"].set(config.CUSTOM_PALETTE)  # переключит палитру и запустит рендер
+
+    # ------------------------------------------------------------------ фото и кадрирование
+    def _on_censor_toggle(self):
+        if self.vars["censor"].get() and not self.engine.face_cascade:
+            self.vars["censor"].set(False)
+            self.toast.show("Детектор лиц недоступен: не найден файл haarcascade", kind="error", duration=3500)
+
+    def _on_crop_changed(self, crop):
+        self.crop = list(crop)
+        self.schedule_render()
+
+    def _sync_source_preview(self):
+        cv = self.cv_img
+        if cv is None:
+            self.canvas_crop._placeholder = "Фото не загружено\n\nCtrl+O — загрузить"
+            self.canvas_crop.image = None
+            self.canvas_crop.crop = [0.0, 0.0, 1.0, 1.0]
+            self.canvas_crop._render()
+            self.src_info.config(text="")
+            self.viewport.set_overlay("Фото не загружено — показан тест.\nCtrl+O, чтобы загрузить своё")
+        else:
+            rgb = cv2.cvtColor(cv, cv2.COLOR_BGR2RGB)
+            self.canvas_crop.image = Image.fromarray(rgb)
+            self.canvas_crop.set_crop(self.crop)
+            self.src_info.config(text=f"{cv.shape[1]}×{cv.shape[0]} px")
+            self.viewport.set_overlay(None)
+
+    def _new_img_key(self):
+        self._img_counter += 1
+        return f"img{self._img_counter}"
+
+    def load_image(self):
+        paths = filedialog.askopenfilenames(
+            parent=self.root, initialdir=self._dir("images"), title="Выберите одно или несколько фото",
+            filetypes=[("Изображения", "*.jpg *.jpeg *.png *.webp *.bmp *.tif *.tiff"), ("Все файлы", "*.*")],
+        )
+        if not paths:
+            return
+        self._remember_dir("images", paths[0])
+        self._load_image_paths(paths)
+
+    def _load_image_paths(self, paths):
+        loaded, failed = [], []
+        for p in paths:
+            try:
+                loaded.append((os.path.basename(p), read_image_bgr(p)))
+            except Exception:
+                log.warning("не удалось открыть фото %s", p, exc_info=True)
+                failed.append(os.path.basename(p))
+        if not loaded:
+            messagebox.showerror("Ошибка", "Не удалось открыть файл:\n" + "\n".join(failed), parent=self.root)
+            return
+
+        self.pages[self.cur_page_idx] = self._snapshot_state()
+        for i, (_name, img) in enumerate(loaded):
+            key = self._new_img_key()
+            self.images[key] = img
+            if i == 0:
+                self.cur_img_key = key
+                self.crop = [0.0, 0.0, 1.0, 1.0]
+                self.pages[self.cur_page_idx] = self._snapshot_state()
+            else:  # каждое следующее фото - новая страница в том же стиле
+                st = copy.deepcopy(self.pages[self.cur_page_idx])
+                st.update(img=key, crop=[0.0, 0.0, 1.0, 1.0], seed=random.randint(1, 10 ** 6))
+                self._insert_page(self.cur_page_idx + 1 + (i - 1), st)
+        self._garbage_collect_images()
+        self._sync_source_preview()
+        self._build_missing_thumbs()
+        self._refresh_page_strip()
+        self.schedule_render()
+        self._mark_dirty(immediate=True)
+        msg = f"Фото загружено: {loaded[0][0]}" if len(loaded) == 1 else f"Загружено фото: {len(loaded)} (страниц добавлено: {len(loaded) - 1})"
+        self.toast.show(msg + (f" · не открылись: {len(failed)}" if failed else ""), kind="error" if failed else "ok", duration=3000)
+
+    def transform_photo(self, kind):
+        """Поворот и зеркало фото страницы. Результат - новое фото, поэтому работает «Отменить»."""
+        img = self.cv_img
+        if img is None:
+            self.toast.show("Сначала загрузите фото", kind="error")
+            return
+        if kind == "cw":
+            new = cv2.rotate(img, cv2.ROTATE_90_CLOCKWISE)
+        elif kind == "ccw":
+            new = cv2.rotate(img, cv2.ROTATE_90_COUNTERCLOCKWISE)
+        else:
+            new = cv2.flip(img, 1)
+        key = self._new_img_key()
+        self.images[key] = np.ascontiguousarray(new)
+        self.cur_img_key = key
+        self.crop = [0.0, 0.0, 1.0, 1.0]
+        self._sync_source_preview()
+        self.schedule_render()
+        self._mark_dirty(immediate=True)
+
+    def _garbage_collect_images(self):
+        used = {p.get("img") for p in self.pages} | {self.cur_img_key}
+        for doc in self.hist:  # фото из истории нужны для «Отменить»
+            used |= {p.get("img") for p in doc["pages"]}
+        for k in [k for k in self.images if k not in used]:
+            del self.images[k]
+
+    # ------------------------------------------------------------------ рендер предпросмотра
+    def schedule_render(self, dirty=True):
+        if self._loading:
+            return
+        if dirty:
+            self._mark_dirty()
+        self.render_token += 1
+        self.worker.submit((self.render_token, self.cv_img, self._snapshot_state()))
+        self.status_var.set("⏳ рендер…")
+
+    def _poll_results(self):
+        latest = None
+        try:
+            while True:
+                latest = self.results.get_nowait()
+        except queue.Empty:
+            pass
+        if latest:
+            kind, token, a, b, secs = latest
+            if token == self.render_token:
+                if kind == "ok":
+                    self._on_rendered(a, b, secs)
+                else:
+                    self.status_var.set("ошибка рендера")
+                    self.toast.show(f"Ошибка рендера: {a}", kind="error", duration=4000)
+        self.root.after(30, self._poll_results)
+
+    def _on_rendered(self, poster, stencil, secs):
+        self.final_poster, self.stencil_1bit = poster, stencil
+        self.viewport.set_image(poster, keep_view=True)
+        self._set_thumb(self.cur_page_idx, poster)
+        self.status_var.set(f"стр. {self.cur_page_idx + 1}/{len(self.pages)}  ·  {poster.width}×{poster.height} px  ·  рендер {secs:.2f} с")
+
+    def _on_canvas_text_relocate(self, nx, ny):
+        x = int(np.clip(nx * 100, 2, 85))
+        y = ny * 100
+        v1, v2 = self.vars["txt_y1"], self.vars["txt_y2"]
+        self._loading = True
+        try:
+            self.vars["txt_x"].set(x)
+            if abs(y - v1.get()) <= abs(y - v2.get()):  # двигаем ту надпись, что ближе к курсору
+                v1.set(int(np.clip(y, 2, 50)))
+            else:
+                v2.set(int(np.clip(y, 30, 95)))
+        finally:
+            self._loading = False
+        self.schedule_render()
+
+    def reshuffle_seed(self):
+        self.seed = random.randint(1, 10 ** 6)
+        self.schedule_render()
+
+    def random_quote(self):
+        self.apply_manifesto(random.choice(manifestos.all_items()), toast=False)
+
+    # ------------------------------------------------------------------ библиотека манифестов
+    def open_manifesto_library(self):
+        win = getattr(self, "_manifest_win", None)
+        if win is not None and win.winfo_exists():
+            win.deiconify()
+            win.lift()
+            return
+        self._manifest_win = ManifestoDialog(self)
+
+    def apply_manifesto(self, item, toast=True):
+        self._set_text(self.txt_top, item["top"])
+        self._set_text(self.txt_bot, item["bottom"])
+        self.schedule_render()
+        self._mark_dirty(immediate=True)
+        if toast:
+            self.toast.show("✓ Манифест применён к странице")
+
+    def spread_manifestos(self, items):
+        """Каждой странице по своему манифесту, начиная с выбранного (по кругу)."""
+        if not items:
+            return
+        self.pages[self.cur_page_idx] = self._snapshot_state()
+        for i, st in enumerate(self.pages):
+            st["txt_top"], st["txt_bottom"] = items[i % len(items)]["top"], items[i % len(items)]["bottom"]
+            if i != self.cur_page_idx:
+                self.page_thumbs[i] = None
+        cur = self.pages[self.cur_page_idx]
+        self._loading = True
+        try:
+            self._set_text(self.txt_top, cur["txt_top"])
+            self._set_text(self.txt_bot, cur["txt_bottom"])
+        finally:
+            self._loading = False
+        self._build_missing_thumbs()
+        self._refresh_page_strip()
+        self.schedule_render()
+        self._mark_dirty(immediate=True)
+        self.toast.show(f"✓ Манифесты розданы: {len(self.pages)} стр.")
+
+    def save_current_manifesto(self):
+        top = self.txt_top.get("1.0", tk.END).strip()
+        bottom = self.txt_bot.get("1.0", tk.END).strip()
+        if not (top or bottom):
+            self.toast.show("На странице нет текста", kind="error")
+            return False
+        try:
+            saved = manifestos.save_user(top, bottom)
+        except OSError as exc:
+            log.exception("не удалось сохранить манифест")
+            messagebox.showerror("Ошибка", f"Не удалось сохранить манифест:\n{exc}", parent=self.root)
+            return False
+        self.toast.show("✓ Сохранено в «Мои манифесты»" if saved else "Такой манифест уже есть", kind="ok" if saved else "info")
+        return saved
+
+    def apply_surprise(self):
+        self._loading = True
+        try:
+            q = random.choice(manifestos.all_items())
+            self._set_text(self.txt_top, q["top"])
+            self._set_text(self.txt_bot, q["bottom"])
+            v = self.vars
+            v["palette"].set(random.choice(list(config.RISO_PALETTES)))
+            v["layout"].set(random.choice(list(config.LAYOUTS.values())))
+            v["rows"].set(random.randint(4, 8))
+            v["dot_size"].set(random.randint(5, 12))
+            v["tilt"].set(round(random.uniform(0.0, 2.5), 1))
+            v["loss"].set(random.randint(10, 60))
+            v["tstyle"].set(random.choice(list(config.TEXT_STYLES.values())))
+            v["font"].set(random.choice(list(config.FONT_FILES)))
+            self.seed = random.randint(1, 10 ** 6)
+        finally:
+            self._loading = False
+        self._update_swatches()
+        self.schedule_render()
+        self.toast.show("🎲 Сгенерирован новый стиль")
+
+    # ------------------------------------------------------------------ страницы
+    def _insert_page(self, idx, state, thumb=None):
+        self.pages.insert(idx, state)
+        self.page_thumbs.insert(idx, thumb)
+
+    def _goto(self, idx):
+        self.cur_page_idx = idx
+        self._apply_state(self.pages[idx])
+        self._refresh_page_strip()
+
+    def _set_thumb(self, idx, poster):
+        if not (0 <= idx < len(self.pages)):
+            return
+        thumb = poster.copy()
+        thumb.thumbnail(self.thumb_box, Image.Resampling.BILINEAR)
+        self.page_thumbs[idx] = ImageTk.PhotoImage(thumb)
+        if idx < len(self.page_btns):
+            self.page_btns[idx].config(image=self.page_thumbs[idx], width=0)
+
+    def _refresh_page_strip(self):
+        for w in self.f_page_btns.winfo_children():
+            w.destroy()
+        self.page_btns = []
+        for i in range(len(self.pages)):
+            active = i == self.cur_page_idx
+            btn = tk.Button(
+                self.f_page_btns, text=str(i + 1), image=self.page_thumbs[i] if self.page_thumbs[i] else "",
+                compound="top", bg=ACCENT if active else "#262626", fg="#0a0a0a" if active else MUTED,
+                activebackground=ACCENT, font=FONT_BOLD if active else FONT, relief="flat", bd=0, padx=4, pady=3,
+                cursor="hand2", command=lambda idx=i: self.switch_page(idx),
+                width=self.thumb_box[0] // 7 if not self.page_thumbs[i] else 0,
+            )
+            btn.pack(side=tk.LEFT, padx=2, pady=3)
+            self.page_btns.append(btn)
+        self.root.update_idletasks()
+        n = max(1, len(self.pages))
+        self.strip_canvas.xview_moveto(max(0.0, (self.cur_page_idx - 2) / n))
+
+    def switch_page(self, idx):
+        if idx == self.cur_page_idx or not (0 <= idx < len(self.pages)):
+            return
+        self.pages[self.cur_page_idx] = self._snapshot_state()
+        self._goto(idx)
+
+    def add_page(self):
+        """Новая страница: тот же стиль, но без фото и с новым манифестом."""
+        self.pages[self.cur_page_idx] = self._snapshot_state()
+        st = copy.deepcopy(self.pages[self.cur_page_idx])
+        q = random.choice(manifestos.all_items())
+        st.update(img=None, crop=[0.0, 0.0, 1.0, 1.0], seed=random.randint(1, 10 ** 6),
+                  txt_top=q["top"], txt_bottom=q["bottom"])
+        self._insert_page(self.cur_page_idx + 1, st)
+        self._goto(self.cur_page_idx + 1)
+        self._mark_dirty(immediate=True)
+        self.toast.show(f"✓ Добавлена страница {self.cur_page_idx + 1} — загрузите для неё фото (Ctrl+O)")
+
+    def duplicate_page(self):
+        self.pages[self.cur_page_idx] = self._snapshot_state()
+        st = copy.deepcopy(self.pages[self.cur_page_idx])
+        self._insert_page(self.cur_page_idx + 1, st, self.page_thumbs[self.cur_page_idx])
+        self._goto(self.cur_page_idx + 1)
+        self._mark_dirty(immediate=True)
+        self.toast.show("✓ Страница продублирована")
+
+    def move_page(self, delta):
+        j = self.cur_page_idx + delta
+        if not (0 <= j < len(self.pages)):
+            return
+        self.pages[self.cur_page_idx] = self._snapshot_state()
+        i = self.cur_page_idx
+        for lst in (self.pages, self.page_thumbs):
+            lst[i], lst[j] = lst[j], lst[i]
+        self.cur_page_idx = j
+        self._refresh_page_strip()
+        self._mark_dirty(immediate=True)
+        self.status_var.set(f"стр. {j + 1}/{len(self.pages)}")
+
+    def delete_page(self):
+        if len(self.pages) <= 1:
+            self.toast.show("В проекте должна остаться минимум 1 страница", kind="error")
+            return
+        if not messagebox.askyesno("Удалить страницу", f"Удалить страницу {self.cur_page_idx + 1}?", parent=self.root):
+            return
+        del self.pages[self.cur_page_idx]
+        del self.page_thumbs[self.cur_page_idx]
+        self.cur_page_idx = max(0, self.cur_page_idx - 1)
+        self._goto(self.cur_page_idx)
+        self._mark_dirty(immediate=True)
+
+    # ------------------------------------------------------------------ экспорт (в фоне, с прогрессом)
+    def _run_job(self, title, work, on_done):
+        if self._busy:
+            return
+        self._busy = True
+        dlg = ProgressDialog(self.root, title, "Подготовка…")
+        job = {"text": "Подготовка…", "frac": 0.0, "done": False, "result": None, "error": None}
+
+        def progress(text, frac):
+            job["text"], job["frac"] = text, frac
+
+        def target():
+            try:
+                job["result"] = work(progress)
+            except Exception as exc:
+                log.exception("ошибка фоновой задачи")
+                job["error"] = exc
+            finally:
+                job["done"] = True
+
+        threading.Thread(target=target, daemon=True).start()
+
+        def poll():
+            dlg.set_progress(job["text"], job["frac"])
+            if not job["done"]:
+                self.root.after(80, poll)
+                return
+            dlg.grab_release()
+            dlg.destroy()
+            self._busy = False
+            if job["error"]:
+                messagebox.showerror("Ошибка экспорта", f"{type(job['error']).__name__}: {job['error']}", parent=self.root)
+            else:
+                on_done(job["result"])
+
+        poll()
+
+    def _scale(self):
+        return int(self.export_scale.get().rstrip("×") or 1)
+
+    def _pages_for_export(self):
+        self.pages[self.cur_page_idx] = self._snapshot_state()
+        return [(copy.deepcopy(st), self.images.get(st.get("img"))) for st in self.pages]
+
+    def export_png(self):
+        path = self._ask_save("export", defaultextension=".png", filetypes=[("PNG", "*.png")], initialfile="zine_page.png")
+        if not path:
+            return
+        state, img = self._snapshot_state(), self.cv_img
+        scale = self._scale()
+
+        def work(progress):
+            progress("Рендеринг страницы…", 0.3)
+            out, _ = self.engine.render_zine_page(img, state, scale=scale)
+            progress("Сохранение PNG…", 0.9)
+            out.save(path, dpi=(300, 300))
+            return out.size
+
+        self._run_job("Экспорт PNG", work, lambda size: self.toast.show(f"✓ PNG сохранён ({size[0]}×{size[1]} px)"))
+
+    def export_stencil(self):
+        path = self._ask_save("export", defaultextension=".png", filetypes=[("PNG 1-bit", "*.png")], initialfile="zine_stencil.png")
+        if not path:
+            return
+        state, img = self._snapshot_state(), self.cv_img
+        scale = self._scale()
+
+        def work(progress):
+            progress("Рендеринг трафарета…", 0.3)
+            _, bits = self.engine.render_zine_page(img, state, scale=scale)
+            progress("Сохранение…", 0.9)
+            bits.save(path, dpi=(300, 300))
+
+        self._run_job("Экспорт трафарета", work, lambda _r: self.toast.show("✓ 1-bit трафарет сохранён (чёрный = краска)"))
+
+    def export_multipage_pdf(self):
+        path = self._ask_save("export", defaultextension=".pdf", filetypes=[("PDF", "*.pdf")], initialfile="zine_book.pdf")
+        if not path:
+            return
+        items, scale = self._pages_for_export(), self._scale()
+
+        def work(progress):
+            def pages():
+                for i, (st, img) in enumerate(items):
+                    progress(f"Рендеринг страницы {i + 1} из {len(items)}…", i / (len(items) + 1))
+                    yield self.engine.render_zine_page(img, st, scale=scale)[0]
+
+            return pdf_writer.write_pdf(path, pages(), dpi=300.0)
+
+        self._run_job("Экспорт PDF", work, lambda n: self.toast.show(f"✓ PDF ({n} стр.) готов"))
+
+    def export_pdf_a4(self):
+        path = self._ask_save("export", defaultextension=".pdf", filetypes=[("PDF", "*.pdf")], initialfile="zine_book_A4.pdf")
+        if not path:
+            return
+        items = self._pages_for_export()
+
+        def work(progress):
+            aw, ah, margin = 2480, 3508, 118  # A4 при 300 DPI, поля 10 мм
+            pw, ph = aw - 2 * margin, ah - 2 * margin
+
+            def sheets():
+                for i, (st, img) in enumerate(items):
+                    progress(f"Рендеринг страницы {i + 1} из {len(items)}…", i / (len(items) + 1))
+                    bw, bh = config.CANVAS_FORMATS.get(st.get("format"), (1000, 1500))
+                    k = min(pw / bw, ph / bh)
+                    size = (int(bw * k), int(bh * k))
+                    page = self.engine.render_zine_page(img, st, out_size=size)[0]
+                    sheet = Image.new("RGB", (aw, ah), (255, 255, 255))
+                    sheet.paste(page, ((aw - size[0]) // 2, (ah - size[1]) // 2))
+                    yield sheet
+
+            return pdf_writer.write_pdf(path, sheets(), dpi=300.0)
+
+        self._run_job("PDF для печати", work, lambda n: self.toast.show(f"✓ PDF A4 ({n} стр.) готов к печати"))
+
+    def export_all_png(self):
+        items = self._pages_for_export()
+        folder = filedialog.askdirectory(parent=self.root, initialdir=self._dir("export"), title="Папка для PNG всех страниц", mustexist=True)
+        if not folder:
+            return
+        self._remember_dir("export", os.path.join(folder, "_"))
+        width = max(2, len(str(len(items))))
+        paths = [os.path.join(folder, f"page_{i + 1:0{width}d}.png") for i in range(len(items))]
+        if any(os.path.exists(p) for p in paths) and not messagebox.askyesno(
+                "Файлы уже есть", "В папке есть файлы page_XX.png. Заменить их?", parent=self.root):
+            return
+        scale = self._scale()
+
+        def work(progress):
+            for i, (st, img) in enumerate(items):
+                progress(f"Страница {i + 1} из {len(items)}…", i / len(items))
+                self.engine.render_zine_page(img, st, scale=scale)[0].save(paths[i], dpi=(300, 300))
+            return len(items)
+
+        self._run_job("Экспорт PNG", work, lambda n: self.toast.show(f"✓ Сохранено страниц: {n}"))
+
+    def export_mini_zine(self):
+        items = self._pages_for_export()
+        n = len(items)
+        if n != 8:
+            note = (f"В проекте {n} стр., а в мини-зине их 8. Недостающие страницы будут копиями последней со случайными манифестами."
+                    if n < 8 else f"В проекте {n} стр., а в мини-зине их 8. В лист попадут первые 8.")
+            if not messagebox.askyesno("Мини-зин на 8 страниц", note + "\n\nПродолжить?", parent=self.root):
+                return
+        path = self._ask_save("export", defaultextension=".png", filetypes=[("PNG", "*.png")], initialfile="mini_zine_A4.png")
+        if not path:
+            return
+        items = items[:8]
+        while len(items) < 8:
+            st, img = copy.deepcopy(items[-1][0]), items[-1][1]
+            q = random.choice(manifestos.all_items())
+            st.update(txt_top=q["top"], txt_bottom=q["bottom"], seed=random.randint(1, 10 ** 6))
+            items.append((st, img))
+
+        def work(progress):
+            sw, sh = 3508, 2480  # A4 альбомная, 300 DPI
+            cw, rh = sw // 4, sh // 2
+            pages = []
+            for i, (st, img) in enumerate(items):
+                progress(f"Рендеринг страницы {i + 1} из 8…", i / 9.0)
+                pages.append(self.engine.render_zine_page(img, st, out_size=(cw, rh))[0])
+            sheet = Image.new("RGB", (sw, sh), (255, 255, 255))
+            # классическая раскладка: верхний ряд перевёрнут 5-4-3-2, нижний 6-7-8-1
+            for col, idx in enumerate((4, 3, 2, 1)):
+                sheet.paste(pages[idx].rotate(180), (col * cw, 0))
+            for col, idx in enumerate((5, 6, 7, 0)):
+                sheet.paste(pages[idx], (col * cw, rh))
+            draw = ImageDraw.Draw(sheet)
+            for c in range(1, 4):  # линии сгиба
+                for y in range(0, sh, 24):
+                    draw.line([(c * cw, y), (c * cw, min(sh, y + 14))], fill=(160, 160, 160), width=2)
+            for x in range(0, sw, 24):
+                draw.line([(x, rh), (min(sw, x + 14), rh)], fill=(160, 160, 160), width=2)
+            draw.line([(cw, rh), (cw * 3, rh)], fill=(220, 20, 20), width=5)  # разрез
+            progress("Сохранение…", 0.95)
+            sheet.save(path, dpi=(300, 300))
+
+        self._run_job("Мини-зин A4", work, lambda _r: self.toast.show("✓ Мини-зин сохранён: сложите лист, разрежьте по красной линии", duration=5000))
+
+    # ------------------------------------------------------------------ пресеты стиля
+    def _refresh_presets(self):
+        self._presets = presets.all_presets()
+        self.preset_combo["values"] = list(self._presets)
+        m = self._style_menu
+        m.delete(0, "end")
+        user = presets.load_user()
+        for name in presets.BUILTIN:
+            m.add_command(label=name, command=lambda n=name: self.apply_preset(n))
+        if user:
+            m.add_separator()
+            for name in user:
+                m.add_command(label=name, command=lambda n=name: self.apply_preset(n))
+        m.add_separator()
+        m.add_command(label="Сохранить текущий стиль как пресет...", command=self.save_preset)
+        m.add_command(label="Применить стиль этой страницы ко всем страницам", command=self.apply_style_to_all_pages)
+        if user:
+            sub = tk.Menu(m, tearoff=0)
+            for name in user:
+                sub.add_command(label=name, command=lambda n=name: self.delete_preset(n))
+            m.add_cascade(label="Удалить свой пресет", menu=sub)
+
+    def _on_preset_selected(self, _event=None):
+        self.apply_preset(self.preset_var.get())
+        self.preset_combo.selection_clear()
+
+    def apply_preset(self, name):
+        style = self._presets.get(name)
+        if not style:
+            return
+        state = self._snapshot_state()
+        state.update(copy.deepcopy(style))
+        self._apply_state(state)
+        self._mark_dirty(immediate=True)
+        self.preset_var.set(name)
+        self.toast.show(f"Стиль «{name}» применён")
+
+    def save_preset(self):
+        name = simpledialog.askstring("Сохранить стиль", "Название пресета:", parent=self.root)
+        name = (name or "").strip()[:40]
+        if not name:
+            return
+        if name in presets.BUILTIN:
+            self.toast.show("Это имя занято встроенным пресетом", kind="error")
+            return
+        try:
+            presets.save_user(name, self._snapshot_state())
+        except OSError as exc:
+            log.exception("не удалось сохранить пресет")
+            messagebox.showerror("Ошибка", f"Не удалось сохранить пресет:\n{exc}", parent=self.root)
+            return
+        self._refresh_presets()
+        self.preset_var.set(name)
+        self.toast.show(f"✓ Пресет «{name}» сохранён")
+
+    def delete_preset(self, name):
+        if messagebox.askyesno("Удалить пресет", f"Удалить пресет «{name}»?", parent=self.root):
+            presets.delete_user(name)
+            self._refresh_presets()
+            if self.preset_var.get() == name:
+                self.preset_var.set(PRESET_HINT)
+
+    def apply_style_to_all_pages(self):
+        if len(self.pages) < 2:
+            self.toast.show("В проекте одна страница", kind="info")
+            return
+        if not messagebox.askyesno("Применить ко всем", "Перенести оформление этой страницы на все остальные?\nФото и тексты не изменятся.", parent=self.root):
+            return
+        style = presets.extract_style(self._snapshot_state())
+        self.pages[self.cur_page_idx] = self._snapshot_state()
+        for i, st in enumerate(self.pages):
+            if i != self.cur_page_idx:
+                st.update(copy.deepcopy(style))
+                self.page_thumbs[i] = None
+        self._build_missing_thumbs()
+        self._refresh_page_strip()
+        self._mark_dirty(immediate=True)
+        self.toast.show("✓ Стиль применён ко всем страницам")
+
+    # ------------------------------------------------------------------ проект .zine
+    def _confirm_discard(self):
+        """True - можно продолжать (сохранили или отказались сохранять); False - пользователь передумал."""
+        if not self.dirty:
+            return True
+        ans = messagebox.askyesnocancel(config.APP_NAME, "Сохранить изменения в проекте?", parent=self.root)
+        if ans is None:
+            return False
+        return self.save_project() if ans else True
+
+    def save_project(self):
+        path = self.project_path or self._ask_save(
+            "project", defaultextension=".zine", filetypes=[("Zine Project", "*.zine")], initialfile="project.zine")
+        return self._write_project_to(path) if path else False
+
+    def save_project_as(self):
+        initial = os.path.basename(self.project_path) if self.project_path else "project.zine"
+        path = self._ask_save("project", defaultextension=".zine", filetypes=[("Zine Project", "*.zine")], initialfile=initial)
+        return self._write_project_to(path) if path else False
+
+    def _write_project_to(self, path):
+        doc = self._doc_snapshot()
+        self.pages[self.cur_page_idx] = doc["pages"][doc["cur"]]
+        self.root.config(cursor="watch")
+        self.root.update_idletasks()
+        try:
+            project_io.write_project(path, doc["pages"], self.images, doc["cur"])
+        except Exception as exc:
+            log.exception("не удалось сохранить проект %s", path)
+            messagebox.showerror("Ошибка", f"Не удалось сохранить проект:\n{exc}", parent=self.root)
+            return False
+        finally:
+            self.root.config(cursor="")
+        self.project_path = path
+        self.dirty = False
+        self._autosave_rev = self._rev
+        self._update_title()
+        self._clear_autosave()
+        self.toast.show("✓ Проект сохранён")
+        return True
+
+    def open_project(self):
+        path = filedialog.askopenfilename(parent=self.root, initialdir=self._dir("project"), filetypes=[("Zine Project", "*.zine")])
+        if not path:
+            return
+        self._remember_dir("project", path)
+        if self._confirm_discard():
+            self._load_project_path(path)
+
+    def _load_project_path(self, path, recovered=False):
+        try:
+            pages, images, cur = project_io.read_project(path)
+        except Exception as exc:
+            log.exception("не удалось открыть проект %s", path)
+            messagebox.showerror("Ошибка", f"Не удалось прочесть .zine файл:\n{exc}", parent=self.root)
+            return False
+        self.images = images
+        nums = [int(k[3:]) for k in images if k.startswith("img") and k[3:].isdigit()]
+        self._img_counter = max(nums, default=0)
+        self.pages = pages
+        self.page_thumbs = [None] * len(pages)
+        self.cur_page_idx = cur
+        self.project_path = None if recovered else path
+        self._apply_state(self.pages[cur])
+        self._build_missing_thumbs()
+        self._refresh_page_strip()
+        self._reset_history()
+        self.dirty = recovered
+        self._rev += 1
+        self._autosave_rev = -1 if recovered else self._rev
+        self._update_title()
+        self.toast.show(f"✓ Проект {'восстановлен' if recovered else 'загружен'} ({len(pages)} стр.)")
+        return True
+
+    def new_project(self):
+        if not self._confirm_discard():
+            return
+        self.images, self.cur_img_key, self._img_counter = {}, None, 0
+        quote = manifestos.builtin()[0]
+        first = dict(config.DEFAULT_STATE, txt_top=quote["top"], txt_bottom=quote["bottom"])
+        self.pages, self.page_thumbs, self.cur_page_idx = [first], [None], 0
+        self._apply_state(first)
+        self._refresh_page_strip()
+        self._reset_history()
+        self.project_path, self.dirty = None, False
+        self._rev += 1
+        self._autosave_rev = self._rev
+        self._update_title()
+        self._clear_autosave()
+
+    def _setup_dnd(self):
+        """Перетаскивание фото и .zine в окно (нужен пакет tkinterdnd2; без него просто не работает)."""
+        try:
+            from tkinterdnd2 import DND_FILES
+            self.root.drop_target_register(DND_FILES)
+            self.root.dnd_bind("<<Drop>>", self._on_drop)
+        except Exception:
+            log.info("перетаскивание файлов недоступно")
+
+    def _on_drop(self, event):
+        paths = [p for p in self.root.tk.splitlist(event.data) if os.path.isfile(p)]
+        zines = [p for p in paths if p.lower().endswith(".zine")]
+        if zines:
+            if self._confirm_discard():
+                self._load_project_path(zines[0])
+        elif paths:
+            self._load_image_paths(paths)
+        return event.action
+
+    def _open_from_cli(self, path):
+        """Файл, переданный программе при запуске (двойной клик или перетаскивание на exe)."""
+        if path.lower().endswith(".zine"):
+            self._load_project_path(path)
+        else:
+            self._load_image_paths([path])
+
+    # ------------------------------------------------------------------ отмена / вернуть
+    def _mark_dirty(self, immediate=False):
+        """immediate=True для разовых действий (поворот фото, страница, пресет): это отдельный шаг «Отменить».
+        Правки ползунков и текста склеиваются в один шаг через 0,6 с."""
+        self._rev += 1
+        if not self.dirty:
+            self.dirty = True
+            self._update_title()
+        if self._hist_after:
+            self.root.after_cancel(self._hist_after)
+            self._hist_after = None
+        if immediate:
+            self._commit_history()
+        else:
+            self._hist_after = self.root.after(600, self._commit_history)
+
+    def _doc_snapshot(self):
+        pages = copy.deepcopy(self.pages)
+        pages[self.cur_page_idx] = self._snapshot_state()
+        return {"pages": pages, "cur": self.cur_page_idx}
+
+    def _reset_history(self):
+        if self._hist_after:
+            self.root.after_cancel(self._hist_after)
+            self._hist_after = None
+        self.hist, self.hist_idx = [self._doc_snapshot()], 0
+
+    def _commit_history(self):
+        self._hist_after = None
+        doc = self._doc_snapshot()
+        if self.hist and doc["pages"] == self.hist[self.hist_idx]["pages"]:
+            return
+        del self.hist[self.hist_idx + 1:]
+        self.hist.append(doc)
+        if len(self.hist) > HISTORY_LIMIT:
+            del self.hist[0]
+        self.hist_idx = len(self.hist) - 1
+
+    def undo(self):
+        self._step_history(-1)
+
+    def redo(self):
+        self._step_history(1)
+
+    def _step_history(self, delta):
+        if self._hist_after:
+            self.root.after_cancel(self._hist_after)
+            self._commit_history()
+        j = self.hist_idx + delta
+        if not 0 <= j < len(self.hist):
+            self.toast.show("Нечего отменять" if delta < 0 else "Нечего возвращать", kind="info", duration=1200)
+            return
+        self.hist_idx = j
+        doc = copy.deepcopy(self.hist[j])
+        self.pages = doc["pages"]
+        self.page_thumbs = [None] * len(self.pages)
+        self.cur_page_idx = min(doc["cur"], len(self.pages) - 1)
+        self._apply_state(self.pages[self.cur_page_idx])
+        self._build_missing_thumbs()
+        self._refresh_page_strip()
+        self._rev += 1
+        if not self.dirty:
+            self.dirty = True
+            self._update_title()
+        self.toast.show("↶ Отменено" if delta < 0 else "↷ Возвращено", kind="info", duration=1200)
+
+    # ------------------------------------------------------------------ автосохранение, настройки, выход
+    def _autosave_tick(self):
+        try:
+            if self.dirty and self._autosave_rev != self._rev and not self._autosave_busy:
+                doc = self._doc_snapshot()
+                images, rev = dict(self.images), self._rev
+                self._autosave_busy = True
+
+                def work():
+                    try:
+                        project_io.write_project(appdata.autosave_path(), doc["pages"], images, doc["cur"])
+                        self._autosave_rev = rev
+                    except Exception:
+                        log.exception("автосохранение не удалось")
+                    finally:
+                        self._autosave_busy = False
+
+                self._autosave_thread = threading.Thread(target=work, daemon=True)
+                self._autosave_thread.start()
+        except Exception:
+            log.exception("сбой автосохранения")
+        self.root.after(AUTOSAVE_MS, self._autosave_tick)
+
+    @staticmethod
+    def _clear_autosave():
+        try:
+            os.remove(appdata.autosave_path())
+        except OSError:
+            pass
+
+    def _offer_recovery(self):
+        path = appdata.autosave_path()
+        if not os.path.exists(path):
+            return
+        when = time.strftime("%d.%m.%Y %H:%M", time.localtime(os.path.getmtime(path)))
+        if messagebox.askyesno(
+            config.APP_NAME,
+            f"Найдена несохранённая работа от {when}: программа закрылась некорректно.\n\nВосстановить?",
+            parent=self.root,
+        ):
+            if not self._load_project_path(path, recovered=True):
+                self._clear_autosave()
+        else:
+            self._clear_autosave()
+
+    def on_close(self):
+        if self._busy and not messagebox.askyesno(config.APP_NAME, "Сейчас идёт экспорт. Выйти и прервать его?", parent=self.root):
+            return
+        if not self._confirm_discard():
+            return
+        if self._autosave_thread:
+            self._autosave_thread.join(timeout=5)
+        self._clear_autosave()
+        self.settings.save()
+        self.root.destroy()
+
+    def _update_title(self):
+        name = os.path.basename(self.project_path) if self.project_path else "Без названия"
+        self.root.title(f"{'*' if self.dirty else ''}{name} — {config.APP_NAME}")
+
+    def _dir(self, kind):
+        d = self.settings.get(f"dir_{kind}")
+        return d if d and os.path.isdir(d) else os.path.expanduser("~")
+
+    def _remember_dir(self, kind, path):
+        if path:
+            self.settings.set(f"dir_{kind}", os.path.dirname(os.path.abspath(path)))
+
+    def _ask_save(self, kind, **kwargs):
+        path = filedialog.asksaveasfilename(parent=self.root, initialdir=self._dir(kind), **kwargs)
+        self._remember_dir(kind, path)
+        return path
+
+    def _on_tk_exception(self, exc, val, tb):
+        log.error("необработанная ошибка интерфейса", exc_info=(exc, val, tb))
+        try:
+            self.toast.show(f"Внутренняя ошибка: {val}. Подробности в журнале: {appdata.log_path()}", kind="error", duration=7000)
+        except Exception:
+            pass
+
+    def _build_missing_thumbs(self):
+        for i, st in enumerate(self.pages):
+            if self.page_thumbs[i] is None and i != self.cur_page_idx:
+                try:
+                    img, _ = self.engine.render_zine_page(self.images.get(st.get("img")), st, scale=0.18)
+                    self._set_thumb(i, img)
+                except Exception:
+                    log.warning("не удалось построить миниатюру", exc_info=True)
+
+    # ------------------------------------------------------------------ справка
+    def show_help(self):
+        messagebox.showinfo("Горячие клавиши", HELP_TEXT, parent=self.root)
+
+    def show_about(self):
+        messagebox.showinfo(
+            config.APP_NAME,
+            f"{config.APP_NAME} {config.APP_VERSION}\n\nГенератор ксерокс-зинов: полутон, рваные края,\n"
+            "потеря качества копий и ризографская палитра.\n"
+            "Страницы собираются в PDF, мини-зин A4 и 1-bit трафарет.",
+            parent=self.root,
+        )
+
+    def show_licenses(self):
+        try:
+            with open(config.resource_path("THIRD_PARTY_NOTICES.md"), encoding="utf-8") as f:
+                text = f.read()
+        except OSError:
+            text = "Файл THIRD_PARTY_NOTICES.md не найден."
+        win = tk.Toplevel(self.root)
+        win.title("Лицензии третьих сторон")
+        win.configure(bg=PANEL)
+        win.geometry(f"{self.px(760)}x{self.px(560)}")
+        win.transient(self.root)
+        box = tk.Text(win, bg=FIELD, fg=FG, font=("Consolas", 9), wrap="word", relief="flat", padx=10, pady=8)
+        scroll = ttk.Scrollbar(win, orient="vertical", style="Dark.Vertical.TScrollbar", command=box.yview)
+        box.configure(yscrollcommand=scroll.set)
+        scroll.pack(side=tk.RIGHT, fill=tk.Y)
+        box.pack(fill=tk.BOTH, expand=True)
+        box.insert("1.0", text)
+        box.config(state="disabled")
+
+    def show_log(self):
+        path = appdata.log_path()
+        try:
+            if sys.platform == "win32":
+                os.startfile(path)  # noqa: S606
+            else:
+                messagebox.showinfo("Журнал ошибок", path, parent=self.root)
+        except OSError:
+            messagebox.showinfo("Журнал ошибок", f"Файл журнала:\n{path}", parent=self.root)
+
+
+def run_selftest(out_path=None):
+    """Проверка сборки без окна: `XeroxZineStudio.exe --selftest result.json`. Код 0 = всё в порядке."""
+    import json
+    import tempfile
+
+    appdata.setup_logging()
+    result = {"ok": False, "version": config.APP_VERSION, "checks": {}}
+    try:
+        engine = ZineGraphicEngine()
+        img, bits = engine.render_zine_page(None, {"txt_top": "TEST", "txt_bottom": "ТЕСТ"}, scale=0.5)
+        colors = len(np.unique(np.asarray(img).reshape(-1, 3), axis=0))
+        result["checks"]["render_size"] = img.size == (500, 750)
+        result["checks"]["render_palette_colors<=3"] = colors <= 3
+        result["checks"]["stencil_is_1bit"] = bits.mode == "1"
+        for layout in config.LAYOUTS.values():
+            for dither in config.DITHERS.values():
+                engine.render_zine_page(None, {"layout": layout, "dither": dither}, scale=0.25)
+        result["checks"]["all_layouts_and_dithers"] = True
+        result["checks"]["icon_png_present"] = os.path.exists(config.resource_path("icon.png"))
+        result["checks"]["icon_ico_present"] = os.path.exists(config.resource_path("icon.ico"))
+        with tempfile.TemporaryDirectory() as d:
+            path = os.path.join(d, "t.zine")
+            pages = [dict(config.DEFAULT_STATE, img="img1")]
+            project_io.write_project(path, pages, {"img1": np.zeros((24, 24, 3), np.uint8)}, 0)
+            got_pages, got_images, _cur = project_io.read_project(path)
+            result["checks"]["project_roundtrip"] = len(got_pages) == 1 and "img1" in got_images
+        try:
+            import tkinterdnd2
+            dnd = os.path.isdir(os.path.join(os.path.dirname(tkinterdnd2.__file__), "tkdnd"))
+        except Exception:
+            dnd = False
+        result["checks"]["face_detector"] = engine.face_cascade is not None
+        result["checks"]["manifestos_loaded"] = len(manifestos.builtin()) >= 30
+        result["checks"]["notices_bundled"] = os.path.exists(config.resource_path("THIRD_PARTY_NOTICES.md"))
+        result["info"] = {"drag_and_drop": dnd}  # не критично: без него не работает только перетаскивание файлов
+        result["ok"] = all(result["checks"].values())
+    except Exception as exc:
+        log.exception("selftest")
+        result["error"] = f"{type(exc).__name__}: {exc}"
+    if out_path:
+        with open(out_path, "w", encoding="utf-8") as f:
+            json.dump(result, f, ensure_ascii=False, indent=2)
+    return 0 if result["ok"] else 1
+
+
+def main():
+    if "--selftest" in sys.argv:
+        i = sys.argv.index("--selftest")
+        sys.exit(run_selftest(sys.argv[i + 1] if len(sys.argv) > i + 1 else None))
+
+    appdata.setup_logging()
+    log.info("запуск %s %s", config.APP_NAME, config.APP_VERSION)
+    sys.excepthook = lambda et, ev, tb: log.error("необработанное исключение", exc_info=(et, ev, tb))
+    threading.excepthook = lambda a: log.error("исключение в потоке %s", a.thread, exc_info=(a.exc_type, a.exc_value, a.exc_traceback))
+
+    enable_windows_integration()
+    try:
+        from tkinterdnd2 import TkinterDnD
+        root = TkinterDnD.Tk()
+    except Exception:
+        root = tk.Tk()
+    open_path = next((a for a in sys.argv[1:] if os.path.isfile(a)), None)
+    XeroxZineStudioApp(root, open_path=open_path)
+    root.mainloop()
+
+
+if __name__ == "__main__":
+    main()

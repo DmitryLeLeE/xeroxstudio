@@ -1,0 +1,37 @@
+name: build-windows
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: |
+            requirements.txt
+            requirements-build.txt
+
+      - name: Single exe (tests + build + selftest)
+        run: |
+          python build.py
+          mkdir release
+          copy dist\XeroxZineStudio.exe release\
+
+      - name: Installer and zip (onedir)
+        run: |
+          choco install innosetup -y --no-progress
+          python build.py --installer --no-install --skip-tests
+          copy dist\XeroxZineStudio-Setup-*.exe release\
+          copy dist\XeroxZineStudio-*.zip release\
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: XeroxZineStudio-windows
+          path: release/*

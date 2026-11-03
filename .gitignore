@@ -1,0 +1,17 @@
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# Сборка (создаётся командой python build.py)
+build/
+dist/
+version_info.txt
+
+# Тесты и временные файлы
+.pytest_cache/
+*.tmp
+
+# Проекты и экспорт, созданные при ручной проверке
+*.zine
