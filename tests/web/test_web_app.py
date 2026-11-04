@@ -193,3 +193,29 @@ def test_fold_guide_sound_toggle_and_separations_menu(page_factory):
     pg.evaluate("[...document.querySelectorAll('#menuFile button')].find(b => /sound|звук/i.test(b.textContent)).click()")
     assert pg.evaluate("localStorage.getItem('zine.sound')") == "true"
     assert pg.errors == []
+
+
+def test_python_and_js_halftone_plates_match(page_factory):
+    """Один и тот же серый массив даёт одну и ту же пластину в десктопном и браузерном движке."""
+    import numpy as np
+    from PIL import Image
+    from engine import ZineGraphicEngine
+
+    h, w = 160, 200
+    yy, xx = np.mgrid[0:h, 0:w]
+    gray = ((xx / w * 255) * 0.6 + (yy / h * 255) * 0.4 + np.random.RandomState(3).rand(h, w) * 20).clip(0, 255).astype(np.uint8)
+    pg = page_factory()
+    wait_ready(pg)
+    # (размер точки, угол): основной экран и второй экран оверпринта (x1.3, +30°)
+    for dot, angle in [(7, 45), (7 * 1.3, 75), (12, 15), (4, 0), (9.5, 22.5)]:
+        js = pg.evaluate(
+            """async ([g, w, h, dot, angle]) => {
+              const E = await import('/app/js/engine.js');
+              return Array.from(E.halftoneBits(Uint8Array.from(g), w, h, dot, angle));
+            }""",
+            [gray.flatten().tolist(), w, h, dot, angle],
+        )
+        py = ZineGraphicEngine.apply_halftone_dots(Image.fromarray(gray), dot_size=dot, angle=angle)
+        same = (np.array(js, dtype=bool).reshape(h, w) == py).mean()
+        assert same > 0.995, f"dot={dot} angle={angle}: only {same:.4f} of pixels match"
+    assert pg.errors == []

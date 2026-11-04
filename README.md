@@ -11,6 +11,8 @@ English · [Русский](README.ru.md)
 
 ![One photo, nine presets](docs/gallery.jpg)
 
+![Screen recording: one photo, eight looks](docs/demo.gif)
+
 </div>
 
 A zine is not a product, it is a gesture. This tool makes the gesture cheap: drop in a photo, pick a mood,
@@ -65,7 +67,7 @@ python build.py --onedir        # folder + zip: faster start, fewer antivirus fa
 python build.py --installer     # + Inno Setup installer (winget install JRSoftware.InnoSetup)
 ```
 
-Pushing a tag like `v1.1.0` builds the exe, zip and installer on GitHub Actions and attaches them to a Release.
+To release: bump `APP_VERSION` in `config.py` (and `installer.iss`), run `python tools/gen_config_js.py`, push to `main`. GitHub Actions builds the exe, zip and installer and publishes release `<version>` automatically (a `v*` tag works too).
 
 ## Project layout
 

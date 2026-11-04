@@ -1,9 +1,13 @@
 name: build-windows
 
-# Tag v* → builds exe, zip and installer and attaches them to a GitHub Release.
+# Automatic release: bump APP_VERSION in config.py and push to main. If the release for that
+# version does not exist yet, this builds exe, zip and installer and publishes release <version>.
+# A v* tag or a manual run with a tag also attaches a build to an existing release.
 
 on:
   push:
+    branches: [main]
+    paths: [config.py]
     tags: ["v*"]
   workflow_dispatch:
     inputs:
@@ -16,7 +20,28 @@ env:
   PYTHONUTF8: "1"
 
 jobs:
+  version:
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.v.outputs.version }}
+      publish: ${{ steps.v.outputs.publish }}
+    steps:
+      - uses: actions/checkout@v4
+      - id: v
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          VER=$(python3 -c "import re;print(re.search(r'APP_VERSION\s*=\s*\"([^\"]+)\"',open('config.py').read()).group(1))")
+          echo "version=$VER" >> "$GITHUB_OUTPUT"
+          if [ "${{ github.ref_type }}" = "branch" ] && [ "${{ github.event_name }}" = "push" ]; then
+            if gh release view "$VER" >/dev/null 2>&1; then echo "publish=false" >> "$GITHUB_OUTPUT"; echo "Release $VER exists, nothing to do."; else echo "publish=true" >> "$GITHUB_OUTPUT"; fi
+          else
+            echo "publish=manual" >> "$GITHUB_OUTPUT"
+          fi
+
   build:
+    needs: version
+    if: needs.version.outputs.publish != 'false'
     runs-on: windows-latest
     permissions:
       contents: write
@@ -49,9 +74,10 @@ jobs:
           path: release/*
 
       - name: Attach to GitHub Release
-        if: startsWith(github.ref, 'refs/tags/v') || inputs.tag != ''
+        if: needs.version.outputs.publish == 'true' || startsWith(github.ref, 'refs/tags/v') || inputs.tag != ''
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: ${{ inputs.tag || github.ref_name }}
+          tag_name: ${{ inputs.tag || (startsWith(github.ref, 'refs/tags/') && github.ref_name) || needs.version.outputs.version }}
+          target_commitish: ${{ github.sha }}
           files: release/*
           generate_release_notes: true

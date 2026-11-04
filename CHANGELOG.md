@@ -1,10 +1,13 @@
 # Changelog
 
-## Unreleased
+## 1.2.0
 - **Riso ink separations** (both versions): ZIP with one 1-bit plate per ink, corner registration crosses and a README with ink colours and print order.
 - **Fold guide:** illustrated 5-step guide to folding the 8-page mini-zine, printable from the app.
 - **Copier sound** (browser, off by default) and a short "print ritual" animation when an export finishes (respects reduced motion).
-- Author's manifesto on the landing page.
+- **Desktop:** copier sound on export (File menu toggle, Windows).
+- Author's manifesto and a screen-recording demo on the landing page and README.
+- Releases are automatic: bump `APP_VERSION` in `config.py` and push to `main`; CI builds the exe, installer and zip and publishes release `<version>`.
+- Tests: Python and JS halftone plates are checked pixel for pixel on the same input.
 
 ## 1.1.0
 The tool gets deeper, and the browser gets a version of it.

@@ -19,6 +19,7 @@ from PIL import Image, ImageDraw, ImageOps, ImageTk
 
 import appdata
 import config
+import copier_sound
 import manifestos
 import pdf_writer
 import presets
@@ -296,6 +297,9 @@ class XeroxZineStudioApp:
         f.add_command(label="Экспорт книги в PDF...", command=self.export_multipage_pdf)
         f.add_command(label="Экспорт PDF для печати (A4, поля 10 мм)...", command=self.export_pdf_a4)
         f.add_command(label="Экспорт 8-page мини-зина (A4)...", command=self.export_mini_zine)
+        self.sound_on = tk.BooleanVar(value=bool(self.settings.get("copier_sound", False)))
+        self.sound_on.trace_add("write", lambda *a: self.settings.set("copier_sound", self.sound_on.get()))
+        f.add_checkbutton(label="Звук копира при экспорте", variable=self.sound_on)
         f.add_separator()
         f.add_command(label="Выход", command=self.on_close)
         menu_bar.add_cascade(label="Файл", menu=f)
@@ -963,6 +967,8 @@ class XeroxZineStudioApp:
                 messagebox.showerror("Ошибка экспорта", f"{type(job['error']).__name__}: {job['error']}", parent=self.root)
             else:
                 on_done(job["result"])
+                if self.sound_on.get():
+                    copier_sound.play()
 
         poll()
 

@@ -23,3 +23,10 @@ def test_separations_single_plate_without_overprint():
     st = dict(config.DEFAULT_STATE); st["overprint"] = 0
     plates, (_, _, ink2) = eng.render_separations(img, st)
     assert len(plates) == 1 and ink2 is None
+
+
+def test_copier_sound_is_valid_wav():
+    import io, wave
+    import copier_sound
+    with wave.open(io.BytesIO(copier_sound.make_wav(0.5))) as w:
+        assert w.getnchannels() == 1 and w.getframerate() == copier_sound.RATE and w.getnframes() > 1000

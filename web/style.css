@@ -104,3 +104,5 @@ footer .muted { font-weight:400; }
 @media (max-width:600px) { .wall { grid-template-columns:repeat(2,minmax(0,1fr)); gap:26px 14px; } .pg .tp { width:60px; margin-left:-30px; } }
 @media (max-width:430px) { .brand span { font-size:14px; } .btn { padding:11px 14px; font-size:14px; } .btn.big { font-size:16px; padding:13px 18px; } }
 @media (prefers-reduced-motion:reduce) { *, *::before, *::after { animation:none !important; transition:none !important; scroll-behavior:auto !important; } .wall .pg { opacity:1; } }
+
+.demo { display: block; width: 100%; max-width: 900px; margin: 0 auto; border: 3px solid currentColor; box-shadow: 6px 6px 0 currentColor; background: #fff; }
