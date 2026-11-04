@@ -18,6 +18,14 @@ import subprocess
 import sys
 import tempfile
 
+# Консоль Windows может быть в cp1252 (GitHub Actions): без этого русские сообщения роняют сборку.
+for _stream in (sys.stdout, sys.stderr):
+    try:
+        _stream.reconfigure(encoding="utf-8", errors="replace")
+    except (AttributeError, ValueError):
+        pass
+os.environ["PYTHONUTF8"] = "1"  # то же для дочерних процессов (pytest, PyInstaller, самотест)
+
 ROOT = os.path.dirname(os.path.abspath(__file__))
 os.chdir(ROOT)
 
