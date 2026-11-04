@@ -27,6 +27,8 @@ const EN = {
   "Пользовательская (Custom)": "Custom",
   "Классический ксерокс": "Classic Xerox", "Газетная печать": "Newsprint", "Кислотный райот": "Acid Riot", "Панк-флаер": "Punk Flyer",
   "Синька (cyanotype)": "Cyanotype", "Контактный лист 35 мм": "35 mm Contact Sheet", "Ночное видение": "Night Vision", "Ризо-оверпринт": "Riso Overprint", "Склейка со скотчем": "Tape Collage",
+  "Диагональ-панк": "Diagonal Punk", "Стопка снимков": "Photo Pile", "Газетная мозаика": "Newsprint Mosaic", "Триптих-синька": "Cyanotype Triptych",
+  "Постер во весь лист": "Full-page Poster", "Лента кинопроб": "Film-test Ribbon", "Ризо-диптих": "Riso Diptych",
   "Мои": "Mine",
 };
 const lbl = (ru, key) => (LANG === "ru" ? ru : EN[key] || EN[ru] || ru);
@@ -407,6 +409,44 @@ function requestRender({ draft = false } = {}) {
 }
 const previewScale = (draft) => (TOUCH ? 0.7 : 1) * (draft ? 0.55 : 1);
 
+// ---------------------------------------------------------------- сравнение «до/после»
+const CMP = { on: false, x: 0.5, last: null };
+function drawCompare() {
+  if (!CMP.on || !CMP.last) return;
+  const src = srcFor(page()), w = preview.width, h = preview.height;
+  if (!src) return;
+  const sw = src.canvas.width, sh = src.canvas.height, k = Math.max(w / sw, h / sh);
+  const cx = Math.round(w * CMP.x);
+  pctx.save();
+  pctx.beginPath(); pctx.rect(0, 0, cx, h); pctx.clip();
+  pctx.fillStyle = "#fff"; pctx.fillRect(0, 0, w, h);
+  pctx.drawImage(src.canvas, (w - sw * k) / 2, (h - sh * k) / 2, sw * k, sh * k);
+  pctx.restore();
+  const lw = Math.max(2, Math.round(w / 300)), r = Math.max(14, Math.round(w / 40));
+  pctx.fillStyle = "#fff"; pctx.fillRect(cx - lw, 0, lw * 2, h);
+  pctx.fillStyle = "#141414"; pctx.fillRect(cx - lw / 2, 0, lw, h);
+  pctx.beginPath(); pctx.arc(cx, h / 2, r, 0, Math.PI * 2); pctx.fillStyle = "#141414"; pctx.fill();
+  pctx.strokeStyle = "#fff"; pctx.lineWidth = lw; pctx.stroke();
+  pctx.fillStyle = "#fff"; pctx.font = `700 ${Math.round(r * 0.9)}px sans-serif`; pctx.textAlign = "center"; pctx.textBaseline = "middle";
+  pctx.fillText("⇔", cx, h / 2 + 1);
+}
+function redrawCompare() { if (CMP.last) { pctx.drawImage(CMP.last, 0, 0); drawCompare(); } }
+function setCompare(on) {
+  CMP.on = on; $("#btnCompare").setAttribute("aria-pressed", String(on));
+  if (on && !srcFor(page())) { CMP.on = false; $("#btnCompare").setAttribute("aria-pressed", "false"); toast(T("Сначала добавьте фото", "Add a photo first"), "err"); return; }
+  $("#viewport").classList.toggle("cmp", CMP.on);
+  redrawCompare();
+}
+$("#btnCompare").addEventListener("click", () => setCompare(!CMP.on));
+$("#viewport").addEventListener("pointerdown", (e) => {
+  if (!CMP.on) return;
+  const move = (ev) => { const r = preview.getBoundingClientRect(); CMP.x = Math.min(0.98, Math.max(0.02, (ev.clientX - r.left) / r.width)); redrawCompare(); };
+  e.stopImmediatePropagation(); e.preventDefault();
+  $("#viewport").setPointerCapture(e.pointerId); move(e);
+  const up = () => { $("#viewport").removeEventListener("pointermove", move); $("#viewport").removeEventListener("pointerup", up); $("#viewport").removeEventListener("pointercancel", up); };
+  $("#viewport").addEventListener("pointermove", move); $("#viewport").addEventListener("pointerup", up); $("#viewport").addEventListener("pointercancel", up);
+}, true);
+
 async function pump() {
   if (R.running) { R.again = true; return; }
   R.running = true;
@@ -421,6 +461,7 @@ async function pump() {
         if (idx === S.cur) {
           if (preview.width !== res.width || preview.height !== res.height) { preview.width = res.width; preview.height = res.height; }
           pctx.drawImage(res.canvas, 0, 0);
+          CMP.last = res.canvas; drawCompare();
           if (!draft) { setThumb(sigOf(st), res.canvas); paintThumbs(); }
         }
       } catch (e) {

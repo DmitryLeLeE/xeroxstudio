@@ -744,6 +744,342 @@ export const CFG = {
    "txt_y2": 70,
    "text_rot": 0.0
   },
+  "Диагональ-панк": {
+   "layout": "diagonal",
+   "rows": 5,
+   "tilt": 4.0,
+   "fit_mode": "cover",
+   "bright": 1.3,
+   "edge_x": 18,
+   "edge_y": 12,
+   "loss": 50,
+   "dither": "halftone",
+   "dot_size": 9,
+   "angle": 45,
+   "contrast": 2.8,
+   "noise": 28,
+   "streaks": 30,
+   "misreg": 5,
+   "copier_edge": 0,
+   "paper": 0,
+   "overprint": 0,
+   "ink2": [
+    255,
+    60,
+    140
+   ],
+   "tape": 0,
+   "palette": "Safety Orange (Blaze Orange / Charcoal)",
+   "invert": false,
+   "custom_colors": [
+    [
+     255,
+     255,
+     255
+    ],
+    [
+     0,
+     0,
+     0
+    ]
+   ],
+   "font": "Impact",
+   "font_size": 48,
+   "tstyle": "white_box",
+   "text_align": "left",
+   "txt_x": 7,
+   "txt_y1": 10,
+   "txt_y2": 70,
+   "text_rot": 0.0
+  },
+  "Стопка снимков": {
+   "layout": "pile",
+   "rows": 5,
+   "tilt": 6.0,
+   "fit_mode": "cover",
+   "bright": 1.3,
+   "edge_x": 6,
+   "edge_y": 5,
+   "loss": 20,
+   "dither": "halftone",
+   "dot_size": 5,
+   "angle": 15,
+   "contrast": 1.9,
+   "noise": 32,
+   "streaks": 14,
+   "misreg": 2,
+   "copier_edge": 0,
+   "paper": 65,
+   "overprint": 0,
+   "ink2": [
+    255,
+    60,
+    140
+   ],
+   "tape": 60,
+   "palette": "Vintage Newsprint (Cream / Charcoal)",
+   "invert": false,
+   "custom_colors": [
+    [
+     255,
+     255,
+     255
+    ],
+    [
+     0,
+     0,
+     0
+    ]
+   ],
+   "font": "Courier New Bold",
+   "font_size": 30,
+   "tstyle": "white_box",
+   "text_align": "left",
+   "txt_x": 7,
+   "txt_y1": 10,
+   "txt_y2": 70,
+   "text_rot": 0.0
+  },
+  "Газетная мозаика": {
+   "layout": "mosaic",
+   "rows": 6,
+   "tilt": 0.0,
+   "fit_mode": "cover",
+   "bright": 1.3,
+   "edge_x": 6,
+   "edge_y": 5,
+   "loss": 18,
+   "dither": "halftone",
+   "dot_size": 5,
+   "angle": 15,
+   "contrast": 1.8,
+   "noise": 36,
+   "streaks": 10,
+   "misreg": 1,
+   "copier_edge": 20,
+   "paper": 50,
+   "overprint": 0,
+   "ink2": [
+    255,
+    60,
+    140
+   ],
+   "tape": 0,
+   "palette": "Vintage Newsprint (Cream / Charcoal)",
+   "invert": false,
+   "custom_colors": [
+    [
+     255,
+     255,
+     255
+    ],
+    [
+     0,
+     0,
+     0
+    ]
+   ],
+   "font": "Times New Roman Bold",
+   "font_size": 40,
+   "tstyle": "white_box",
+   "text_align": "left",
+   "txt_x": 7,
+   "txt_y1": 10,
+   "txt_y2": 70,
+   "text_rot": 0.0
+  },
+  "Триптих-синька": {
+   "layout": "triptych",
+   "rows": 4,
+   "tilt": 0.0,
+   "fit_mode": "cover",
+   "bright": 1.3,
+   "edge_x": 10,
+   "edge_y": 8,
+   "loss": 22,
+   "dither": "floyd",
+   "dot_size": 6,
+   "angle": 45,
+   "contrast": 2.1,
+   "noise": 14,
+   "streaks": 10,
+   "misreg": 1,
+   "copier_edge": 0,
+   "paper": 0,
+   "overprint": 0,
+   "ink2": [
+    255,
+    60,
+    140
+   ],
+   "tape": 0,
+   "palette": "Blueprint / Cyanotype (Navy / Cyan)",
+   "invert": false,
+   "custom_colors": [
+    [
+     255,
+     255,
+     255
+    ],
+    [
+     0,
+     0,
+     0
+    ]
+   ],
+   "font": "Courier New Bold",
+   "font_size": 30,
+   "tstyle": "dymo_tape",
+   "text_align": "left",
+   "txt_x": 7,
+   "txt_y1": 10,
+   "txt_y2": 70,
+   "text_rot": 0.0
+  },
+  "Постер во весь лист": {
+   "layout": "full_page",
+   "rows": 4,
+   "tilt": 0.0,
+   "fit_mode": "cover",
+   "bright": 1.3,
+   "edge_x": 14,
+   "edge_y": 10,
+   "loss": 0,
+   "dither": "halftone",
+   "dot_size": 9,
+   "angle": 45,
+   "contrast": 2.6,
+   "noise": 24,
+   "streaks": 28,
+   "misreg": 3,
+   "copier_edge": 45,
+   "paper": 0,
+   "overprint": 0,
+   "ink2": [
+    255,
+    60,
+    140
+   ],
+   "tape": 0,
+   "palette": "Classic B&W (Xerox)",
+   "invert": false,
+   "custom_colors": [
+    [
+     255,
+     255,
+     255
+    ],
+    [
+     0,
+     0,
+     0
+    ]
+   ],
+   "font": "Impact",
+   "font_size": 64,
+   "tstyle": "outline",
+   "text_align": "left",
+   "txt_x": 7,
+   "txt_y1": 10,
+   "txt_y2": 70,
+   "text_rot": 0.0
+  },
+  "Лента кинопроб": {
+   "layout": "ribbon",
+   "rows": 5,
+   "tilt": 0.0,
+   "fit_mode": "cover",
+   "bright": 1.3,
+   "edge_x": 15,
+   "edge_y": 10,
+   "loss": 35,
+   "dither": "halftone",
+   "dot_size": 7,
+   "angle": 45,
+   "contrast": 2.7,
+   "noise": 22,
+   "streaks": 26,
+   "misreg": 4,
+   "copier_edge": 0,
+   "paper": 0,
+   "overprint": 0,
+   "ink2": [
+    255,
+    60,
+    140
+   ],
+   "tape": 0,
+   "palette": "Acid Cyberpunk (Neon Lime / Black)",
+   "invert": false,
+   "custom_colors": [
+    [
+     255,
+     255,
+     255
+    ],
+    [
+     0,
+     0,
+     0
+    ]
+   ],
+   "font": "Consolas Bold",
+   "font_size": 34,
+   "tstyle": "dymo_tape",
+   "text_align": "left",
+   "txt_x": 7,
+   "txt_y1": 10,
+   "txt_y2": 70,
+   "text_rot": 0.0
+  },
+  "Ризо-диптих": {
+   "layout": "duo",
+   "rows": 4,
+   "tilt": 0.0,
+   "fit_mode": "cover",
+   "bright": 1.3,
+   "edge_x": 15,
+   "edge_y": 10,
+   "loss": 15,
+   "dither": "halftone",
+   "dot_size": 8,
+   "angle": 30,
+   "contrast": 2.2,
+   "noise": 18,
+   "streaks": 10,
+   "misreg": 5,
+   "copier_edge": 0,
+   "paper": 55,
+   "overprint": 75,
+   "ink2": [
+    255,
+    60,
+    140
+   ],
+   "tape": 0,
+   "palette": "Пользовательская (Custom)",
+   "invert": false,
+   "custom_colors": [
+    [
+     244,
+     238,
+     224
+    ],
+    [
+     25,
+     55,
+     170
+    ]
+   ],
+   "font": "Impact",
+   "font_size": 46,
+   "tstyle": "white_box",
+   "text_align": "left",
+   "txt_x": 7,
+   "txt_y1": 10,
+   "txt_y2": 70,
+   "text_rot": 0.0
+  },
   "Ночное видение": {
    "layout": "center_hero",
    "rows": 5,
