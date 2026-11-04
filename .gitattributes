@@ -13,3 +13,8 @@ web/**/*.jpg binary
 web/**/*.webp binary
 web/**/*.woff2 binary
 web/**/*.json text eol=lf
+web/**/*.mp4 binary
+web/*.mp4 binary
+*.mp4 binary
+*.gif binary
+*.jpg binary
