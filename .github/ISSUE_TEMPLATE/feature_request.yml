@@ -1,0 +1,9 @@
+name: Idea or feature request
+description: A new effect, preset, manifesto or export option
+labels: [enhancement]
+body:
+  - type: textarea
+    id: idea
+    attributes:
+      label: What would you like to make that you can't make now?
+    validations: {required: true}

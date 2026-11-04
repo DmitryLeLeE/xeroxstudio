@@ -6,6 +6,7 @@
 <title>Xerox Zine Studio — make xerox zines from your photos</title>
 <meta name="description" content="Turn photos into photocopied zine pages: halftone, torn edges, risograph palettes, manifestos, print-ready A4 PDF and 8-page mini-zine. Free, runs in your browser, photos never leave your device.">
 <meta name="theme-color" content="#f1ece0">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; object-src 'none'; base-uri 'self'; form-action 'none'">
 <link rel="canonical" href="https://dmitrylelee.github.io/xeroxstudio/">
 <link rel="icon" href="img/favicon.png">
 <meta property="og:type" content="website">
@@ -127,23 +128,6 @@ python build.py</code></pre>
   <div class="muted" data-ru="Шрифты Rubik, Oswald, JetBrains Mono, PT Serif — SIL OFL. Модель поиска лиц — OpenCV (Intel License). Копируй, складывай, раздавай." data-en="Fonts Rubik, Oswald, JetBrains Mono, PT Serif — SIL OFL. Face model — OpenCV (Intel License). Copy it, fold it, give it away."></div>
 </footer>
 
-<script>
-(function () {
-  var L = localStorage.getItem("zine.lang") || ((navigator.language || "en").toLowerCase().indexOf("ru") === 0 ? "ru" : "en");
-  function apply() {
-    document.documentElement.lang = L;
-    document.querySelectorAll("[data-ru]").forEach(function (e) { e.textContent = e.dataset[L]; });
-    document.getElementById("lang").textContent = L === "ru" ? "EN" : "RU";
-    document.title = L === "ru" ? "Xerox Zine Studio — ксерокс-зины из ваших фото" : "Xerox Zine Studio — make xerox zines from your photos";
-  }
-  document.getElementById("lang").addEventListener("click", function () { L = L === "ru" ? "en" : "ru"; try { localStorage.setItem("zine.lang", L); } catch (e) {} apply(); });
-  apply();
-  var pgs = document.querySelectorAll(".wall .pg");
-  if ("IntersectionObserver" in window) {
-    var io = new IntersectionObserver(function (es) { es.forEach(function (e) { if (e.isIntersecting) { e.target.classList.add("in"); io.unobserve(e.target); } }); }, { rootMargin: "0px 0px -8% 0px" });
-    pgs.forEach(function (p) { io.observe(p); });
-  } else { pgs.forEach(function (p) { p.classList.add("in"); }); }
-})();
-</script>
+<script src="landing.js"></script>
 </body>
 </html>

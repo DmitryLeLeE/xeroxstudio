@@ -1037,6 +1037,28 @@ async function exportPng() {
     await sink.write(new Blob([await pngU8(r.canvas)], { type: "image/png" }));
   }, T(`✓ Сохранено: ${sink.name}`, `✓ Saved: ${sink.name}`));
 }
+async function pageBlob() {
+  flushCommit();
+  const r = await render(S.cur, { scale: exportScale() });
+  return new Blob([await pngU8(r.canvas)], { type: "image/png" });
+}
+const CAN_SHARE = () => !!(navigator.canShare && navigator.share && navigator.canShare({ files: [new File([new Blob([""])], "a.png", { type: "image/png" })] }));
+const CAN_COPY = () => !!(navigator.clipboard && navigator.clipboard.write && window.ClipboardItem);
+async function sharePage() {
+  try {
+    toast(T("Подготовка…", "Preparing…"), "ok", 1500);
+    const file = new File([await pageBlob()], `${pageName(S.cur)}.png`, { type: "image/png" });
+    await navigator.share({ files: [file], title: "Xerox Zine Studio" });
+  } catch (e) { if (!e || e.name !== "AbortError") toast(T("Не удалось поделиться", "Could not share"), "err"); }
+}
+async function copyPage() {
+  try {
+    toast(T("Копирование…", "Copying…"), "ok", 1500);
+    const blob = await pageBlob();
+    await navigator.clipboard.write([new ClipboardItem({ "image/png": blob })]);
+    toast(T("✓ Страница скопирована в буфер", "✓ Page copied to clipboard"));
+  } catch (e) { toast(T("Браузер не дал доступ к буферу обмена", "The browser blocked clipboard access"), "err"); }
+}
 async function exportAllPng() {
   flushCommit();
   const sink = await askSave(`${S.name || "zine"}_pages.zip`, { mime: "application/zip", ext: ".zip", desc: "ZIP" });
@@ -1147,6 +1169,8 @@ function menuItems() {
     [T("Сохранить проект как…", "Save project as…"), () => saveProject(true)],
     "hr", T("ЭКСПОРТ", "EXPORT"),
     [T("Страница в PNG", "Page as PNG"), exportPng, "Ctrl+S"],
+    ...(CAN_SHARE() ? [[T("Поделиться страницей…", "Share page…"), sharePage]] : []),
+    ...(CAN_COPY() ? [[T("Копировать страницу в буфер", "Copy page to clipboard"), copyPage]] : []),
     [T("Все страницы в PNG (ZIP)", "All pages as PNG (ZIP)"), exportAllPng],
     [T("1-bit трафарет (PNG)", "1-bit stencil (PNG)"), exportStencil],
     [T("Книга в PDF", "Book as PDF"), exportPdf],
@@ -1263,6 +1287,18 @@ window.addEventListener("paste", (e) => {
 });
 
 $("#fileImg").addEventListener("change", (e) => { const f = [...e.target.files]; e.target.value = ""; if (f.length) addPhotos(f); });
+$("#fileCam").addEventListener("change", (e) => { const f = [...e.target.files]; e.target.value = ""; if (f.length) addPhotos(f); });
+const closeWelcome = () => { ls.set("zine.welcomed", true); const d = $("#dlgWelcome"); if (d.open) d.close(); };
+$("#dlgWelcome").addEventListener("cancel", () => ls.set("zine.welcomed", true));
+$("#wPhoto").addEventListener("click", () => { closeWelcome(); $("#fileImg").click(); });
+$("#wCam").addEventListener("click", () => { closeWelcome(); $("#fileCam").click(); });
+$("#wSample").addEventListener("click", closeWelcome);
+if (!TOUCH) $("#wCam").hidden = true;
+$("#btnTheme").addEventListener("click", () => {
+  const next = document.documentElement.dataset.theme === "paper" ? "dark" : "paper";
+  document.documentElement.dataset.theme = next; ls.set("zine.theme", next);
+  document.querySelector('meta[name="theme-color"]').setAttribute("content", next === "paper" ? "#f1ece0" : "#121212");
+});
 $("#fileProj").addEventListener("change", (e) => { const f = e.target.files[0]; e.target.value = ""; if (f) openProjectFile(f); });
 
 // ---------------------------------------------------------------- кнопки
@@ -1322,7 +1358,7 @@ async function init() {
   if (!restoring) await loadSample();
   resetHistory(); markClean();
   afterPageSwitch();
-  if (!restoring && srcFor(page())) toast(T("Это пример (фото NASA). Нажмите «Загрузить фото», чтобы взять своё.", "This is a sample (NASA photo). Press “Add photos” to use your own."), "ok", 4500);
+  if (!restoring && srcFor(page()) && !ls.get("zine.welcomed", false) && !/[?&]shot\b/.test(location.search)) $("#dlgWelcome").showModal();
   if ("serviceWorker" in navigator && /^https:|^http:\/\/localhost/.test(location.href)) {
     navigator.serviceWorker.register("sw.js").then((reg) => {
       reg.addEventListener("updatefound", () => {

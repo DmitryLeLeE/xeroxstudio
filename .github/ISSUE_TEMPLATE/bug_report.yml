@@ -1,0 +1,21 @@
+name: Bug report
+description: Something broke or looks wrong
+labels: [bug]
+body:
+  - type: dropdown
+    id: where
+    attributes:
+      label: Where does it happen?
+      options: [Browser version, Windows app]
+    validations: {required: true}
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened, and what did you expect?
+      description: Steps to reproduce, a screenshot or a .zine file help a lot (never attach private photos).
+    validations: {required: true}
+  - type: input
+    id: env
+    attributes:
+      label: Browser / Windows version
+      placeholder: "Safari 17.5 on iPhone 14 · Windows 11 23H2"

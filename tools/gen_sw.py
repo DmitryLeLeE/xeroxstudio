@@ -10,7 +10,7 @@ for base, _, names in os.walk(os.path.join(root, 'app')):
         if rel in ('sw.js',) or rel.startswith('test_') or n.startswith('_'): continue
         files.append(rel)
 files = sorted(files)
-extra = ['../img/sample.jpg', '../img/favicon.png', '../img/xerox.png', '../index.html', '../style.css'] 
+extra = ['../img/sample.jpg', '../img/favicon.png', '../img/xerox.png', '../index.html', '../style.css', '../landing.js'] 
 extra = [e for e in extra if os.path.exists(os.path.normpath(os.path.join(root, 'app', e)))]
 h = hashlib.sha1()
 for f in files + extra:

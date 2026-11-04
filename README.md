@@ -71,7 +71,8 @@ main.py  ui_components.py  manifest_dialog.py     Tkinter interface
 project_io.py  pdf_writer.py                      .zine files, own PDF writer
 web/                                              the browser version (landing at /, app at /app/)
 tools/gen_config_js.py  tools/gen_sw.py           keep web/ in sync with the Python constants, rebuild offline cache
-tests/                                            pytest suite (engine, presets, projects, PDF, web sync)
+tests/  tests/web/                                pytest suite (engine, presets, projects, PDF, web sync) and Playwright browser tests
+docs/                                             screenshots and the .zine format
 ```
 
 The web app reads its constants from `web/app/js/config.js`, which is **generated** from `config.py`, `presets.py`
@@ -81,7 +82,8 @@ and `manifestos.py`. After changing any of them run `python tools/gen_config_js.
 ## Tests
 
 ```
-python -m pytest -q tests
+python -m pytest -q tests                      # browser tests are skipped without Playwright
+pip install playwright && python -m playwright install chromium   # to run tests/web too
 ```
 
 ## Changelog and licenses
