@@ -10,7 +10,7 @@ The tool gets deeper, and the browser gets a version of it.
   screen on another angle with its own ink colour) and masking tape strips that are photocopied with the page.
 - **New presets:** Riso Overprint and Tape Collage (nine built-in in total).
 - Old projects without the new keys render exactly as before.
-- **Manifesto library grew from 30 to 54** built-in English manifestos; new categories COPIER, DIY and CITY. In the browser version the library now has “Write your own”; saved texts appear under “Mine”.
+- **Manifesto library grew from 30 to 54** built-in English manifestos; new categories COPIER, DIY and CITY. Both versions have “Write your own” in the library (two lines of text, saved under “Mine”).
 - Landing page redesigned as a zine; gallery covers all nine presets.
 - Repository: MIT licence, English README (+ Russian), `tools/` to regenerate web config and offline cache,
   `tests/test_web_sync.py`, GitHub Actions for tests, site deployment and tagged releases.

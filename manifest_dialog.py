@@ -80,6 +80,7 @@ class ManifestoDialog(tk.Toplevel):
         self.btn_delete = make_button(btns, "Удалить свой", self.delete_selected, kind="danger")
         self.btn_delete.pack(side=tk.RIGHT)
         make_button(btns, "＋ Сохранить текст страницы", self.save_current).pack(side=tk.RIGHT, padx=6)
+        make_button(btns, "✎ Написать свой", self.write_own).pack(side=tk.RIGHT)
 
         self.lang_combo.bind("<<ComboboxSelected>>", lambda e: self._on_filter(reset_cat=True))
         self.cat_combo.bind("<<ComboboxSelected>>", lambda e: self._on_filter())
@@ -166,3 +167,49 @@ class ManifestoDialog(tk.Toplevel):
         if item and item["lang"] == "user":
             manifestos.delete_user(item["top"], item["bottom"])
             self.reload()
+
+    def write_own(self):
+        """Маленькое окно: две строки текста -> «Мои»."""
+        win = tk.Toplevel(self)
+        win.title("Свой манифест")
+        win.configure(bg=PANEL, padx=14, pady=12)
+        win.transient(self)
+        win.resizable(False, False)
+        boxes = []
+        for caption in ("Верхний текст (Enter: новая строка)", "Нижний текст"):
+            tk.Label(win, text=caption, bg=PANEL, fg=MUTED, font=FONT_SMALL, anchor="w").pack(fill=tk.X, pady=(6, 2))
+            t = tk.Text(win, width=44, height=3, bg=FIELD, fg=FG, insertbackground=ACCENT, relief="flat", wrap="word",
+                        font=("Consolas", 12, "bold"), highlightthickness=1, highlightbackground=LINE, highlightcolor=ACCENT)
+            t.pack(fill=tk.X)
+            boxes.append(t)
+        msg = tk.Label(win, text="", bg=PANEL, fg="#ff6b6b", font=FONT_SMALL, anchor="w")
+        msg.pack(fill=tk.X, pady=(6, 0))
+
+        def save():
+            top, bottom = (b.get("1.0", "end").strip().upper() for b in boxes)
+            if not top or not bottom:
+                msg.config(text="Заполните обе строки")
+                return
+            if not manifestos.save_user(top, bottom):
+                msg.config(text="Такой манифест уже есть среди ваших")
+                return
+            win.destroy()
+            self.lang_var.set(manifestos.LANG_LABELS["user"])
+            self.cat_var.set(ALL_CATS)
+            self.query_var.set("")
+            self.reload()
+            for i, item in enumerate(self.shown):
+                if item["top"] == top and item["bottom"] == bottom:
+                    self.listbox.selection_clear(0, "end")
+                    self.listbox.selection_set(i)
+                    self.listbox.see(i)
+                    self._show_preview()
+                    break
+
+        row = tk.Frame(win, bg=PANEL)
+        row.pack(fill=tk.X, pady=(8, 0))
+        make_button(row, "★ Сохранить в «Мои»", save, kind="primary").pack(side=tk.LEFT)
+        make_button(row, "Отмена", win.destroy).pack(side=tk.LEFT, padx=6)
+        win.bind("<Escape>", lambda e: win.destroy())
+        boxes[0].focus_set()
+        win.grab_set()
