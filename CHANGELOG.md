@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+- **Riso ink separations** (both versions): ZIP with one 1-bit plate per ink, corner registration crosses and a README with ink colours and print order.
+- **Fold guide:** illustrated 5-step guide to folding the 8-page mini-zine, printable from the app.
+- **Copier sound** (browser, off by default) and a short "print ritual" animation when an export finishes (respects reduced motion).
+- Author's manifesto on the landing page.
+
 ## 1.1.0
 The tool gets deeper, and the browser gets a version of it.
 

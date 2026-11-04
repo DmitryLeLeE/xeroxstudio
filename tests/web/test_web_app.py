@@ -176,3 +176,20 @@ def test_shared_look_link_roundtrip_and_validation(page_factory):
     wait_ready(pg3)
     assert pg3.evaluate("window.__zine.page().rows") <= 12
     assert pg3.errors == []
+
+
+def test_fold_guide_sound_toggle_and_separations_menu(page_factory):
+    pg = page_factory()
+    wait_ready(pg)
+    pg.click("#btnFile")
+    labels = pg.evaluate("[...document.querySelectorAll('#menuFile button')].map(b => b.textContent)")
+    assert any("separations" in l or "разделение" in l.lower() for l in labels)
+    pg.evaluate("[...document.querySelectorAll('#menuFile button')].find(b => /fold|сложить/i.test(b.textContent)).click()")
+    pg.wait_for_selector("#dlgFold[open]")
+    assert pg.evaluate("document.querySelectorAll('#foldBody .fold-steps li').length") == 5
+    assert pg.evaluate("document.querySelectorAll('#foldBody svg').length") == 5
+    pg.click("#dlgFold .dlg-head button")
+    pg.click("#btnFile")
+    pg.evaluate("[...document.querySelectorAll('#menuFile button')].find(b => /sound|звук/i.test(b.textContent)).click()")
+    assert pg.evaluate("localStorage.getItem('zine.sound')") == "true"
+    assert pg.errors == []

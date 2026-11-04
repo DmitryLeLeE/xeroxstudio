@@ -274,3 +274,30 @@ html[data-theme="paper"] body, html[data-theme="paper"] .btn { font-family: "Rub
   background: linear-gradient(to bottom, transparent, #ffffffcc 45%, #fff 50%, #ffffffcc 55%, transparent); mix-blend-mode: plus-lighter; }
 .scanbar.go { animation: scan .85s cubic-bezier(.4,0,.2,1); }
 @keyframes scan { 0% { top: -90px; opacity: 1; } 100% { top: 100%; opacity: 1; } }
+
+/* --- fold guide */
+.fold-steps { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; counter-reset: st; }
+.fold-steps li { counter-increment: st; border: 1px dashed #777; border-radius: 6px; padding: 8px; font-size: 13px; line-height: 1.35; }
+.fold-steps li::before { content: counter(st); display: inline-block; background: var(--fg); color: var(--panel); border-radius: 50%; width: 20px; height: 20px; text-align: center; font-weight: 700; margin-bottom: 4px; }
+.fold-steps svg { display: block; width: 100%; height: auto; margin: 4px 0 6px; }
+.fold-steps .sh { fill: #fff; stroke: #222; stroke-width: 1.5; }
+.fold-steps .cr { stroke: #888; stroke-width: 1.2; stroke-dasharray: 4 3; }
+.fold-steps .cut { stroke: #e0301e; stroke-width: 2.4; }
+.fold-steps text { font: 700 10px sans-serif; fill: #222; text-anchor: middle; dominant-baseline: central; }
+.dlg-foot { padding: 10px 14px; border-top: 1px solid #444; text-align: right; }
+@media print {
+  body > *:not(#dlgFold) { display: none !important; }
+  #dlgFold { position: static !important; box-shadow: none; border: 0; width: 100%; max-height: none; color: #000; background: #fff; }
+  #dlgFold .dlg-head button, #dlgFold .dlg-foot { display: none; }
+  #dlgFold::backdrop { display: none; }
+}
+
+/* --- print ritual */
+.ritual { position: fixed; inset: 0; z-index: 90; pointer-events: none; display: flex; align-items: center; justify-content: center; background: #0006; animation: ritualBg 1.9s ease both; }
+.ritual .copier { position: relative; width: min(260px, 60vw); height: 70px; background: #bbb; border: 3px solid #222; border-radius: 8px; box-shadow: 6px 6px 0 #222; }
+.ritual .copier::after { content: ""; position: absolute; left: 10%; right: 10%; bottom: 14px; height: 6px; background: #222; border-radius: 3px; }
+.ritual .sheet { position: absolute; left: 14%; right: 14%; top: 60px; height: 190px; background: #fff; border: 1px solid #333; box-shadow: 2px 3px 0 #0005; transform: translateY(-120px); animation: sheetOut 1.5s .15s cubic-bezier(.3,.7,.3,1) both; z-index: -1; }
+.ritual .sheet::before { content: ""; position: absolute; inset: 14px; background: repeating-linear-gradient(0deg, #222 0 2px, transparent 2px 7px); opacity: .55; }
+@keyframes sheetOut { from { transform: translateY(-120px); } to { transform: translateY(0); } }
+@keyframes ritualBg { 0% { opacity: 0; } 12% { opacity: 1; } 80% { opacity: 1; } 100% { opacity: 0; } }
+@media (prefers-reduced-motion: reduce) { .ritual .sheet { animation: none; transform: none; } .ritual { animation-duration: 1.2s; } }

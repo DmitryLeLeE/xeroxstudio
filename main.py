@@ -292,6 +292,7 @@ class XeroxZineStudioApp:
         f.add_command(label="Экспорт страницы в PNG...", command=self.export_png, accelerator="Ctrl+S")
         f.add_command(label="Экспорт всех страниц в PNG...", command=self.export_all_png)
         f.add_command(label="Экспорт 1-bit трафарета (PNG)...", command=self.export_stencil)
+        f.add_command(label="Экспорт разделения красок для ризографа (ZIP)...", command=self.export_separations)
         f.add_command(label="Экспорт книги в PDF...", command=self.export_multipage_pdf)
         f.add_command(label="Экспорт PDF для печати (A4, поля 10 мм)...", command=self.export_pdf_a4)
         f.add_command(label="Экспорт 8-page мини-зина (A4)...", command=self.export_mini_zine)
@@ -1002,6 +1003,33 @@ class XeroxZineStudioApp:
             bits.save(path, dpi=(300, 300))
 
         self._run_job("Экспорт трафарета", work, lambda _r: self.toast.show("✓ 1-bit трафарет сохранён (чёрный = краска)"))
+
+    def export_separations(self):
+        path = self._ask_save("export", defaultextension=".zip", filetypes=[("ZIP", "*.zip")], initialfile="zine_riso.zip")
+        if not path:
+            return
+        state, img = self._snapshot_state(), self.cv_img
+        scale = self._scale()
+
+        def work(progress):
+            import io, zipfile
+            progress("Разделение красок…", 0.3)
+            plates, (paper, ink, ink2) = self.engine.render_separations(img, state, scale=scale)
+            hx = lambda c: "#%02X%02X%02X" % tuple(int(v) for v in c)
+            lines = ["XEROX ZINE STUDIO - INK SEPARATIONS / RAZDELENIE KRASOK", "",
+                     f"ink1: ink {hx(ink)}", f"ink2: ink {hx(ink2)}" if ink2 else "ink2: none (overprint is 0)",
+                     f"paper: {hx(paper)}", "",
+                     "Black = ink, white = nothing. Print ink1, let it dry, then lay the SAME sheet",
+                     "into the machine again aligned by the corner crosses and print ink2.",
+                     "Slight misregistration is not a bug. It is the point.", "",
+                     "Чёрное = краска. Печатай ink1, дай высохнуть, затем тот же лист снова,",
+                     "совместив по угловым крестам, и печатай ink2. Небольшой сдвиг - не ошибка, а суть.", ""]
+            with zipfile.ZipFile(path, "w", zipfile.ZIP_STORED) as z:
+                for name, im in plates:
+                    buf = io.BytesIO(); im.save(buf, "PNG", dpi=(300, 300)); z.writestr(f"zine_{name}.png", buf.getvalue())
+                z.writestr("README.txt", "\n".join(lines).encode("utf-8"))
+
+        self._run_job("Разделение красок", work, lambda _r: self.toast.show("✓ Пластины красок сохранены (ZIP)"))
 
     def export_multipage_pdf(self):
         path = self._ask_save("export", defaultextension=".pdf", filetypes=[("PDF", "*.pdf")], initialfile="zine_book.pdf")

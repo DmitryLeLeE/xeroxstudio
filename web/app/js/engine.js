@@ -697,10 +697,12 @@ export async function renderPage(source, state, opts = {}) {
   }
   // --- второй цвет (оверпринт): другой экран растра, свой сдвиг, смешение умножением
   const over = Number(st.overprint);
+  let plate2 = null;
   if (over > 0) {
     const k2 = Math.min(1, over / 100) * 0.9, lighter = new Uint8Array(n);
     for (let i = 0; i < n; i++) lighter[i] = 255 - (255 - gray[i]) * k2;
     const bits2 = halftoneBits(lighter, cw, ch, st.dot_size * s * 1.3, (Number(st.angle) + 30) % 90);
+    plate2 = bits2;
     const sx = Math.round((3 + Number(st.misreg)) * s), sy = Math.round((2 + Number(st.misreg) / 2) * s);
     const [r2, g2, b2] = st.ink2;
     for (let y = sy; y < ch; y++) {
@@ -715,5 +717,5 @@ export async function renderPage(source, state, opts = {}) {
   addPaper(o, cw, ch, Number(st.paper), seed + 21, s);
   const result = makeCanvas(cw, ch);
   ctx2d(result).putImageData(out, 0, 0);
-  return { canvas: result, bits, width: cw, height: ch };
+  return { canvas: result, bits, plate2, inks: { paper, ink, ink2: plate2 ? st.ink2 : null }, width: cw, height: ch };
 }

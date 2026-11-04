@@ -23,7 +23,30 @@ BICUBIC = Image.Resampling.BICUBIC
 
 class ZineGraphicEngine:
 
+    @staticmethod
+    def add_registration_marks(plate):
+        """Перекрестия приводки по углам (чёрные = краска) на 1-bit пластине."""
+        a = np.array(plate.convert("1"), dtype=bool)  # True = белый
+        h, w = a.shape
+        m = int(round(min(w, h) * 0.035)); arm = int(round(m * 0.9))
+        for cx, cy in ((m, m), (w - 1 - m, m), (m, h - 1 - m), (w - 1 - m, h - 1 - m)):
+            for d in range(-arm, arm + 1):
+                for x, y in ((cx + d, cy), (cx, cy + d)) + (((cx + d, cy + 1), (cx + 1, cy + d)) if abs(d) < 2 else ()):
+                    if 0 <= x < w and 0 <= y < h:
+                        a[y, x] = False
+        return Image.fromarray(a)
+
+    def render_separations(self, img, state, scale=1.0):
+        """Пластины красок для ризографа: [(имя, 1-bit Image)], цвета (бумага, ink1, ink2|None)."""
+        _, bits = self.render_zine_page(img, state, scale=scale)
+        plates = [("ink1", self.add_registration_marks(bits))]
+        if self.last_plate2 is not None:
+            plates.append(("ink2", self.add_registration_marks(self.last_plate2)))
+        return plates, self.last_inks
+
     def __init__(self):
+        self.last_plate2 = None
+        self.last_inks = None
         self._lock = threading.Lock()  # CascadeClassifier не потокобезопасен
         self.face_cascade = self._load_cascade()
         self._fonts = {}
@@ -566,10 +589,13 @@ class ZineGraphicEngine:
 
         # --- второй цвет (оверпринт): другой экран растра, свой сдвиг, смешение умножением
         over = float(st["overprint"])
+        self.last_plate2 = None
+        self.last_inks = (paper_rgb, ink_rgb, tuple(st["ink2"]) if over > 0 else None)
         if over > 0:
             k2 = min(1.0, over / 100.0) * 0.9
             lighter = Image.fromarray((255.0 - (255.0 - np.asarray(gray, dtype=np.float32)) * k2).astype(np.uint8))
             bits2 = self.apply_halftone_dots(lighter, dot_size=st["dot_size"] * s * 1.3, angle=(float(st["angle"]) + 30) % 90)
+            self.last_plate2 = Image.fromarray(bits2)
             plate = ~bits2
             sx, sy = int(round((3 + st["misreg"]) * s)), int(round((2 + st["misreg"] / 2) * s))
             shifted = np.zeros_like(plate)

@@ -32,6 +32,8 @@ engine design, one preset library and one project format:
 - **Riso overprint.** A second ink layer on another screen angle, shifted and multiplied over the first. Nine paper / ink pairs plus your own colours.
 - **Paper and tape.** Fibre and blotch texture, edge vignette, torn tape strips that get photocopied along with the page.
 - **Generation loss.** 13 layouts (staggered, columns, diagonal cascade, overlapping pile, mosaic, diptych, triptych, ribbon, contact sheet, hero + copies, full page…); every next copy is blurrier and harsher.
+- **Ink separations.** Export per-ink 1-bit plates with registration crosses (ZIP) to print on a real risograph.
+- **Fold guide.** Illustrated how to fold the 8-page mini-zine, printable from the app.
 - **Manifestos.** 54 built-in English manifestos in eight categories, search, your own texts, three backings (box, Dymo tape, outline), draggable caption.
 - **Faces.** Optional black bar over the eyes and sticker cut-outs (Haar cascade; runs in-browser too).
 - **Print-ready.** PNG up to 3×, book PDF, A4 PDF with margins, **8-page mini-zine** with fold and cut lines, 1-bit PNG for stencil printing.

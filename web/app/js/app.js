@@ -449,6 +449,7 @@ function scanSweep() {
 
 // ---------------------------------------------------------------- сравнение «до/после»
 const CMP = { on: false, x: 0.5, last: null };
+$("#foldPrint").addEventListener("click", () => window.print());
 function drawCompare() {
   if (!CMP.on || !CMP.last) return;
   const src = srcFor(page()), w = preview.width, h = preview.height;
@@ -1101,10 +1102,80 @@ async function job(title, fn, okMsg) {
   try {
     const r = await runJob(title, fn);
     if (okMsg) toast(typeof okMsg === "function" ? okMsg(r) : okMsg);
+    printRitual();
   } catch (e) {
     if (e instanceof Cancelled) { toast(T("Отменено", "Cancelled"), "ok", 1200); return; }
     console.error(e); toast(T("Ошибка экспорта: ", "Export failed: ") + (e.message || e) + memHint(e), "err");
   }
+}
+
+// ---------------------------------------------------------------- звук копира и «ритуал печати»
+const SOUND = { on: !!ls.get("zine.sound", false), ctx: null };
+function copierSound() {
+  if (!SOUND.on) return;
+  try {
+    const AC = window.AudioContext || window.webkitAudioContext; if (!AC) return;
+    const ctx = SOUND.ctx || (SOUND.ctx = new AC()); if (ctx.state === "suspended") ctx.resume();
+    const t0 = ctx.currentTime, dur = 1.5, n = Math.floor(ctx.sampleRate * dur), buf = ctx.createBuffer(1, n, ctx.sampleRate), d = buf.getChannelData(0);
+    for (let i = 0; i < n; i++) d[i] = Math.random() * 2 - 1;
+    const src = ctx.createBufferSource(); src.buffer = buf;
+    const bp = ctx.createBiquadFilter(); bp.type = "bandpass"; bp.Q.value = 1.4;
+    bp.frequency.setValueAtTime(500, t0); bp.frequency.exponentialRampToValueAtTime(2600, t0 + 1.1);
+    const g = ctx.createGain(); g.gain.setValueAtTime(0.0001, t0);
+    g.gain.exponentialRampToValueAtTime(0.28, t0 + 0.12); g.gain.setValueAtTime(0.28, t0 + 1.0); g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
+    // «лампа»: быстрая вспышка-щелчок в начале
+    const o = ctx.createOscillator(), og = ctx.createGain(); o.type = "square"; o.frequency.value = 90;
+    og.gain.setValueAtTime(0.25, t0); og.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.09);
+    src.connect(bp).connect(g).connect(ctx.destination); o.connect(og).connect(ctx.destination);
+    src.start(t0); o.start(t0); o.stop(t0 + 0.1);
+  } catch { /* звук необязателен */ }
+}
+function printRitual() {
+  copierSound();
+  const el = document.createElement("div"); el.className = "ritual"; el.setAttribute("aria-hidden", "true");
+  el.innerHTML = '<div class="copier"><div class="sheet"></div></div>';
+  document.body.appendChild(el);
+  setTimeout(() => el.remove(), 2000);
+}
+function toggleSound() {
+  SOUND.on = !SOUND.on; ls.set("zine.sound", SOUND.on);
+  toast(SOUND.on ? T("Звук копира включён", "Copier sound on") : T("Звук копира выключен", "Copier sound off"), "ok", 1400);
+  if (SOUND.on) copierSound();
+}
+
+// ---------------------------------------------------------------- схема сложения мини-зина
+function foldSvg(step) {
+  const W = 160, H = 84, x0 = 6, y0 = 6, w = 148, h = 72, cw = w / 4, rh = h / 2;
+  const nums = [[5, 4, 3, 2], [6, 7, 8, 1]];
+  const sheet = `<rect class="sh" x="${x0}" y="${y0}" width="${w}" height="${h}"/>`;
+  let body = sheet;
+  const label = (r, c, t, flip) => `<text x="${x0 + cw * c + cw / 2}" y="${y0 + rh * r + rh / 2}"${flip ? ` transform="rotate(180 ${x0 + cw * c + cw / 2} ${y0 + rh * r + rh / 2})"` : ""}>${t}</text>`;
+  if (step === 1) body += `<line class="cr" x1="${x0}" y1="${y0 + rh}" x2="${x0 + w}" y2="${y0 + rh}"/>`;
+  if (step === 2) for (let c = 1; c < 4; c++) body += `<line class="cr" x1="${x0 + cw * c}" y1="${y0}" x2="${x0 + cw * c}" y2="${y0 + h}"/>`;
+  if (step >= 3 && step <= 3) {
+    body += `<line class="cr" x1="${x0}" y1="${y0 + rh}" x2="${x0 + w}" y2="${y0 + rh}"/>`;
+    for (let c = 1; c < 4; c++) body += `<line class="cr" x1="${x0 + cw * c}" y1="${y0}" x2="${x0 + cw * c}" y2="${y0 + h}"/>`;
+    body += `<line class="cut" x1="${x0 + cw}" y1="${y0 + rh}" x2="${x0 + cw * 3}" y2="${y0 + rh}"/>`;
+    for (let r = 0; r < 2; r++) for (let c = 0; c < 4; c++) body += label(r, c, nums[r][c], r === 0);
+  }
+  if (step === 4) {
+    body = `<path class="sh" d="M${x0 + cw * 2} ${y0 + 4} L${x0 + cw * 3.4} ${y0 + rh} L${x0 + cw * 2} ${y0 + h - 4} L${x0 + cw * 0.6} ${y0 + rh} Z"/>` +
+      `<line class="cr" x1="${x0 + cw * 0.6}" y1="${y0 + rh}" x2="${x0 + cw * 3.4}" y2="${y0 + rh}"/>` +
+      `<line class="cut" x1="${x0 + cw * 2}" y1="${y0 + 4}" x2="${x0 + cw * 2}" y2="${y0 + h - 4}"/>`;
+  }
+  if (step === 5) body = `<rect class="sh" x="${x0 + cw * 1.2}" y="${y0 + 4}" width="${cw * 1.6}" height="${h - 8}"/><text x="${x0 + cw * 2}" y="${y0 + rh}">1</text>`;
+  return `<svg viewBox="0 0 ${W} ${H}" role="img" aria-hidden="true">${body}</svg>`;
+}
+function showFoldGuide() {
+  const steps = [
+    [T("Сложи лист пополам по длинной стороне, проведи по сгибу ногтем и раскрой.", "Fold the sheet in half the long way, crease it with a fingernail, unfold.")],
+    [T("Сложи пополам поперёк, ещё раз пополам — получится 4 колонки. Раскрой.", "Fold in half across, then in half again for 4 columns. Unfold.")],
+    [T("Сложи по длинной стороне и разрежь по красной линии: только средние две колонки.", "Fold the long way again and cut the red line: the middle two columns only.")],
+    [T("Раскрой и сведи концы листа друг к другу — разрез откроется ромбом.", "Open it and push the two ends together; the slit opens into a diamond.")],
+    [T("Прижми в книжечку: обложка — страница 1. Готово. Отдай другому.", "Press flat into a booklet with page 1 on the cover. Done. Hand it to someone.")],
+  ];
+  $("#foldBody").innerHTML = `<p class="muted small">${T("Красная линия на листе — разрез, пунктир — сгиб. Цифры — номера страниц.", "Red is the cut, dashed is the fold. Numbers are page numbers.")}</p><ol class="fold-steps">${steps.map((t, i) => `<li>${foldSvg(i + 1)}${t[0]}</li>`).join("")}</ol>`;
+  $("#dlgFold").showModal();
 }
 
 async function exportPng() {
@@ -1164,6 +1235,40 @@ async function exportStencil() {
     const r = await render(S.cur, { scale: exportScale() });
     await sink.write(await IO.encodePng1(r.bits, r.width, r.height, 300));
   }, T("✓ Трафарет сохранён (чёрно-белый PNG, 1 бит)", "✓ Stencil saved (1-bit black & white PNG)"));
+}
+function regMarks(bits, w, h) {
+  // перекрестия приводки по углам: 0 = краска; одинаковы на всех пластинах
+  const m = Math.round(Math.min(w, h) * 0.035), arm = Math.round(m * 0.9);
+  const put = (x, y) => { if (x >= 0 && y >= 0 && x < w && y < h) bits[y * w + x] = 0; };
+  for (const [cx, cy] of [[m, m], [w - 1 - m, m], [m, h - 1 - m], [w - 1 - m, h - 1 - m]]) {
+    for (let d = -arm; d <= arm; d++) { put(cx + d, cy); put(cx, cy + d); if (Math.abs(d) < 2) { put(cx + d, cy + 1); put(cx + 1, cy + d); } }
+  }
+  return bits;
+}
+async function exportSeparations() {
+  flushCommit();
+  const sink = await askSave(`${pageName(S.cur)}_riso.zip`, { mime: "application/zip", ext: ".zip", desc: "ZIP" });
+  if (!sink) return;
+  await job(T("Разделение красок", "Ink separations"), async (progress) => {
+    await progress(T("Рендеринг…", "Rendering…"), 0.3);
+    const r = await render(S.cur, { scale: exportScale() });
+    const base = pageName(S.cur), entries = [];
+    const hx = (c) => rgbHex(c).toUpperCase();
+    entries.push({ name: `${base}_ink1.png`, data: await IO.encodePng1(regMarks(Uint8Array.from(r.bits), r.width, r.height), r.width, r.height, 300) });
+    if (r.plate2) entries.push({ name: `${base}_ink2.png`, data: await IO.encodePng1(regMarks(Uint8Array.from(r.plate2), r.width, r.height), r.width, r.height, 300) });
+    const L = [
+      "XEROX ZINE STUDIO - INK SEPARATIONS / RAZDELENIE KRASOK", "",
+      `ink1: ${base}_ink1.png  -> ink ${hx(r.inks.ink)}`,
+      r.plate2 ? `ink2: ${base}_ink2.png  -> ink ${hx(r.inks.ink2)}` : "ink2: none (overprint is 0)",
+      `paper: ${hx(r.inks.paper)}`, "",
+      "Black = ink, white = nothing. Print ink1, let it dry, then lay the SAME sheet",
+      "into the machine again aligned by the corner crosses and print ink2.",
+      "Slight misregistration is not a bug. It is the point.", "",
+      "Чёрное = краска. Печатай ink1, дай высохнуть, затем тот же лист снова,",
+      "совместив по угловым крестам, и печатай ink2. Небольшой сдвиг - не ошибка, а суть.", ""];
+    entries.push({ name: "README.txt", data: new TextEncoder().encode(L.join("\n")) });
+    await sink.write(new Blob([IO.writeZip(entries)], { type: "application/zip" }));
+  }, T("✓ Пластины красок сохранены (ZIP)", "✓ Ink plates saved (ZIP)"));
 }
 async function exportPdf() {
   flushCommit();
@@ -1255,9 +1360,12 @@ function menuItems() {
     ...(CAN_COPY() ? [[T("Копировать страницу в буфер", "Copy page to clipboard"), copyPage]] : []),
     [T("Все страницы в PNG (ZIP)", "All pages as PNG (ZIP)"), exportAllPng],
     [T("1-bit трафарет (PNG)", "1-bit stencil (PNG)"), exportStencil],
+    [T("Разделение красок для ризографа (ZIP)", "Riso ink separations (ZIP)"), exportSeparations],
     [T("Книга в PDF", "Book as PDF"), exportPdf],
     [T("PDF для печати (A4, поля 10 мм)", "Print PDF (A4, 10 mm margins)"), exportPdfA4],
     [T("Мини-зин на 8 страниц (A4)", "8-page mini-zine (A4)"), exportMiniZine],
+    [T("Как сложить мини-зин (схема)", "How to fold the mini-zine (guide)"), showFoldGuide],
+    [SOUND.on ? T("Звук копира: выключить", "Copier sound: turn off") : T("Звук копира: включить", "Copier sound: turn on"), toggleSound],
     "hr", T("СТРАНИЦЫ И ТЕКСТ", "PAGES & TEXT"),
     [T("Применить стиль страницы ко всем", "Apply this page's style to all pages"), applyStyleToAll],
     [T("Библиотека манифестов…", "Manifesto library…"), openManifest, "Ctrl+M"],
