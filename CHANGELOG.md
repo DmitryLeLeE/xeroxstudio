@@ -13,6 +13,8 @@ The tool gets deeper, and the browser gets a version of it.
 - **Manifesto library grew from 30 to 54** built-in English manifestos; new categories COPIER, DIY and CITY. Both versions have “Write your own” in the library (two lines of text, saved under “Mine”).
 - **13 frame layouts instead of 4** (both versions, identical geometry, covered by a Python-vs-JS test): column on the right, diagonal cascade, overlapping pile, two columns, mosaic, diptych, triptych, ribbon, full page.
 - **Seven new presets** for the new layouts (16 in total): Diagonal Punk, Photo Pile, Newsprint Mosaic, Cyanotype Triptych, Full-page Poster, Film-test Ribbon, Riso Diptych.
+- **Share a look:** File → “Copy link to this look” makes a URL carrying the style, caption and seed (never the photo); whoever opens it gets the same look on their own photo. Links are validated on load.
+- **Copier lamp:** a light bar sweeps across the sheet when you switch style or remix.
 - **Before / after** comparison with a draggable divider in the browser editor.
 - **Browser editor redesign:** light “paper” theme by default (dark one on the ◐ button), first-run welcome dialog
   (add a photo / take a photo / play with the sample), Share and Copy-to-clipboard in the File menu.

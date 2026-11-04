@@ -5,7 +5,7 @@
 **Turn photos into photocopied zine pages.**<br>
 Halftone · torn edges · generation loss · riso overprint · paper grain · tape
 
-[**Open in the browser →**](https://dmitrylelee.github.io/xeroxstudio/app/) · [Landing page](https://dmitrylelee.github.io/xeroxstudio/) · [Windows builds](https://github.com/DmitryLeLeE/xeroxstudio/releases)
+[**Open in the browser →**](https://dmitrylelee.github.io/xeroxstudio/app/) · [Landing page](https://dmitrylelee.github.io/xeroxstudio/) · [Download for Windows](https://github.com/DmitryLeLeE/xeroxstudio/releases/latest)
 
 English · [Русский](README.ru.md)
 
@@ -37,6 +37,7 @@ engine design, one preset library and one project format:
 - **Print-ready.** PNG up to 3×, book PDF, A4 PDF with margins, **8-page mini-zine** with fold and cut lines, 1-bit PNG for stencil printing.
 - **Projects.** `.zine` files (a zip with `manifest.json` and PNGs) open in both versions. Autosave, undo / redo.
 - **16 presets.** Classic Xerox, Newsprint, Acid Riot, Punk Flyer, Cyanotype, 35 mm Contact Sheet, Night Vision, Riso Overprint, Tape Collage, Diagonal Punk, Photo Pile, Newsprint Mosaic, Cyanotype Triptych, Full-page Poster, Film-test Ribbon, Riso Diptych — or save your own.
+- **Share a look.** One link carries a style and caption (no photo), so anyone can try it on their own picture.
 - **Before / after.** Drag a divider across the sheet to compare with the original photo (browser version).
 
 ## Run it

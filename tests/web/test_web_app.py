@@ -152,3 +152,27 @@ def test_new_layout_presets_exist(page_factory):
     names = pg.evaluate("[...document.querySelectorAll('#presetRow select option')].map(o => o.textContent)")
     for n in ("Diagonal Punk", "Photo Pile", "Newsprint Mosaic", "Cyanotype Triptych", "Full-page Poster", "Film-test Ribbon", "Riso Diptych"):
         assert n in names, n
+
+
+def test_shared_look_link_roundtrip_and_validation(page_factory):
+    pg = page_factory(welcomed=False)
+    wait_ready(pg)
+    pg.click("#wSample")
+    pg.select_option("#presetRow select", "Триптих-синька")
+    pg.wait_for_timeout(500)
+    url = pg.evaluate("""async () => { const m = await import('/app/js/config.js'); const s = window.__zine.page();
+        const o = {}; for (const k of [...m.CFG.STYLE_KEYS, 'txt_top', 'txt_bottom', 'seed']) o[k] = s[k];
+        const b = btoa(String.fromCharCode(...new TextEncoder().encode(JSON.stringify(o)))).replace(/\\+/g, '-').replace(/\\//g, '_').replace(/=+$/, '');
+        return '/app/#look=' + b; }""")
+    pg2 = page_factory(url, welcomed=False)
+    wait_ready(pg2)
+    assert pg2.evaluate("window.__zine.page().layout") == "triptych"
+    assert not pg2.evaluate("document.querySelector('#dlgWelcome').open")  # открыли по ссылке: без приветствия
+    assert pg2.evaluate("location.hash") == ""
+    # мусор и опасные значения не ломают приложение
+    import base64, json
+    bad = base64.urlsafe_b64encode(json.dumps({"rows": 10**9, "layout": 5, "evil": 1, "font_size": "x"}).encode()).decode().rstrip("=")
+    pg3 = page_factory("/app/#look=" + bad)
+    wait_ready(pg3)
+    assert pg3.evaluate("window.__zine.page().rows") <= 12
+    assert pg3.errors == []
