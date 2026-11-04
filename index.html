@@ -1,0 +1,132 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Xerox Zine Studio — make xerox zines from your photos</title>
+<meta name="description" content="Turn photos into photocopied zine pages: halftone, torn edges, risograph palettes, manifestos, print-ready A4 PDF and 8-page mini-zine. Free, runs in your browser, photos never leave your device.">
+<meta name="theme-color" content="#121212">
+<link rel="canonical" href="https://dmitrylelee.github.io/xeroxstudio/">
+<link rel="icon" href="img/favicon.png">
+<meta property="og:type" content="website">
+<meta property="og:title" content="Xerox Zine Studio">
+<meta property="og:description" content="Photocopied zine pages from your photos — halftone, torn edges, riso palettes. Free, private, works offline.">
+<meta property="og:image" content="https://dmitrylelee.github.io/xeroxstudio/img/og.jpg">
+<meta property="og:url" content="https://dmitrylelee.github.io/xeroxstudio/">
+<meta name="twitter:card" content="summary_large_image">
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"WebApplication","name":"Xerox Zine Studio","applicationCategory":"DesignApplication","operatingSystem":"Any","offers":{"@type":"Offer","price":"0","priceCurrency":"USD"},"url":"https://dmitrylelee.github.io/xeroxstudio/app/","image":"https://dmitrylelee.github.io/xeroxstudio/img/og.jpg","description":"Xerox zine generator that runs in the browser."}</script>
+<link rel="stylesheet" href="app/fonts/fonts.css">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="nav">
+  <a class="brand" href="./"><img src="img/favicon.png" alt="" width="30" height="30"><span>Xerox Zine Studio</span></a>
+  <nav>
+    <a href="#gallery" data-ru="Галерея" data-en="Gallery"></a>
+    <a href="#features" data-ru="Возможности" data-en="Features"></a>
+    <a href="#desktop" data-ru="Для ПК" data-en="Desktop"></a>
+    <a href="https://github.com/DmitryLeLeE/xeroxstudio" target="_blank" rel="noopener">GitHub</a>
+    <button id="lang" class="chip" aria-label="Language">RU</button>
+  </nav>
+</header>
+
+<main>
+<section class="hero">
+  <div class="hero-text">
+    <p class="eyebrow" data-ru="БЕСПЛАТНО · В БРАУЗЕРЕ · БЕЗ РЕГИСТРАЦИИ" data-en="FREE · IN YOUR BROWSER · NO SIGN-UP"></p>
+    <h1><span data-ru="Ксерокс-зины" data-en="Xerox zines"></span><br><em data-ru="из ваших фото" data-en="from your photos"></em></h1>
+    <p class="lead" data-ru="Полутон, рваные края, потеря качества копий, ризо-палитры и манифесты. Соберите страницу за минуту и отправьте в печать: PDF A4, мини-зин на 8 страниц или 1-bit трафарет." data-en="Halftone, torn edges, generation loss, risograph palettes and manifestos. Build a page in a minute and print it: A4 PDF, 8-page mini-zine or a 1-bit stencil."></p>
+    <div class="cta">
+      <a class="btn big" href="app/" data-ru="Открыть приложение →" data-en="Open the app →"></a>
+      <a class="btn ghost" href="https://github.com/DmitryLeLeE/xeroxstudio" target="_blank" rel="noopener" data-ru="Версия для Windows ↗" data-en="Windows version ↗"></a>
+    </div>
+    <ul class="ticks">
+      <li data-ru="🔒 Фото не уходят с устройства" data-en="🔒 Photos never leave your device"></li>
+      <li data-ru="📴 Работает офлайн (PWA)" data-en="📴 Works offline (PWA)"></li>
+      <li data-ru="📱 Телефон, планшет, ПК" data-en="📱 Phone, tablet, desktop"></li>
+    </ul>
+  </div>
+  <div class="hero-shot">
+    <img class="shot-desk" src="img/web-desktop.webp" width="1080" height="645" alt="Xerox Zine Studio web app on a desktop screen">
+    <img class="shot-phone" src="img/web-phone.webp" width="300" height="511" alt="The same app on a phone">
+  </div>
+</section>
+
+<section id="gallery" class="sec">
+  <h2 data-ru="Один исходник — семь настроений" data-en="One photo — seven moods"></h2>
+  <p class="sub" data-ru="Каждая страница ниже сделана из одного и того же фото одним нажатием на пресет." data-en="Every page below comes from the same photo with a single preset click."></p>
+  <div class="gal">
+    <figure><img loading="lazy" src="img/xerox.png" width="300" height="450" alt="Classic Xerox preset"><figcaption>Classic Xerox</figcaption></figure>
+    <figure><img loading="lazy" src="img/newsprint.png" width="300" height="450" alt="Newsprint preset"><figcaption>Newsprint</figcaption></figure>
+    <figure><img loading="lazy" src="img/acid.png" width="300" height="450" alt="Acid Riot preset"><figcaption>Acid Riot</figcaption></figure>
+    <figure><img loading="lazy" src="img/punk.png" width="300" height="450" alt="Punk Flyer preset"><figcaption>Punk Flyer</figcaption></figure>
+    <figure><img loading="lazy" src="img/cyanotype.png" width="300" height="450" alt="Cyanotype preset"><figcaption>Cyanotype</figcaption></figure>
+    <figure><img loading="lazy" src="img/contact.png" width="300" height="450" alt="35 mm Contact Sheet preset"><figcaption>35 mm Contact Sheet</figcaption></figure>
+    <figure><img loading="lazy" src="img/nightvision.png" width="300" height="450" alt="Night Vision preset"><figcaption>Night Vision</figcaption></figure>
+  </div>
+</section>
+
+<section id="features" class="sec">
+  <h2 data-ru="Что внутри" data-en="What's inside"></h2>
+  <div class="grid">
+    <article><b>◐</b><h3 data-ru="Честный растр" data-en="Real halftone"></h3><p data-ru="Амплитудный полутон с углом и размером точки, зерно Флойда–Стейнберга, жёсткий трафарет. Шум тонера, полосы сканера, тень края копира, сдвиг краски." data-en="Amplitude halftone with angle and dot size, Floyd–Steinberg grain, hard stencil. Toner noise, scanner streaks, copier edge shadow, ink misregistration."></p></article>
+    <article><b>✂</b><h3 data-ru="Рваные края и копии" data-en="Torn edges & copies"></h3><p data-ru="Четыре раскладки, каждая следующая копия мутнее и контрастнее. Вырезка-стикер и чёрная полоса на глазах (поиск лиц прямо в браузере)." data-en="Four layouts, every next copy blurrier and harsher. Sticker cut-out and a black bar over the eyes (face detection runs right in the browser)."></p></article>
+    <article><b>🎨</b><h3 data-ru="Ризо-палитры" data-en="Riso palettes"></h3><p data-ru="Девять готовых пар «бумага / краска» и свои цвета. Инверсия одним флажком." data-en="Nine ready paper / ink pairs plus your own colours. Invert with one switch."></p></article>
+    <article><b>Aa</b><h3 data-ru="Манифесты и шрифты" data-en="Manifestos & type"></h3><p data-ru="Библиотека из 30 манифестов с поиском, свои тексты, три подложки (плашка, Dymo-лента, контур), перетаскивание подписи по листу." data-en="A library of 30 manifestos with search, your own texts, three backings (box, Dymo tape, outline) and a caption you can place anywhere."></p></article>
+    <article><b>🖨</b><h3 data-ru="Готово к печати" data-en="Print-ready"></h3><p data-ru="PNG до 3×, PDF книги, PDF A4 с полями 10 мм, мини-зин на 8 страниц с линиями сгиба и разреза, 1-bit PNG для трафаретной печати." data-en="PNG up to 3×, book PDF, A4 PDF with 10 mm margins, 8-page mini-zine with fold and cut lines, 1-bit PNG for stencil printing."></p></article>
+    <article><b>⇄</b><h3 data-ru="Проекты .zine" data-en=".zine projects"></h3><p data-ru="Файл проекта открывается и в браузере, и в программе для Windows. Автосохранение в браузере, отмена и возврат." data-en="One project file opens in the browser and in the Windows app. Autosave, undo and redo included."></p></article>
+  </div>
+</section>
+
+<section class="sec steps">
+  <h2 data-ru="Как это работает" data-en="How it works"></h2>
+  <ol>
+    <li><b>1</b><span data-ru="Загрузите фото (или несколько — каждое станет страницей)." data-en="Add a photo (or several — each becomes a page)."></span></li>
+    <li><b>2</b><span data-ru="Выберите пресет, поиграйте с ползунками или нажмите 🎲 Remix." data-en="Pick a preset, tweak the sliders or hit 🎲 Remix."></span></li>
+    <li><b>3</b><span data-ru="Экспортируйте, распечатайте, сложите и разрежьте по красной линии." data-en="Export, print, fold and cut along the red line."></span></li>
+  </ol>
+  <a class="btn big" href="app/" data-ru="Попробовать сейчас →" data-en="Try it now →"></a>
+</section>
+
+<section id="desktop" class="sec desk">
+  <div>
+    <h2 data-ru="Версия для Windows" data-en="Windows app"></h2>
+    <p data-ru="Та же студия как обычная программа: быстрее на больших файлах, PDF без сжатия, работает без браузера. Исходники открыты — соберите одной командой:" data-en="The same studio as a native-style app: faster on huge files, lossless PDF, no browser needed. The source is open — build it with one command:"></p>
+    <pre><code>git clone https://github.com/DmitryLeLeE/xeroxstudio
+cd xeroxstudio
+python build.py</code></pre>
+    <p class="muted" data-ru="Получится dist/XeroxZineStudio.exe (нужен Python 3.11–3.13). Готовые сборки появятся в разделе Releases." data-en="You get dist/XeroxZineStudio.exe (needs Python 3.11–3.13). Ready-made builds will appear under Releases."></p>
+    <div class="cta"><a class="btn ghost" href="https://github.com/DmitryLeLeE/xeroxstudio" target="_blank" rel="noopener" data-ru="Репозиторий на GitHub ↗" data-en="Repository on GitHub ↗"></a><a class="btn ghost" href="https://github.com/DmitryLeLeE/xeroxstudio/releases" target="_blank" rel="noopener">Releases ↗</a></div>
+  </div>
+  <img loading="lazy" src="img/app.webp" width="830" height="465" alt="Desktop version of Xerox Zine Studio">
+</section>
+
+<section class="sec faq">
+  <h2 data-ru="Вопросы" data-en="FAQ"></h2>
+  <details><summary data-ru="Мои фото где-то хранятся?" data-en="Are my photos stored anywhere?"></summary><p data-ru="Нет. Всё считается в вашем браузере. Автосохранение лежит только в локальном хранилище вашего браузера. Ни аналитики, ни трекеров, ни серверной части нет." data-en="No. Everything is computed in your browser. Autosave lives only in your browser's local storage. There is no analytics, tracking or server component."></p></details>
+  <details><summary data-ru="Работает ли без интернета?" data-en="Does it work offline?"></summary><p data-ru="Да, после первого открытия. Приложение можно установить на телефон или ПК («Добавить на главный экран» / «Установить»)." data-en="Yes, after the first visit. You can install it on a phone or computer (“Add to Home Screen” / “Install”)."></p></details>
+  <details><summary data-ru="Какие браузеры поддерживаются?" data-en="Which browsers are supported?"></summary><p data-ru="Современные Chrome, Edge, Firefox и Safari (16.4+). Для больших экспортов (A4, 3×) на телефоне нужно достаточно памяти — если не хватило, снизьте масштаб." data-en="Current Chrome, Edge, Firefox and Safari (16.4+). Big exports (A4, 3×) on a phone need enough memory — lower the scale if it runs out."></p></details>
+  <details><summary data-ru="Откуда пример-фото?" data-en="Where does the sample photo come from?"></summary><p data-ru="Портрет из архива NASA — общественное достояние." data-en="A NASA portrait — public domain."></p></details>
+</section>
+</main>
+
+<footer>
+  <div>© Xerox Zine Studio · <a href="app/licenses.txt">licenses</a> · <a href="https://github.com/DmitryLeLeE/xeroxstudio" target="_blank" rel="noopener">GitHub</a></div>
+  <div class="muted" data-ru="Шрифты Rubik, Oswald, JetBrains Mono, PT Serif — SIL OFL. Модель поиска лиц — OpenCV (Intel License)." data-en="Fonts Rubik, Oswald, JetBrains Mono, PT Serif — SIL OFL. Face model — OpenCV (Intel License)."></div>
+</footer>
+
+<script>
+(function () {
+  var L = localStorage.getItem("zine.lang") || ((navigator.language || "en").toLowerCase().indexOf("ru") === 0 ? "ru" : "en");
+  function apply() {
+    document.documentElement.lang = L;
+    document.querySelectorAll("[data-ru]").forEach(function (e) { e.textContent = e.dataset[L]; });
+    document.getElementById("lang").textContent = L === "ru" ? "EN" : "RU";
+    document.title = L === "ru" ? "Xerox Zine Studio — ксерокс-зины из ваших фото" : "Xerox Zine Studio — make xerox zines from your photos";
+  }
+  document.getElementById("lang").addEventListener("click", function () { L = L === "ru" ? "en" : "ru"; try { localStorage.setItem("zine.lang", L); } catch (e) {} apply(); });
+  apply();
+})();
+</script>
+</body>
+</html>
