@@ -368,8 +368,41 @@ function applyPreset(name) {
   flushCommit();
   const st = page();
   for (const k of CFG.STYLE_KEYS) if (k in p) st[k] = clone(p[k]);
-  syncUI(); commit(); requestRender();
+  syncUI(); commit(); requestRender(); scanSweep();
   toast(T(`Стиль применён: ${lbl(name, name)}`, `Style applied: ${lbl(name, name)}`), "ok", 1400);
+}
+// ---------------------------------------------------------------- ссылка на «вид» (стиль + текст, без фото)
+const LOOK_KEYS = () => [...CFG.STYLE_KEYS, "txt_top", "txt_bottom", "seed"];
+const b64u = (s) => btoa(String.fromCharCode(...new TextEncoder().encode(s))).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+const unb64u = (t) => new TextDecoder().decode(Uint8Array.from(atob(t.replace(/-/g, "+").replace(/_/g, "/")), (c) => c.charCodeAt(0)));
+function lookUrl() {
+  const st = page(), o = {};
+  for (const k of LOOK_KEYS()) if (k in st) o[k] = st[k];
+  return `${location.origin}${location.pathname}#look=${b64u(JSON.stringify(o))}`;
+}
+async function copyLookLink() {
+  flushCommit();
+  const url = lookUrl();
+  try { await navigator.clipboard.writeText(url); toast(T("✓ Ссылка на этот вид скопирована. Фото в ней нет: его выберет тот, кто откроет.", "✓ Link to this look copied. It carries no photo: whoever opens it picks their own."), "ok", 4200); }
+  catch (e) { promptDlg({ title: T("Ссылка на вид", "Link to this look"), msg: T("Скопируйте вручную:", "Copy it manually:"), ok: "OK", value: url }); }
+}
+function applyLookFromHash() {
+  const m = /^#look=([A-Za-z0-9_-]{1,6000})$/.exec(location.hash);
+  if (!m) return false;
+  try {
+    const src = JSON.parse(unb64u(m[1])), st = page(), allowed = new Set(LOOK_KEYS());
+    for (const [k, v] of Object.entries(src)) {
+      if (!allowed.has(k) || !(k in DEF)) continue;
+      const d = DEF[k];
+      if (typeof v !== typeof d || Array.isArray(v) !== Array.isArray(d)) continue;
+      if (typeof v === "number") { if (!Number.isFinite(v) || Math.abs(v) > 1e6) continue; st[k] = k === "rows" ? Math.max(1, Math.min(12, Math.floor(v))) : v; }
+      else if (typeof v === "string") st[k] = v.slice(0, 200);
+      else if (Array.isArray(v)) { if (JSON.stringify(v).length < 400) st[k] = clone(v); }
+      else st[k] = v;
+    }
+    history.replaceState(null, "", location.pathname + location.search);
+    return true;
+  } catch (e) { console.warn("ссылка на вид не разобрана", e); return false; }
 }
 async function savePreset() {
   const name = await promptDlg({ title: T("Сохранить стиль", "Save style"), msg: T("Название пресета (фото, кадр и тексты не сохраняются):", "Preset name (photo, crop and captions are not saved):"), ok: T("Сохранить", "Save") });
@@ -408,6 +441,11 @@ function requestRender({ draft = false } = {}) {
   if (draft) R.final = setTimeout(() => requestRender(), 380);
 }
 const previewScale = (draft) => (TOUCH ? 0.7 : 1) * (draft ? 0.55 : 1);
+
+function scanSweep() {
+  const el = $("#scanbar"); if (!el) return;
+  el.classList.remove("go"); void el.offsetWidth; el.classList.add("go");
+}
 
 // ---------------------------------------------------------------- сравнение «до/после»
 const CMP = { on: false, x: 0.5, last: null };
@@ -896,7 +934,7 @@ function remix() {
     palette: pick(Object.keys(CFG.RISO_PALETTES)), layout: pick(CFG.LAYOUTS)[1], rows: rnd(4, 8), dot_size: rnd(5, 12),
     tilt: +(Math.random() * 2.5).toFixed(1), loss: rnd(10, 60), tstyle: pick(CFG.TEXT_STYLES)[1], font: pick(Object.keys(CFG.FONTS)), seed: newSeed(),
   });
-  syncUI(); resetPresetLabel(); commit(); requestRender();
+  syncUI(); resetPresetLabel(); commit(); requestRender(); scanSweep();
   toast(T("🎲 Новый стиль", "🎲 New style"), "ok", 1000);
 }
 
@@ -1212,6 +1250,7 @@ function menuItems() {
     [T("Сохранить проект как…", "Save project as…"), () => saveProject(true)],
     "hr", T("ЭКСПОРТ", "EXPORT"),
     [T("Страница в PNG", "Page as PNG"), exportPng, "Ctrl+S"],
+    [T("Копировать ссылку на этот вид", "Copy link to this look"), copyLookLink],
     ...(CAN_SHARE() ? [[T("Поделиться страницей…", "Share page…"), sharePage]] : []),
     ...(CAN_COPY() ? [[T("Копировать страницу в буфер", "Copy page to clipboard"), copyPage]] : []),
     [T("Все страницы в PNG (ZIP)", "All pages as PNG (ZIP)"), exportAllPng],
@@ -1399,9 +1438,11 @@ async function init() {
   buildSettings(); buildMenu();
   const restoring = await offerRestore();
   if (!restoring) await loadSample();
+  const fromLink = !restoring && applyLookFromHash();
   resetHistory(); markClean();
   afterPageSwitch();
-  if (!restoring && srcFor(page()) && !ls.get("zine.welcomed", false) && !/[?&]shot\b/.test(location.search)) $("#dlgWelcome").showModal();
+  if (!restoring && srcFor(page()) && !fromLink && !ls.get("zine.welcomed", false) && !/[?&]shot\b/.test(location.search)) $("#dlgWelcome").showModal();
+  if (fromLink) { syncUI(); requestRender(); toast(T("Открыт чужой вид. Добавьте своё фото!", "Opened a shared look. Add your own photo!"), "ok", 4000); }
   if ("serviceWorker" in navigator && /^https:|^http:\/\/localhost/.test(location.href)) {
     navigator.serviceWorker.register("sw.js").then((reg) => {
       reg.addEventListener("updatefound", () => {
