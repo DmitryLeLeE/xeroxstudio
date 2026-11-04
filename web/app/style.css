@@ -154,7 +154,7 @@ input[type=color].col2 { position: static; width: 100%; height: 36px; opacity: 1
 
 /* библиотека манифестов на ПК: боковая панель поверх левых колонок, лист остаётся виден */
 @media (min-width: 861px) {
-  #dlgManifest { margin: 0; position: fixed; left: 8px; top: 52px; height: calc(100dvh - 60px); width: min(600px, 52vw); }
+  #dlgManifest { margin: 0; position: fixed; z-index: 30; left: 8px; top: 52px; height: calc(100dvh - 60px); width: min(600px, 52vw); }
   #dlgManifest .m-body { grid-template-columns: 1fr; grid-template-rows: 1fr auto; } #dlgManifest .m-prev { max-height: 24dvh; }
 }
 /* ---------- планшеты */
