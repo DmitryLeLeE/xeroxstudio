@@ -206,6 +206,60 @@ class ZineGraphicEngine:
         gray = np.asarray(canvas.convert("L"), dtype=np.float32) * (1.0 - dark)
         return Image.fromarray(gray.astype(np.uint8)).convert("RGB")
 
+
+    @staticmethod
+    def add_tape(canvas, boxes, amount, seed, s=1.0):
+        """Полоски малярного скотча на кадрах: рисуются в серой зоне и потом превращаются в растр."""
+        if amount <= 0:
+            return canvas
+        rng = random.Random(int(seed))
+        layer = Image.new("RGBA", canvas.size, (0, 0, 0, 0))
+        d = ImageDraw.Draw(layer)
+        p = amount / 100.0
+
+        def strip(cx, cy, ang):
+            length, wid = rng.uniform(64, 96) * s, rng.uniform(20, 28) * s
+            ca, sa = math.cos(math.radians(ang)), math.sin(math.radians(ang))
+            nz = max(1.0, 2.5 * s)
+            pts = []
+            for u, v in ((-1, -1), (-1, -0.33), (-1, 0.33), (-1, 1), (1, 1), (1, 0.33), (1, -0.33), (1, -1)):
+                jx = rng.uniform(-nz, nz) if abs(u) == 1 and abs(v) != 1 else 0.0  # рваные торцы
+                x, y = u * length / 2 + jx, v * wid / 2
+                pts.append((cx + x * ca - y * sa, cy + x * sa + y * ca))
+            d.polygon(pts, fill=(178, 178, 178, 235))
+
+        for bx, by, bw, bh in boxes:
+            if bw < 4 or bh < 4:
+                continue
+            if rng.random() < p:
+                strip(bx + bw / 2 + rng.uniform(-0.1, 0.1) * bw, by + 4 * s, rng.uniform(-9, 9))
+            for cx, cy, base in ((bx + 6 * s, by + 6 * s, -40), (bx + bw - 6 * s, by + bh - 6 * s, -40), (bx + bw - 6 * s, by + 6 * s, 40), (bx + 6 * s, by + bh - 6 * s, 40)):
+                if rng.random() < p * 0.35:
+                    strip(cx, cy, base + rng.uniform(-8, 8))
+        out = canvas.convert("RGBA")
+        out.alpha_composite(layer)
+        return out.convert("RGB")
+
+    @staticmethod
+    def add_paper(out, amount, seed, s=1.0):
+        """Фактура бумаги: волокна, пятна и лёгкое потемнение к краям. out - uint8 (h, w, 3)."""
+        if amount <= 0:
+            return out
+        h, w = out.shape[:2]
+        rng = np.random.default_rng(int(seed))
+        k = amount / 100.0
+        fine = rng.standard_normal((h, w), dtype=np.float32)
+        def field(cell):  # шум с размером пятна cell пикселей
+            gh, gw = max(2, int(h / (cell * max(s, 0.5)))), max(2, int(w / (cell * max(s, 0.5))))
+            g = rng.standard_normal((gh, gw)).astype(np.float32)
+            return np.asarray(Image.fromarray(g).resize((w, h), Image.BICUBIC), dtype=np.float32)
+
+        blot = 0.35 * field(90) + 0.65 * field(5)  # крупные разводы и мелкие волокна
+        yy, xx = np.mgrid[0:h, 0:w].astype(np.float32)
+        edge = np.maximum(np.abs(xx / w - 0.5), np.abs(yy / h - 0.5)) * 2.0
+        shade = 1.0 - k * (0.05 * fine + 0.055 * blot + 0.10 * np.clip(edge - 0.6, 0, 1) ** 2 / 0.16)
+        return np.clip(out.astype(np.float32) * shade[..., None], 0, 255).astype(np.uint8)
+
     def _placeholder(self):
         """Тестовая «пустая» картинка, пока фото не загружено."""
         if self._placeholder_img is None:
@@ -377,6 +431,7 @@ class ZineGraphicEngine:
                 draw_canvas.rectangle([lx, ly, lx + lb[2] + int(8 * s), ly + lb[3] + int(6 * s)], fill=(255, 255, 255))
                 draw_canvas.text((lx + int(4 * s), ly + int(2 * s)), label, fill=(0, 0, 0), font=font_label)
 
+        canvas = self.add_tape(canvas, boxes, float(st["tape"]), seed + 31, s)
         canvas = self.add_scanner_artifacts(canvas, st["streaks"], seed + 7, s)
         canvas = self.add_copier_edge(canvas, st["copier_edge"], seed + 13, s)
 
@@ -458,4 +513,19 @@ class ZineGraphicEngine:
             out[ghost & ~ink] = ghost_rgb
         out[ink] = ink_rgb
 
+        # --- второй цвет (оверпринт): другой экран растра, свой сдвиг, смешение умножением
+        over = float(st["overprint"])
+        if over > 0:
+            k2 = min(1.0, over / 100.0) * 0.9
+            lighter = Image.fromarray((255.0 - (255.0 - np.asarray(gray, dtype=np.float32)) * k2).astype(np.uint8))
+            bits2 = self.apply_halftone_dots(lighter, dot_size=st["dot_size"] * s * 1.3, angle=(float(st["angle"]) + 30) % 90)
+            plate = ~bits2
+            sx, sy = int(round((3 + st["misreg"]) * s)), int(round((2 + st["misreg"] / 2) * s))
+            shifted = np.zeros_like(plate)
+            shifted[sy:, :cw - sx] = plate[: ch - sy, sx:]
+            ink2 = np.array(st["ink2"], dtype=np.float32)
+            region = shifted
+            out[region] = (out[region].astype(np.float32) * ink2 / 255.0).astype(np.uint8)
+
+        out = self.add_paper(out, float(st["paper"]), seed + 21, s)
         return Image.fromarray(out), Image.fromarray(bits)

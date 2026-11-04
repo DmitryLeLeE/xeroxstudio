@@ -13,7 +13,7 @@ import config
 
 STYLE_KEYS = (
     "layout", "rows", "tilt", "fit_mode", "bright", "edge_x", "edge_y", "loss",
-    "dither", "dot_size", "angle", "contrast", "noise", "streaks", "misreg", "copier_edge",
+    "dither", "dot_size", "angle", "contrast", "noise", "streaks", "misreg", "copier_edge", "paper", "overprint", "ink2", "tape",
     "palette", "invert", "custom_colors",
     "font", "font_size", "tstyle", "text_align", "txt_x", "txt_y1", "txt_y2", "text_rot",
 )
@@ -47,6 +47,16 @@ BUILTIN = {
         "layout": "contact_sheet", "rows": 6, "palette": "Classic B&W (Xerox)", "dither": "halftone",
         "dot_size": 5, "contrast": 2.2, "noise": 22, "streaks": 18, "misreg": 1, "loss": 15,
         "font": "Consolas Bold", "font_size": 28, "tstyle": "white_box",
+    },
+    "Ризо-оверпринт": {
+        "layout": "staggered", "rows": 4, "palette": config.CUSTOM_PALETTE, "custom_colors": ((244, 238, 224), (25, 55, 170)), "dither": "halftone",
+        "dot_size": 8, "angle": 30, "contrast": 2.2, "noise": 18, "streaks": 12, "misreg": 5, "loss": 25, "tilt": 1.2,
+        "paper": 55, "overprint": 70, "ink2": (255, 60, 140), "font": "Impact", "font_size": 46, "tstyle": "white_box",
+    },
+    "Склейка со скотчем": {
+        "layout": "center_hero", "rows": 5, "palette": "Vintage Newsprint (Cream / Charcoal)", "dither": "halftone",
+        "dot_size": 6, "angle": 15, "contrast": 2.0, "noise": 34, "streaks": 20, "misreg": 2, "loss": 28, "tilt": 3.5,
+        "edge_x": 20, "edge_y": 14, "paper": 70, "tape": 85, "font": "Courier New Bold", "font_size": 32, "tstyle": "dymo_tape",
     },
     "Ночное видение": {
         "layout": "center_hero", "rows": 5, "palette": "Nightvision (Muted Green / Phosphor)", "dither": "halftone",

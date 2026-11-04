@@ -81,3 +81,32 @@ def test_copier_edge_darkens_left_and_bottom_only(engine, photo):
     assert e[:, :8].mean() < b[:, :8].mean() - 60       # левая кромка заметно темнее
     assert e[-6:, :].mean() < b[-6:, :].mean() - 60      # нижняя тоже
     assert abs(float(e[200:1200, 600:900].mean()) - float(b[200:1200, 600:900].mean())) < 1  # центр не тронут
+
+
+def test_art_effects_change_output_and_are_deterministic():
+    import numpy as np
+    import config
+    from engine import ZineGraphicEngine
+
+    eng = ZineGraphicEngine()
+    img = np.random.default_rng(3).integers(0, 255, (200, 150, 3), dtype=np.uint8)
+    base = dict(config.DEFAULT_STATE, img="k", txt_top="X")
+    plain, bits0 = eng.render_zine_page(img, base, scale=0.4)
+    for key, val in (("paper", 80), ("overprint", 80), ("tape", 100)):
+        a, bits = eng.render_zine_page(img, dict(base, **{key: val}), scale=0.4)
+        b, _ = eng.render_zine_page(img, dict(base, **{key: val}), scale=0.4)
+        assert np.array_equal(np.asarray(a), np.asarray(b)), f"{key}: результат не детерминирован"
+        assert not np.array_equal(np.asarray(a), np.asarray(plain)), f"{key}: эффект не виден"
+    # бумага и оверпринт не должны трогать 1-bit трафарет чёрной краски
+    _, bits_paper = eng.render_zine_page(img, dict(base, paper=80, overprint=80), scale=0.4)
+    assert np.array_equal(np.asarray(bits_paper), np.asarray(bits0))
+
+
+def test_old_states_without_new_keys_still_render():
+    import numpy as np
+    import config
+    from engine import ZineGraphicEngine
+
+    old = {k: v for k, v in config.DEFAULT_STATE.items() if k not in ("paper", "overprint", "ink2", "tape")}
+    out, _ = ZineGraphicEngine().render_zine_page(np.zeros((50, 50, 3), np.uint8), dict(old, img="k"), scale=0.2)
+    assert out.size[0] > 0

@@ -162,6 +162,7 @@ class XeroxZineStudioApp:
         self.crop = [0.0, 0.0, 1.0, 1.0]
         self.seed = config.DEFAULT_STATE["seed"]
         self.custom_colors = config.DEFAULT_STATE["custom_colors"]
+        self.ink2 = tuple(config.DEFAULT_STATE["ink2"])
 
         self.vars = {}
         self._loading = True  # Tk-виджеты пишут в переменные при создании: рендерить рано
@@ -393,6 +394,7 @@ class XeroxZineStudioApp:
         self._slider(c, "bright", "Яркость фото", 0.6, 2.0, 0.05)
         self._slider(c, "edge_x", "Рваный край по X", 0, 50)
         self._slider(c, "edge_y", "Рваный край по Y", 0, 50)
+        self._slider(c, "tape", "Малярный скотч на кадрах", 0, 100)
         self._slider(c, "loss", "Потеря качества копий", 0, 100)
         self._check(c, "censor", "Чёрная полоса на глазах (поиск лиц)", command=self._on_censor_toggle)
         self._check(c, "sticker", "Вырезка-стикер (тёмный объект на светлом фоне)")
@@ -408,6 +410,13 @@ class XeroxZineStudioApp:
         self._slider(c, "streaks", "Полосы сканера", 0, 100)
         self._slider(c, "misreg", "Приводка (сдвиг краски)", 0, 12)
         self._slider(c, "copier_edge", "Тень края копира", 0, 100)
+        self._slider(c, "paper", "Фактура бумаги", 0, 100)
+        self._slider(c, "overprint", "Второй цвет (оверпринт)", 0, 100)
+        row2 = tk.Frame(c, bg=PANEL2)
+        row2.pack(fill=tk.X, pady=(0, 2))
+        self.sw_ink2 = tk.Label(row2, width=6, bg="#%02x%02x%02x" % self.ink2, relief="flat", highlightthickness=1, highlightbackground=LINE)
+        self.sw_ink2.pack(side=tk.LEFT, ipady=6)
+        make_button(row2, "Цвет второй краски…", self._pick_ink2).pack(side=tk.LEFT, padx=6)
 
         # 4. Палитра
         c = self._section(p, "4. ПАЛИТРА (RISOGRAPH)")
@@ -508,6 +517,7 @@ class XeroxZineStudioApp:
             txt_top=self.txt_top.get("1.0", tk.END).strip(),
             txt_bottom=self.txt_bot.get("1.0", tk.END).strip(),
             custom_colors=[list(c) for c in self.custom_colors],
+            ink2=list(self.ink2),
             crop=list(self.crop),
             seed=self.seed,
             img=self.cur_img_key,
@@ -534,6 +544,10 @@ class XeroxZineStudioApp:
             self._set_text(self.txt_bot, s.get("txt_bottom", ""))
             colors = s.get("custom_colors", config.DEFAULT_STATE["custom_colors"])
             self.custom_colors = (tuple(colors[0]), tuple(colors[1]))
+            try:
+                self.ink2 = tuple(int(v) for v in s.get("ink2", config.DEFAULT_STATE["ink2"]))[:3]
+            except (TypeError, ValueError):
+                self.ink2 = tuple(config.DEFAULT_STATE["ink2"])
             self.crop = list(s.get("crop", [0.0, 0.0, 1.0, 1.0]))
             self.seed = int(s.get("seed", config.DEFAULT_STATE["seed"]))
             key = s.get("img")
@@ -541,6 +555,7 @@ class XeroxZineStudioApp:
         finally:
             self._loading = False
         self._update_swatches()
+        self.sw_ink2.config(bg="#%02x%02x%02x" % tuple(self.ink2))
         self._sync_source_preview()
         self.schedule_render(dirty=False)
 
@@ -569,6 +584,14 @@ class XeroxZineStudioApp:
         paper, ink = self._palette_colors()
         self.sw_paper.config(bg="#%02x%02x%02x" % tuple(paper))
         self.sw_ink.config(bg="#%02x%02x%02x" % tuple(ink))
+
+    def _pick_ink2(self):
+        rgb, _hex = colorchooser.askcolor(color="#%02x%02x%02x" % tuple(self.ink2), title="Цвет второй краски", parent=self.root)
+        if not rgb:
+            return
+        self.ink2 = tuple(int(v) for v in rgb)
+        self.sw_ink2.config(bg="#%02x%02x%02x" % self.ink2)
+        self.schedule_render()
 
     def _pick_color(self, which):
         current = list(self.custom_colors)

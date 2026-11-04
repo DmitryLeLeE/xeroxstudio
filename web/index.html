@@ -1,0 +1,149 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Xerox Zine Studio — make xerox zines from your photos</title>
+<meta name="description" content="Turn photos into photocopied zine pages: halftone, torn edges, risograph palettes, manifestos, print-ready A4 PDF and 8-page mini-zine. Free, runs in your browser, photos never leave your device.">
+<meta name="theme-color" content="#f1ece0">
+<link rel="canonical" href="https://dmitrylelee.github.io/xeroxstudio/">
+<link rel="icon" href="img/favicon.png">
+<meta property="og:type" content="website">
+<meta property="og:title" content="Xerox Zine Studio">
+<meta property="og:description" content="Photocopied zine pages from your photos — halftone, torn edges, riso palettes. Free, private, works offline.">
+<meta property="og:image" content="https://dmitrylelee.github.io/xeroxstudio/img/og.jpg">
+<meta property="og:url" content="https://dmitrylelee.github.io/xeroxstudio/">
+<meta name="twitter:card" content="summary_large_image">
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"WebApplication","name":"Xerox Zine Studio","applicationCategory":"DesignApplication","operatingSystem":"Any","offers":{"@type":"Offer","price":"0","priceCurrency":"USD"},"url":"https://dmitrylelee.github.io/xeroxstudio/app/","image":"https://dmitrylelee.github.io/xeroxstudio/img/og.jpg","description":"Xerox zine generator that runs in the browser."}</script>
+<link rel="stylesheet" href="app/fonts/fonts.css">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><filter id="rough"><feTurbulence type="fractalNoise" baseFrequency=".035" numOctaves="2" seed="4"/><feDisplacementMap in="SourceGraphic" scale="5"/></filter></svg>
+<header class="nav">
+  <a class="brand" href="./"><img src="img/favicon.png" alt="" width="30" height="30"><span>XEROX ZINE STUDIO</span></a>
+  <nav>
+    <a href="#gallery" data-ru="Галерея" data-en="Gallery"></a>
+    <a href="#manifesto" data-ru="Манифест" data-en="Manifesto"></a>
+    <a href="#desktop" data-ru="Для ПК" data-en="Desktop"></a>
+    <a href="https://github.com/DmitryLeLeE/xeroxstudio" target="_blank" rel="noopener">GitHub</a>
+    <button id="lang" class="chip" aria-label="Language">RU</button>
+  </nav>
+</header>
+
+<main>
+<section class="hero">
+  <p class="issue" data-ru="ЗИН №1 · ТИРАЖ: ∞ · ЦЕНА: 0" data-en="ZINE №1 · PRINT RUN: ∞ · PRICE: FREE"></p>
+  <h1><span class="l1" data-ru="Ксерокс" data-en="Xerox"></span> <span class="l2" data-ru="зины" data-en="zines"></span><br><em data-ru="из твоих фото" data-en="from your photos"></em></h1>
+  <p class="lead" data-ru="Полутон, рваные края, потеря качества копий, ризо-наложение, бумага и скотч. Собери страницу за минуту и отправь в печать: PDF A4, мини-зин на 8 страниц или 1-bit трафарет." data-en="Halftone, torn edges, generation loss, riso overprint, paper grain and tape. Build a page in a minute and print it: A4 PDF, 8-page mini-zine or a 1-bit stencil."></p>
+  <div class="cta">
+    <a class="btn big" href="app/" data-ru="Открыть студию →" data-en="Open the studio →"></a>
+    <a class="btn ghost" href="https://github.com/DmitryLeLeE/xeroxstudio" target="_blank" rel="noopener" data-ru="Версия для Windows ↗" data-en="Windows version ↗"></a>
+  </div>
+  <ul class="ticks">
+    <li data-ru="Фото не уходят с устройства" data-en="Photos never leave your device"></li>
+    <li data-ru="Работает офлайн" data-en="Works offline"></li>
+    <li data-ru="Телефон · планшет · ПК" data-en="Phone · tablet · desktop"></li>
+  </ul>
+  <div class="hero-collage" aria-hidden="false">
+    <figure class="pg big" style="--r:-4deg"><span class="tp"></span><img src="img/riso.png" width="300" height="450" alt="Riso overprint page made with the app"></figure>
+    <figure class="pg mid" style="--r:3.5deg"><span class="tp t2"></span><img src="img/tape.png" width="300" height="450" alt="Tape collage page made with the app"></figure>
+    <figure class="pg sm" style="--r:-1.5deg"><span class="tp"></span><img src="img/punk.png" width="300" height="450" alt="Punk flyer page made with the app"></figure>
+    <span class="stamp" data-ru="СДЕЛАНО НА КСЕРОКСЕ" data-en="MADE ON A COPIER"></span>
+  </div>
+</section>
+
+<section id="gallery" class="sec">
+  <h2><span data-ru="Один исходник — девять настроений" data-en="One photo — nine moods"></span></h2>
+  <p class="sub" data-ru="Каждая страница ниже сделана из одного и того же фото одним нажатием на пресет." data-en="Every page below comes from the same photo with a single preset click."></p>
+  <div class="wall">
+    <figure class="pg" style="--r:-3deg;--d:0ms"><span class="tp"></span><img loading="lazy" src="img/xerox.png" width="300" height="450" alt="Classic Xerox preset"><figcaption>№01 · Classic Xerox</figcaption></figure>
+    <figure class="pg" style="--r:2.5deg;--d:70ms"><span class="tp"></span><img loading="lazy" src="img/riso.png" width="300" height="450" alt="Riso Overprint preset"><figcaption>№02 · Riso Overprint</figcaption></figure>
+    <figure class="pg" style="--r:-1.5deg;--d:140ms"><span class="tp"></span><img loading="lazy" src="img/tape.png" width="300" height="450" alt="Tape Collage preset"><figcaption>№03 · Tape Collage</figcaption></figure>
+    <figure class="pg" style="--r:3deg;--d:210ms"><span class="tp"></span><img loading="lazy" src="img/punk.png" width="300" height="450" alt="Punk Flyer preset"><figcaption>№04 · Punk Flyer</figcaption></figure>
+    <figure class="pg" style="--r:-2.5deg;--d:280ms"><span class="tp"></span><img loading="lazy" src="img/newsprint.png" width="300" height="450" alt="Newsprint preset"><figcaption>№05 · Newsprint</figcaption></figure>
+    <figure class="pg" style="--r:1.5deg;--d:350ms"><span class="tp"></span><img loading="lazy" src="img/acid.png" width="300" height="450" alt="Acid Riot preset"><figcaption>№06 · Acid Riot</figcaption></figure>
+    <figure class="pg" style="--r:-3.5deg;--d:420ms"><span class="tp"></span><img loading="lazy" src="img/cyanotype.png" width="300" height="450" alt="Cyanotype preset"><figcaption>№07 · Cyanotype</figcaption></figure>
+    <figure class="pg" style="--r:2deg;--d:490ms"><span class="tp"></span><img loading="lazy" src="img/contact.png" width="300" height="450" alt="35 mm Contact Sheet preset"><figcaption>№08 · 35 mm Contact Sheet</figcaption></figure>
+    <figure class="pg" style="--r:-1deg;--d:560ms"><span class="tp"></span><img loading="lazy" src="img/nightvision.png" width="300" height="450" alt="Night Vision preset"><figcaption>№09 · Night Vision</figcaption></figure>
+  </div>
+</section>
+
+<section id="manifesto" class="sec manifesto">
+  <p class="kicker" data-ru="МАНИФЕСТ" data-en="MANIFESTO"></p>
+  <blockquote>
+    <p><mark data-ru="Копия хуже оригинала — и в этом смысл." data-en="The copy is worse than the original — that is the point."></mark></p>
+    <p data-ru="Каждый проход через ксерокс стирает гладкость и оставляет характер. Мы не имитируем плёнку и не прячем шум. Мы отдаём его в руки: ползунок, пресет, кнопка «Печать»." data-en="Every pass through the copier wipes out polish and leaves character. We don't fake film and we don't hide the noise. We hand it over: a slider, a preset, a Print button."></p>
+    <p data-ru="Зин — это не продукт. Это жест. Сложи лист пополам, разрежь по красной линии и отдай другому." data-en="A zine is not a product. It is a gesture. Fold the sheet, cut along the red line, hand it to someone."></p>
+  </blockquote>
+</section>
+
+<section id="features" class="sec">
+  <h2 data-ru="Что внутри" data-en="What's inside"></h2>
+  <div class="grid">
+    <article><b>◐</b><h3 data-ru="Честный растр" data-en="Real halftone"></h3><p data-ru="Амплитудный полутон с углом и размером точки, зерно Флойда–Стейнберга, жёсткий трафарет. Шум тонера, полосы сканера, тень края копира, сдвиг краски." data-en="Amplitude halftone with angle and dot size, Floyd–Steinberg grain, hard stencil. Toner noise, scanner streaks, copier edge shadow, ink misregistration."></p></article>
+    <article><b>◑</b><h3 data-ru="Ризо-наложение" data-en="Riso overprint"></h3><p data-ru="Второй слой краски с другим углом растра, смещённый и перемноженный с первым. Девять пар «бумага / краска» и свои цвета." data-en="A second ink layer on a different screen angle, shifted and multiplied over the first. Nine paper / ink pairs plus your own colours."></p></article>
+    <article><b>✂</b><h3 data-ru="Бумага, скотч, рваные края" data-en="Paper, tape, torn edges"></h3><p data-ru="Зерно и волокна бумаги, полоски скотча по углам, четыре раскладки, каждая следующая копия мутнее. Вырезка-стикер и чёрная полоса на глазах (поиск лиц прямо в браузере)." data-en="Paper fibre and grain, strips of tape at the corners, four layouts, every next copy blurrier. Sticker cut-out and a black bar over the eyes (face detection runs right in the browser)."></p></article>
+    <article><b>Aa</b><h3 data-ru="Манифесты и шрифты" data-en="Manifestos & type"></h3><p data-ru="Библиотека из 30 манифестов с поиском, свои тексты, три подложки (плашка, Dymo-лента, контур), перетаскивание подписи по листу." data-en="A library of 30 manifestos with search, your own texts, three backings (box, Dymo tape, outline) and a caption you can place anywhere."></p></article>
+    <article><b>⎙</b><h3 data-ru="Готово к печати" data-en="Print-ready"></h3><p data-ru="PNG до 3×, PDF книги, PDF A4 с полями 10 мм, мини-зин на 8 страниц с линиями сгиба и разреза, 1-bit PNG для трафаретной печати." data-en="PNG up to 3×, book PDF, A4 PDF with 10 mm margins, 8-page mini-zine with fold and cut lines, 1-bit PNG for stencil printing."></p></article>
+    <article><b>⇄</b><h3 data-ru="Проекты .zine" data-en=".zine projects"></h3><p data-ru="Файл проекта открывается и в браузере, и в программе для Windows. Автосохранение в браузере, отмена и возврат." data-en="One project file opens in the browser and in the Windows app. Autosave, undo and redo included."></p></article>
+  </div>
+</section>
+
+<section class="sec steps">
+  <h2 data-ru="Как сделать зин" data-en="How to make a zine"></h2>
+  <ol>
+    <li><b>1</b><span data-ru="Загрузи фото (или несколько — каждое станет страницей)." data-en="Add a photo (or several — each becomes a page)."></span></li>
+    <li><b>2</b><span data-ru="Выбери пресет, поиграй с ползунками или нажми 🎲 Remix." data-en="Pick a preset, tweak the sliders or hit 🎲 Remix."></span></li>
+    <li><b>3</b><span data-ru="Экспортируй, распечатай, сложи и разрежь по красной линии." data-en="Export, print, fold and cut along the red line."></span></li>
+  </ol>
+  <a class="btn big" href="app/" data-ru="Попробовать сейчас →" data-en="Try it now →"></a>
+</section>
+
+<section id="desktop" class="sec desk">
+  <div>
+    <h2 data-ru="Версия для Windows" data-en="Windows app"></h2>
+    <p data-ru="Та же студия как обычная программа: быстрее на больших файлах, PDF без сжатия, работает без браузера. Исходники открыты — собери одной командой:" data-en="The same studio as a native-style app: faster on huge files, lossless PDF, no browser needed. The source is open — build it with one command:"></p>
+    <pre><code>git clone https://github.com/DmitryLeLeE/xeroxstudio
+cd xeroxstudio
+python build.py</code></pre>
+    <p class="muted" data-ru="Получится dist/XeroxZineStudio.exe (нужен Python 3.11–3.13). Готовые сборки — в разделе Releases." data-en="You get dist/XeroxZineStudio.exe (needs Python 3.11–3.13). Ready-made builds live under Releases."></p>
+    <div class="cta"><a class="btn ghost" href="https://github.com/DmitryLeLeE/xeroxstudio" target="_blank" rel="noopener" data-ru="Репозиторий ↗" data-en="Repository ↗"></a><a class="btn ghost" href="https://github.com/DmitryLeLeE/xeroxstudio/releases" target="_blank" rel="noopener">Releases ↗</a></div>
+  </div>
+  <figure class="pg shot" style="--r:1.5deg"><span class="tp"></span><img loading="lazy" src="img/app.webp" width="830" height="465" alt="Desktop version of Xerox Zine Studio"></figure>
+</section>
+
+<section class="sec faq">
+  <h2 data-ru="Вопросы" data-en="FAQ"></h2>
+  <details><summary data-ru="Мои фото где-то хранятся?" data-en="Are my photos stored anywhere?"></summary><p data-ru="Нет. Всё считается в вашем браузере. Автосохранение лежит только в локальном хранилище браузера. Ни аналитики, ни трекеров, ни серверной части нет." data-en="No. Everything is computed in your browser. Autosave lives only in your browser's local storage. There is no analytics, tracking or server component."></p></details>
+  <details><summary data-ru="Работает ли без интернета?" data-en="Does it work offline?"></summary><p data-ru="Да, после первого открытия. Приложение можно установить на телефон или ПК («Добавить на главный экран» / «Установить»)." data-en="Yes, after the first visit. You can install it on a phone or computer (“Add to Home Screen” / “Install”)."></p></details>
+  <details><summary data-ru="Какие браузеры поддерживаются?" data-en="Which browsers are supported?"></summary><p data-ru="Современные Chrome, Edge, Firefox и Safari (16.4+). Для больших экспортов (A4, 3×) на телефоне нужно достаточно памяти — если не хватило, снизьте масштаб." data-en="Current Chrome, Edge, Firefox and Safari (16.4+). Big exports (A4, 3×) on a phone need enough memory — lower the scale if it runs out."></p></details>
+  <details><summary data-ru="Откуда пример-фото?" data-en="Where does the sample photo come from?"></summary><p data-ru="Портрет из архива NASA — общественное достояние." data-en="A NASA portrait — public domain."></p></details>
+</section>
+</main>
+
+<footer>
+  <div>© Xerox Zine Studio · <a href="app/licenses.txt">licenses</a> · <a href="https://github.com/DmitryLeLeE/xeroxstudio" target="_blank" rel="noopener">GitHub</a></div>
+  <div class="muted" data-ru="Шрифты Rubik, Oswald, JetBrains Mono, PT Serif — SIL OFL. Модель поиска лиц — OpenCV (Intel License). Копируй, складывай, раздавай." data-en="Fonts Rubik, Oswald, JetBrains Mono, PT Serif — SIL OFL. Face model — OpenCV (Intel License). Copy it, fold it, give it away."></div>
+</footer>
+
+<script>
+(function () {
+  var L = localStorage.getItem("zine.lang") || ((navigator.language || "en").toLowerCase().indexOf("ru") === 0 ? "ru" : "en");
+  function apply() {
+    document.documentElement.lang = L;
+    document.querySelectorAll("[data-ru]").forEach(function (e) { e.textContent = e.dataset[L]; });
+    document.getElementById("lang").textContent = L === "ru" ? "EN" : "RU";
+    document.title = L === "ru" ? "Xerox Zine Studio — ксерокс-зины из ваших фото" : "Xerox Zine Studio — make xerox zines from your photos";
+  }
+  document.getElementById("lang").addEventListener("click", function () { L = L === "ru" ? "en" : "ru"; try { localStorage.setItem("zine.lang", L); } catch (e) {} apply(); });
+  apply();
+  var pgs = document.querySelectorAll(".wall .pg");
+  if ("IntersectionObserver" in window) {
+    var io = new IntersectionObserver(function (es) { es.forEach(function (e) { if (e.isIntersecting) { e.target.classList.add("in"); io.unobserve(e.target); } }); }, { rootMargin: "0px 0px -8% 0px" });
+    pgs.forEach(function (p) { io.observe(p); });
+  } else { pgs.forEach(function (p) { p.classList.add("in"); }); }
+})();
+</script>
+</body>
+</html>

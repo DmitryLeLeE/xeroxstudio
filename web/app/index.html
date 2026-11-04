@@ -1,0 +1,169 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Xerox Zine Studio — веб-версия</title>
+<meta name="description" content="Генератор ксерокс-зинов в браузере: полутон, рваные края, ризо-палитры, PDF для печати и мини-зин A4. Фото не покидают ваше устройство.">
+<meta name="theme-color" content="#121212">
+<meta name="color-scheme" content="dark">
+<meta property="og:title" content="Xerox Zine Studio">
+<meta property="og:description" content="Xerox zine generator in your browser — halftone, torn edges, risograph palettes, print-ready PDF. Your photos never leave your device.">
+<meta property="og:image" content="https://dmitrylelee.github.io/xeroxstudio/img/og.jpg">
+<meta property="og:type" content="website">
+<link rel="icon" href="../img/favicon.png">
+<link rel="apple-touch-icon" href="icons/apple-180.png">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="stylesheet" href="fonts/fonts.css">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<noscript><p style="padding:2rem;color:#fff">Для работы нужен JavaScript. / JavaScript is required.</p></noscript>
+
+<header class="top" role="banner">
+  <a class="brand" href="../" title="Xerox Zine Studio"><img src="../img/favicon.png" alt="" width="28" height="28"><span>Xerox Zine Studio</span><em>web</em></a>
+  <div class="top-actions">
+    <div class="menu-wrap">
+      <button class="btn" id="btnFile" aria-haspopup="true" aria-expanded="false" aria-controls="menuFile"><span data-ru="Файл" data-en="File"></span> ▾</button>
+      <div class="menu" id="menuFile" role="menu" hidden></div>
+    </div>
+    <button class="btn icon" id="btnUndo" title="Ctrl+Z" data-ru-title="Отменить (Ctrl+Z)" data-en-title="Undo (Ctrl+Z)" aria-label="Undo">↶</button>
+    <button class="btn icon" id="btnRedo" title="Ctrl+Y" data-ru-title="Вернуть (Ctrl+Y)" data-en-title="Redo (Ctrl+Y)" aria-label="Redo">↷</button>
+    <button class="btn pink" id="btnRemix">🎲 <span class="hide-sm" data-ru="Remix" data-en="Remix"></span></button>
+    <button class="btn icon" id="btnHelp" data-ru-title="Справка (F1)" data-en-title="Help (F1)" aria-label="Help">?</button>
+    <button class="btn" id="btnLang" aria-label="Language">EN</button>
+    <a class="btn hide-sm" id="lnkGit" href="https://github.com/DmitryLeLeE/xeroxstudio" target="_blank" rel="noopener" data-ru="Для ПК ↗" data-en="Desktop ↗"></a>
+  </div>
+</header>
+
+<div id="restore" class="banner" hidden>
+  <span id="restoreMsg"></span>
+  <button class="btn primary sm" id="restoreYes"></button>
+  <button class="btn sm" id="restoreNo"></button>
+</div>
+
+<main class="app" id="app" data-tab="style">
+  <!-- Фото -->
+  <section class="panel col-source" id="colSource" data-tab="photo" aria-labelledby="hSource">
+    <h2 id="hSource" class="cap" data-ru="ФОТО СТРАНИЦЫ" data-en="PAGE PHOTO"></h2>
+    <button class="btn primary wide" id="btnPhoto"><span data-ru="＋ Загрузить фото" data-en="＋ Add photos"></span></button>
+    <div class="src-wrap" id="srcWrap">
+      <canvas id="srcCanvas" aria-label="Фото и кадрирование"></canvas>
+      <div class="src-empty" id="srcEmpty"><span data-ru="Перетащите фото сюда,<br>вставьте из буфера (Ctrl+V)<br>или нажмите кнопку выше" data-en="Drop a photo here,<br>paste it (Ctrl+V)<br>or use the button above"></span></div>
+    </div>
+    <p class="muted small" id="srcInfo"></p>
+    <div class="row gap">
+      <button class="btn grow" id="btnRotL" data-ru-title="Повернуть влево" data-en-title="Rotate left">↺</button>
+      <button class="btn grow" id="btnRotR" data-ru-title="Повернуть вправо" data-en-title="Rotate right">↻</button>
+      <button class="btn grow" id="btnFlip" data-ru-title="Зеркало" data-en-title="Mirror">⇋</button>
+      <button class="btn grow" id="btnCropReset" data-ru="Кадр ⟲" data-en="Crop ⟲" data-ru-title="Сбросить кадр (двойной клик)" data-en-title="Reset crop (double-click)"></button>
+    </div>
+    <p class="muted small" data-ru="Потяните по фото — выделить кадр. Двойной клик — сбросить." data-en="Drag over the photo to select a frame. Double-click resets."></p>
+    <p class="privacy small" data-ru="🔒 Фото обрабатываются прямо в браузере и никуда не отправляются." data-en="🔒 Photos are processed in your browser and never uploaded."></p>
+  </section>
+
+  <!-- Настройки -->
+  <section class="panel col-settings" id="colSettings" aria-label="Настройки">
+    <div id="presetRow" class="preset-row" data-tab="style"></div>
+    <div id="sections"></div>
+  </section>
+
+  <!-- Предпросмотр -->
+  <section class="col-view" id="colView" data-tab="view" aria-label="Предпросмотр">
+    <div class="hud">
+      <button class="btn sm" id="btnFit" data-ru="⛶ Вписать" data-en="⛶ Fit"></button>
+      <button class="btn sm" id="btn100">1:1</button>
+      <span class="zoom" id="zoomLbl" aria-live="off">100%</span>
+      <button class="btn sm toggle" id="btnTextMode" aria-pressed="false" data-ru="✎ Подпись" data-en="✎ Caption" data-ru-title="Режим: тап/клик по листу ставит подпись (на ПК — Shift+клик)" data-en-title="Mode: tap/click on the sheet places the caption (desktop: Shift+click)"></button>
+      <span class="spacer"></span>
+      <label class="hide-xs"><span class="muted small" data-ru="Экспорт:" data-en="Export:"></span>
+        <select id="expScale" class="sel sm" aria-label="Export scale"><option value="1">1×</option><option value="2" selected>2×</option><option value="3">3×</option></select></label>
+      <button class="btn primary sm" id="btnSavePng"><span data-ru="💾 PNG" data-en="💾 PNG"></span></button>
+    </div>
+    <div class="viewport" id="viewport" tabindex="0" aria-label="Предпросмотр страницы">
+      <canvas id="preview"></canvas>
+      <div class="busy" id="busy" hidden><i></i><span id="busyTxt"></span></div>
+    </div>
+    <div class="strip">
+      <div class="strip-head"><span class="cap" data-ru="СТРАНИЦЫ" data-en="PAGES"></span><span class="muted small" id="pageInfo"></span></div>
+      <div class="thumbs" id="thumbs" role="tablist"></div>
+      <div class="row gap pctl">
+        <button class="btn primary sm" id="pgNew" data-ru="＋<span class='hide-sm'> Новая</span>" data-en="＋<span class='hide-sm'> New</span>" aria-label="New page"></button>
+        <button class="btn sm" id="pgDup" data-ru="⧉<span class='hide-sm'> Дублировать</span>" data-en="⧉<span class='hide-sm'> Duplicate</span>" aria-label="Duplicate page"></button>
+        <button class="btn sm icon" id="pgLeft" aria-label="Move left">◀</button>
+        <button class="btn sm icon" id="pgRight" aria-label="Move right">▶</button>
+        <button class="btn sm danger" id="pgDel" data-ru="🗑<span class='hide-sm'> Удалить</span>" data-en="🗑<span class='hide-sm'> Delete</span>" aria-label="Delete page"></button>
+      </div>
+    </div>
+  </section>
+</main>
+
+<nav class="tabbar" id="tabbar" aria-label="Разделы">
+  <button data-go="photo"><b>🖼</b><span data-ru="Фото" data-en="Photo"></span></button>
+  <button data-go="style" class="on"><b>🎛</b><span data-ru="Стиль" data-en="Style"></span></button>
+  <button data-go="text"><b>Aa</b><span data-ru="Текст" data-en="Text"></span></button>
+  <button data-go="view"><b>◫</b><span data-ru="Лист" data-en="Sheet"></span></button>
+</nav>
+
+<div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
+
+<input type="file" id="fileImg" accept="image/*" multiple hidden>
+<input type="file" id="fileProj" accept=".zine,.zip,application/zip" hidden>
+<div class="dropveil" id="dropveil" hidden><div data-ru="Отпустите, чтобы открыть" data-en="Drop to open"></div></div>
+
+<!-- Диалоги -->
+<dialog id="dlgManifest" class="dlg wide">
+  <form method="dialog" class="dlg-head"><h3 data-ru="Библиотека манифестов" data-en="Manifesto library"></h3><span class="muted small" id="mCount"></span><button class="btn icon" aria-label="Close">✕</button></form>
+  <div class="dlg-bar">
+    <select id="mCat" class="sel" aria-label="Category"></select>
+    <input id="mQuery" class="inp" type="search" data-ru-ph="Поиск…" data-en-ph="Search…" aria-label="Search">
+  </div>
+  <div class="m-body">
+    <ul id="mList" class="m-list" role="listbox" tabindex="0" aria-label="Manifestos"></ul>
+    <div class="m-prev"><div class="m-cat" id="mPrevCat"></div><pre id="mPrev"></pre></div>
+  </div>
+  <div class="dlg-foot">
+    <button class="btn primary" id="mApply" data-ru="Применить к странице" data-en="Apply to page"></button>
+    <button class="btn" id="mSpread" data-ru="Раздать по страницам" data-en="Spread across pages"></button>
+    <button class="btn" id="mRandom" data-ru="🎲 Случайный" data-en="🎲 Random"></button>
+    <button class="btn danger" id="mDelete" data-ru="Удалить свой" data-en="Delete mine"></button>
+  </div>
+</dialog>
+
+<dialog id="dlgHelp" class="dlg">
+  <form method="dialog" class="dlg-head"><h3 data-ru="Справка" data-en="Help"></h3><button class="btn icon" aria-label="Close">✕</button></form>
+  <div class="dlg-body" id="helpBody"></div>
+</dialog>
+
+<dialog id="dlgAbout" class="dlg">
+  <form method="dialog" class="dlg-head"><h3 data-ru="О программе" data-en="About"></h3><button class="btn icon" aria-label="Close">✕</button></form>
+  <div class="dlg-body" id="aboutBody"></div>
+</dialog>
+
+<dialog id="dlgPrompt" class="dlg narrow">
+  <form method="dialog" id="promptForm">
+    <h3 id="promptTitle"></h3>
+    <p class="muted small" id="promptMsg"></p>
+    <input class="inp" id="promptInput" autocomplete="off" maxlength="60">
+    <div class="dlg-foot"><button class="btn primary" value="ok" id="promptOk"></button><button class="btn" value="cancel" formnovalidate id="promptCancel"></button></div>
+  </form>
+</dialog>
+
+<dialog id="dlgConfirm" class="dlg narrow">
+  <form method="dialog">
+    <h3 id="confTitle"></h3>
+    <p id="confMsg"></p>
+    <div class="dlg-foot"><button class="btn primary" value="ok" id="confOk"></button><button class="btn" value="cancel" id="confCancel"></button></div>
+  </form>
+</dialog>
+
+<dialog id="dlgJob" class="dlg narrow" aria-live="polite">
+  <h3 id="jobTitle"></h3>
+  <p class="muted" id="jobMsg"></p>
+  <div class="bar"><i id="jobBar"></i></div>
+  <div class="dlg-foot"><button class="btn" id="jobCancel"></button></div>
+</dialog>
+
+<script type="module" src="js/app.js"></script>
+</body>
+</html>

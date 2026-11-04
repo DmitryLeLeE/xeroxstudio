@@ -1,5 +1,19 @@
 # Changelog
 
+## 1.1.0
+The tool gets deeper, and the browser gets a version of it.
+
+- **Browser version** (`web/`): the full studio in vanilla JavaScript — no install, works offline as a PWA, phone and
+  tablet layouts, touch pan / pinch, IndexedDB autosave. Same presets, manifestos and `.zine` format as the Windows app
+  (files round-trip both ways). Exports PNG, ZIP, 1-bit PNG, PDF, A4 PDF and the 8-page mini-zine.
+- **New effects** (both versions): paper texture (fibre, blotches, edge vignette), riso overprint (second halftone
+  screen on another angle with its own ink colour) and masking tape strips that are photocopied with the page.
+- **New presets:** Riso Overprint and Tape Collage (nine built-in in total).
+- Old projects without the new keys render exactly as before.
+- Landing page redesigned as a zine; gallery covers all nine presets.
+- Repository: MIT licence, English README (+ Russian), `tools/` to regenerate web config and offline cache,
+  `tests/test_web_sync.py`, GitHub Actions for tests, site deployment and tagged releases.
+
 ## 1.0.1
 Исправление запуска на других компьютерах.
 

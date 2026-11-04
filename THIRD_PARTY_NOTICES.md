@@ -14,7 +14,14 @@ Xerox Zine Studio использует следующие открытые ко�
 | tkdnd (внутри tkinterdnd2) | BSD-подобная | https://github.com/petasis/tkdnd |
 | PyInstaller (только сборка; загрузчик входит в exe) | GPL 2.0 с исключением для сборок | https://github.com/pyinstaller/pyinstaller/blob/develop/COPYING.txt |
 
-Шрифты в программу не входят: используются шрифты, установленные в Windows.
+Шрифты в программу для Windows не входят: используются шрифты, установленные в Windows.
+
+## Веб-версия (`web/`)
+
+Скриптов и библиотек сторонних разработчиков нет. Вместе с сайтом отдаются шрифты (SIL Open Font License 1.1):
+Rubik, Oswald, JetBrains Mono, PT Serif (тексты лицензий лежат рядом, в `web/app/fonts/`), а также каскад Хаара
+в формате JSON, сконвертированный из файла OpenCV (лицензия Intel ниже). Пример-фото — портрет из архива NASA
+(общественное достояние).
 
 ## Каскад Хаара для поиска лиц
 

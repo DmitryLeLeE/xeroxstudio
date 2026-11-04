@@ -6,7 +6,7 @@ import os
 import sys
 
 APP_NAME = "Xerox Zine Studio"
-APP_VERSION = "1.0.1"
+APP_VERSION = "1.1.0"
 
 
 def resource_path(name):
@@ -148,6 +148,10 @@ DEFAULT_STATE = {
     "txt_y2": 70,
     "text_rot": 0.0,
     "copier_edge": 0,
+    "paper": 0,
+    "overprint": 0,
+    "ink2": (255, 60, 140),
+    "tape": 0,
     "crop": [0.0, 0.0, 1.0, 1.0],
     "seed": 42,
     "img": None,
