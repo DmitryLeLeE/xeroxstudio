@@ -111,3 +111,23 @@ def test_landing_page_clean_and_bilingual(page_factory):
     pg.click("#lang")
     assert "зины" in pg.inner_text("h1").lower()
     assert pg.evaluate("document.querySelectorAll('.wall figure').length") == 9
+
+
+def test_layouts_match_python_engine(page_factory):
+    """Геометрия кадров в JS и в Python должна совпадать для всех раскладок."""
+    import sys
+    from pathlib import Path
+    sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
+    import config
+    from engine import ZineGraphicEngine
+
+    pg = page_factory()
+    wait_ready(pg)
+    layouts = sorted(config.LAYOUTS.values())
+    cases = [(lay, rows, 1000, 1500) for lay in layouts for rows in (1, 3, 5, 8)]
+    js = pg.evaluate(
+        """async (cases) => { const m = await import('/app/js/engine.js');
+           return cases.map(([l, r, w, h]) => m.layoutBoxes(l, w, h, r, 12)); }""", cases)
+    for (lay, rows, w, h), got in zip(cases, js):
+        want = [list(b) for b in ZineGraphicEngine._layout_boxes(lay, w, h, rows, 12, 1.0)]
+        assert got == want, (lay, rows)

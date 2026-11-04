@@ -36,10 +36,10 @@ text = ("// Сгенерировано из config.py и presets.py (tools/gen_c
         "export const CFG = " + json.dumps(data, ensure_ascii=False, indent=1) + ";\n")
 target = os.path.join(ROOT, "web", "app", "js", "config.js")
 if "--check" in sys.argv:
-    cur = open(target, encoding="utf-8").read() if os.path.exists(target) else ""
+    cur = open(target, encoding="utf-8", newline="").read() if os.path.exists(target) else ""
     if cur != text:
-        sys.exit("web/app/js/config.js устарел: запустите python tools/gen_config_js.py")
-    print("config.js актуален")
+        sys.exit("web/app/js/config.js is stale: run python tools/gen_config_js.py")
+    print("config.js is up to date")
 else:
-    open(target, "w", encoding="utf-8").write(text)
-    print(len(data["MANIFESTOS"]), "манифестов,", len(data["BUILTIN_PRESETS"]), "пресетов")
+    open(target, "w", encoding="utf-8", newline="\n").write(text)
+    print(len(data["MANIFESTOS"]), "manifestos,", len(data["BUILTIN_PRESETS"]), "presets")

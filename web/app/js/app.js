@@ -18,6 +18,8 @@ const EN = {
   "2:3 Постер (1000×1500)": "2:3 Poster (1000×1500)", "1:1 Квадрат / Обложка (1200×1200)": "1:1 Square / Cover (1200×1200)",
   "9:16 Stories / Обои (1080×1920)": "9:16 Stories / Wallpaper (1080×1920)", "3:4 Принт (1200×1600)": "3:4 Print (1200×1600)",
   staggered: "Staggered (zigzag)", column: "Column (room for text)", contact_sheet: "Contact sheet (frames)", center_hero: "Hero + copies",
+  column_right: "Column on the right", diagonal: "Diagonal cascade", pile: "Pile (overlapping collage)", two_columns: "Two columns",
+  mosaic: "Mosaic (one big + small)", duo: "Diptych (two large)", triptych: "Triptych (three strips)", ribbon: "Ribbon (a row of frames)", full_page: "Full page",
   halftone: "Halftone (dots)", floyd: "Floyd–Steinberg grain", stencil: "Stencil (threshold)",
   contain: "Fit whole photo", cover: "Fill the frame",
   white_box: "White box", dymo_tape: "Black tape (Dymo)", outline: "Outline (black, white stroke)",

@@ -336,6 +336,57 @@ class ZineGraphicEngine:
             tw = (int(cw * 0.80) - (n - 1) * gap) // n
             for i in range(n):
                 boxes.append((int(cw * 0.10) + i * (tw + gap), int(ch * 0.78), tw, int(ch * 0.14)))
+        elif layout == "column_right":
+            col_w, row_h = int(cw * 0.46), ch // rows
+            for r in range(rows):
+                boxes.append((int(cw * 0.49), r * row_h, col_w, row_h + ext))
+        elif layout == "diagonal":
+            n = min(rows, 8)
+            bw = int(cw * 0.5)
+            bh = min(ch, int(ch / n * 1.45))
+            for r in range(n):
+                x = int(cw * 0.04 + cw * 0.42 * (r / (n - 1) if n > 1 else 0.5))
+                y = int(r * (ch - bh) / (n - 1)) if n > 1 else 0
+                boxes.append((x, y, bw, bh))
+        elif layout == "pile":
+            n = min(max(2, rows), 6)
+            bw, bh = int(cw * 0.62), int(ch * 0.40)
+            for i in range(n):
+                fx = (i * 618 % 1000) / 1000
+                fy = i / (n - 1)
+                boxes.append((int((cw - bw) * fx), int((ch - bh) * fy), bw, bh))
+        elif layout == "two_columns":
+            margin, gap = int(cw * 0.05), max(2, int(cw * 0.02))
+            tw, row_h = (cw - 2 * margin - gap) // 2, ch // rows
+            for r in range(rows):
+                for c in range(2):
+                    boxes.append((margin + c * (tw + gap), r * row_h + (row_h // 2 if c else 0), tw, row_h - gap))
+        elif layout == "mosaic":
+            n = min(max(2, rows), 6)
+            gap = max(2, int(cw * 0.012))
+            full_w = int(cw * 0.88)
+            boxes.append((int(cw * 0.06), int(ch * 0.05), full_w, int(ch * 0.46)))
+            tw = (full_w - 2 * gap) // 3
+            lines = (n + 2) // 3
+            th = (int(ch * 0.40) - (lines - 1) * gap) // lines
+            for i in range(n):
+                boxes.append((int(cw * 0.06) + (i % 3) * (tw + gap), int(ch * 0.55) + (i // 3) * (th + gap), tw, th))
+        elif layout == "duo":
+            boxes.append((int(cw * 0.08), int(ch * 0.05), int(cw * 0.84), int(ch * 0.43)))
+            boxes.append((int(cw * 0.08), int(ch * 0.52), int(cw * 0.84), int(ch * 0.43)))
+        elif layout == "triptych":
+            margin, gap = int(cw * 0.04), max(2, int(cw * 0.015))
+            tw = (cw - 2 * margin - 2 * gap) // 3
+            for c in range(3):
+                boxes.append((margin + c * (tw + gap), int(ch * 0.06) + (int(ch * 0.04) if c == 1 else 0), tw, int(ch * 0.82)))
+        elif layout == "ribbon":
+            n = min(max(3, rows), 6)
+            margin, gap = int(cw * 0.04), max(2, int(cw * 0.012))
+            tw = (cw - 2 * margin - (n - 1) * gap) // n
+            for i in range(n):
+                boxes.append((margin + i * (tw + gap), int(ch * 0.38), tw, int(ch * 0.24)))
+        elif layout == "full_page":
+            boxes.append((0, 0, cw, ch))
         else:
             return ZineGraphicEngine._layout_boxes("staggered", cw, ch, rows, ext, s)
         return boxes

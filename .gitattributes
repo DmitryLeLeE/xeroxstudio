@@ -5,3 +5,11 @@
 *.xml -text
 *.ico binary
 *.png binary
+
+# Веб-версия: LF везде, чтобы хэш офлайн-кэша и config.js совпадали на любой ОС
+web/** text eol=lf
+web/**/*.png binary
+web/**/*.jpg binary
+web/**/*.webp binary
+web/**/*.woff2 binary
+web/**/*.json text eol=lf

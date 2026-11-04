@@ -11,6 +11,7 @@ The tool gets deeper, and the browser gets a version of it.
 - **New presets:** Riso Overprint and Tape Collage (nine built-in in total).
 - Old projects without the new keys render exactly as before.
 - **Manifesto library grew from 30 to 54** built-in English manifestos; new categories COPIER, DIY and CITY. Both versions have “Write your own” in the library (two lines of text, saved under “Mine”).
+- **13 frame layouts instead of 4** (both versions, identical geometry, covered by a Python-vs-JS test): column on the right, diagonal cascade, overlapping pile, two columns, mosaic, diptych, triptych, ribbon, full page.
 - **Browser editor redesign:** light “paper” theme by default (dark one on the ◐ button), first-run welcome dialog
   (add a photo / take a photo / play with the sample), Share and Copy-to-clipboard in the File menu.
 - **Accessibility and phones:** touch targets of at least 44 px, labelled fields, a heading and image role for the

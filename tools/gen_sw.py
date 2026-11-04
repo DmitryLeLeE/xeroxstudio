@@ -46,9 +46,9 @@ self.addEventListener("fetch", (e) => {{
 '''
 target = os.path.join(root, 'app', 'sw.js')
 if '--check' in sys.argv:
-    if not os.path.exists(target) or open(target, encoding='utf-8').read() != src:
-        sys.exit('web/app/sw.js устарел: запустите python tools/gen_sw.py')
-    print('sw.js актуален')
+    if not os.path.exists(target) or open(target, encoding='utf-8', newline='').read() != src:
+        sys.exit('web/app/sw.js is stale: run python tools/gen_sw.py')
+    print('sw.js is up to date')
     sys.exit(0)
-open(target, 'w', encoding='utf-8').write(src)
+open(target, 'w', encoding='utf-8', newline='\n').write(src)
 print('sw.js', ver, len(core), 'files')
