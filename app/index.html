@@ -122,7 +122,13 @@
     <ul id="mList" class="m-list" role="listbox" tabindex="0" aria-label="Manifestos"></ul>
     <div class="m-prev"><div class="m-cat" id="mPrevCat"></div><pre id="mPrev"></pre></div>
   </div>
+  <div class="m-new" id="mNew" hidden>
+    <textarea id="mNewTop" rows="2" class="inp" maxlength="120" data-ru-ph="Верхняя строка (Enter — новая строка)" data-en-ph="Top text (Enter = new line)"></textarea>
+    <textarea id="mNewBottom" rows="2" class="inp" maxlength="120" data-ru-ph="Нижняя строка" data-en-ph="Bottom text"></textarea>
+    <div class="m-new-act"><button class="btn primary" id="mNewSave" data-ru="★ Сохранить в «Мои»" data-en="★ Save to Mine"></button><button class="btn" id="mNewCancel" data-ru="Отмена" data-en="Cancel"></button></div>
+  </div>
   <div class="dlg-foot">
+    <button class="btn" id="mWrite" data-ru="✎ Написать свой" data-en="✎ Write your own"></button>
     <button class="btn primary" id="mApply" data-ru="Применить к странице" data-en="Apply to page"></button>
     <button class="btn" id="mSpread" data-ru="Раздать по страницам" data-en="Spread across pages"></button>
     <button class="btn" id="mRandom" data-ru="🎲 Случайный" data-en="🎲 Random"></button>

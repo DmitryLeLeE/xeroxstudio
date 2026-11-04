@@ -937,6 +937,150 @@ export const CFG = {
    "cat": "POST-PUNK",
    "top": "TERMINAL CLARITY",
    "bottom": "NO RETREAT POSSIBLE"
+  },
+  {
+   "lang": "en",
+   "cat": "COPIER",
+   "top": "THE COPY IS WORSE\nTHAN THE ORIGINAL",
+   "bottom": "AND THAT IS THE POINT"
+  },
+  {
+   "lang": "en",
+   "cat": "COPIER",
+   "top": "PRESS START\nON THE GLASS",
+   "bottom": "LET THE LIGHT\nDO THE ARGUING"
+  },
+  {
+   "lang": "en",
+   "cat": "COPIER",
+   "top": "TONER RUNNING OUT",
+   "bottom": "SO IS YOUR TIME"
+  },
+  {
+   "lang": "en",
+   "cat": "COPIER",
+   "top": "EVERY GENERATION LOSES\nA LITTLE MORE TRUTH",
+   "bottom": "AND GAINS A LITTLE MORE NOISE"
+  },
+  {
+   "lang": "en",
+   "cat": "COPIER",
+   "top": "ONE ORIGINAL",
+   "bottom": "ONE THOUSAND ACCOMPLICES"
+  },
+  {
+   "lang": "en",
+   "cat": "COPIER",
+   "top": "FEED THE MACHINE\nA FACE",
+   "bottom": "GET BACK A WARNING"
+  },
+  {
+   "lang": "en",
+   "cat": "COPIER",
+   "top": "PAPER JAM\nIN THE ARCHIVE",
+   "bottom": "REMOVE ALL OBSTRUCTIONS TO MEMORY"
+  },
+  {
+   "lang": "en",
+   "cat": "COPIER",
+   "top": "50 COPIES FOR THE PRICE OF ONE",
+   "bottom": "NOBODY OWNS THE LAST ONE"
+  },
+  {
+   "lang": "en",
+   "cat": "DIY",
+   "top": "FOLD IT.\nCUT IT.",
+   "bottom": "GIVE IT AWAY"
+  },
+  {
+   "lang": "en",
+   "cat": "DIY",
+   "top": "MAKE IT BADLY\nMAKE IT TODAY",
+   "bottom": "PERFECT IS NOT A DEADLINE"
+  },
+  {
+   "lang": "en",
+   "cat": "DIY",
+   "top": "NO PERMISSION\nNO BUDGET",
+   "bottom": "NO PROBLEM"
+  },
+  {
+   "lang": "en",
+   "cat": "DIY",
+   "top": "A STAPLE IS A SPINE",
+   "bottom": "A KITCHEN TABLE IS A PRESS"
+  },
+  {
+   "lang": "en",
+   "cat": "DIY",
+   "top": "SCISSORS BEFORE SOFTWARE",
+   "bottom": "GLUE BEFORE GENIUS"
+  },
+  {
+   "lang": "en",
+   "cat": "DIY",
+   "top": "YOUR HANDS ARE\nTHE ONLY BRAND",
+   "bottom": "WORTH TRUSTING"
+  },
+  {
+   "lang": "en",
+   "cat": "DIY",
+   "top": "READ IT. COPY IT.",
+   "bottom": "PASS IT ON"
+  },
+  {
+   "lang": "en",
+   "cat": "DIY",
+   "top": "SMALL PRINT RUN\nHUGE INTENTIONS",
+   "bottom": "LEAVE ONE ON THE BUS"
+  },
+  {
+   "lang": "en",
+   "cat": "CITY",
+   "top": "THE WALLS ARE\nPAPER NOW",
+   "bottom": "TEAR A STRIP\nAND READ"
+  },
+  {
+   "lang": "en",
+   "cat": "CITY",
+   "top": "LAMPPOSTS FULL OF VOICES",
+   "bottom": "NONE OF THEM ASKED"
+  },
+  {
+   "lang": "en",
+   "cat": "CITY",
+   "top": "3 A.M.\nTHE PHOTOCOPIER STILL WARM",
+   "bottom": "THE STREETS ALREADY SPEAKING"
+  },
+  {
+   "lang": "en",
+   "cat": "CITY",
+   "top": "CONCRETE REMEMBERS\nEVERY POSTER",
+   "bottom": "UNDER EVERY LAYER OF PASTE"
+  },
+  {
+   "lang": "en",
+   "cat": "CITY",
+   "top": "WHAT YOU PASTE TODAY",
+   "bottom": "THE RAIN WILL EDIT TOMORROW"
+  },
+  {
+   "lang": "en",
+   "cat": "CITY",
+   "top": "THIS BUS STOP\nIS A GALLERY",
+   "bottom": "ADMISSION IS ATTENTION"
+  },
+  {
+   "lang": "en",
+   "cat": "CITY",
+   "top": "NOISE IS A\nPUBLIC LANGUAGE",
+   "bottom": "SPEAK IT LOUDLY"
+  },
+  {
+   "lang": "en",
+   "cat": "CITY",
+   "top": "FLYER FOR A\nPARTY THAT NEVER HAPPENED",
+   "bottom": "EVERYONE CAME"
   }
  ]
 };
