@@ -294,6 +294,34 @@ export function layoutBoxes(layout, cw, ch, rows, ext) {
     const n = Math.min(5, Math.max(3, rows)), gap = Math.max(2, Math.floor(cw * 0.012));
     const tw = Math.floor((Math.floor(cw * 0.8) - (n - 1) * gap) / n);
     for (let i = 0; i < n; i++) boxes.push([Math.floor(cw * 0.1) + i * (tw + gap), Math.floor(ch * 0.78), tw, Math.floor(ch * 0.14)]);
+  } else if (layout === "column_right") {
+    const colW = Math.floor(cw * 0.46), rowH = Math.floor(ch / rows);
+    for (let r = 0; r < rows; r++) boxes.push([Math.floor(cw * 0.49), r * rowH, colW, rowH + ext]);
+  } else if (layout === "diagonal") {
+    const n = Math.min(rows, 8), bw = Math.floor(cw * 0.5), bh = Math.min(ch, Math.floor((ch / n) * 1.45));
+    for (let r = 0; r < n; r++) boxes.push([Math.floor(cw * 0.04 + cw * 0.42 * (n > 1 ? r / (n - 1) : 0.5)), n > 1 ? Math.floor((r * (ch - bh)) / (n - 1)) : 0, bw, bh]);
+  } else if (layout === "pile") {
+    const n = Math.min(Math.max(2, rows), 6), bw = Math.floor(cw * 0.62), bh = Math.floor(ch * 0.4);
+    for (let i = 0; i < n; i++) boxes.push([Math.floor((cw - bw) * (((i * 618) % 1000) / 1000)), Math.floor((ch - bh) * (i / (n - 1))), bw, bh]);
+  } else if (layout === "two_columns") {
+    const margin = Math.floor(cw * 0.05), gap = Math.max(2, Math.floor(cw * 0.02)), tw = Math.floor((cw - 2 * margin - gap) / 2), rowH = Math.floor(ch / rows);
+    for (let r = 0; r < rows; r++) for (let c = 0; c < 2; c++) boxes.push([margin + c * (tw + gap), r * rowH + (c ? Math.floor(rowH / 2) : 0), tw, rowH - gap]);
+  } else if (layout === "mosaic") {
+    const n = Math.min(Math.max(2, rows), 6), gap = Math.max(2, Math.floor(cw * 0.012)), fullW = Math.floor(cw * 0.88);
+    boxes.push([Math.floor(cw * 0.06), Math.floor(ch * 0.05), fullW, Math.floor(ch * 0.46)]);
+    const tw = Math.floor((fullW - 2 * gap) / 3), lines = Math.floor((n + 2) / 3), th = Math.floor((Math.floor(ch * 0.4) - (lines - 1) * gap) / lines);
+    for (let i = 0; i < n; i++) boxes.push([Math.floor(cw * 0.06) + (i % 3) * (tw + gap), Math.floor(ch * 0.55) + Math.floor(i / 3) * (th + gap), tw, th]);
+  } else if (layout === "duo") {
+    boxes.push([Math.floor(cw * 0.08), Math.floor(ch * 0.05), Math.floor(cw * 0.84), Math.floor(ch * 0.43)]);
+    boxes.push([Math.floor(cw * 0.08), Math.floor(ch * 0.52), Math.floor(cw * 0.84), Math.floor(ch * 0.43)]);
+  } else if (layout === "triptych") {
+    const margin = Math.floor(cw * 0.04), gap = Math.max(2, Math.floor(cw * 0.015)), tw = Math.floor((cw - 2 * margin - 2 * gap) / 3);
+    for (let c = 0; c < 3; c++) boxes.push([margin + c * (tw + gap), Math.floor(ch * 0.06) + (c === 1 ? Math.floor(ch * 0.04) : 0), tw, Math.floor(ch * 0.82)]);
+  } else if (layout === "ribbon") {
+    const n = Math.min(Math.max(3, rows), 6), margin = Math.floor(cw * 0.04), gap = Math.max(2, Math.floor(cw * 0.012)), tw = Math.floor((cw - 2 * margin - (n - 1) * gap) / n);
+    for (let i = 0; i < n; i++) boxes.push([margin + i * (tw + gap), Math.floor(ch * 0.38), tw, Math.floor(ch * 0.24)]);
+  } else if (layout === "full_page") {
+    boxes.push([0, 0, cw, ch]);
   } else {
     const colW = Math.floor(cw * 0.58), rowH = Math.floor(ch / rows);
     for (let r = 0; r < rows; r++) boxes.push([r % 2 === 0 ? Math.floor(cw * 0.05) : Math.floor(cw * 0.37), r * rowH, colW, rowH + ext]);
