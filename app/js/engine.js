@@ -301,6 +301,68 @@ export function layoutBoxes(layout, cw, ch, rows, ext) {
   return boxes;
 }
 
+
+// ---------------------------------------------------------------- скотч, бумага
+function drawTape(ctx, boxes, amount, seed, s) {
+  if (amount <= 0) return;
+  const rng = new Rng(seed), p = amount / 100;
+  const strip = (cx, cy, ang) => {
+    const len = rng.uniform(64, 96) * s, wid = rng.uniform(20, 28) * s, a = (ang * Math.PI) / 180;
+    const ca = Math.cos(a), sa = Math.sin(a), nz = Math.max(1, 2.5 * s);
+    ctx.beginPath();
+    [[-1, -1], [-1, -0.33], [-1, 0.33], [-1, 1], [1, 1], [1, 0.33], [1, -0.33], [1, -1]].forEach(([u, v], i) => {
+      const jx = Math.abs(u) === 1 && Math.abs(v) !== 1 ? rng.uniform(-nz, nz) : 0;
+      const x = (u * len) / 2 + jx, y = (v * wid) / 2;
+      const px = cx + x * ca - y * sa, py = cy + x * sa + y * ca;
+      if (i === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+    });
+    ctx.closePath();
+    ctx.fill();
+  };
+  ctx.save();
+  ctx.fillStyle = "rgba(178,178,178,0.92)";
+  for (const [bx, by, bw, bh] of boxes) {
+    if (bw < 4 || bh < 4) continue;
+    if (rng.random() < p) strip(bx + bw / 2 + rng.uniform(-0.1, 0.1) * bw, by + 4 * s, rng.uniform(-9, 9));
+    for (const [cx, cy, base] of [[bx + 6 * s, by + 6 * s, -40], [bx + bw - 6 * s, by + bh - 6 * s, -40], [bx + bw - 6 * s, by + 6 * s, 40], [bx + 6 * s, by + bh - 6 * s, 40]]) {
+      if (rng.random() < p * 0.35) strip(cx, cy, base + rng.uniform(-8, 8));
+    }
+  }
+  ctx.restore();
+}
+
+/** Шум с размером пятна cell пикселей (билинейная интерполяция сетки). */
+function noiseField(w, h, cell, rng) {
+  const gw = Math.max(2, Math.floor(w / cell)), gh = Math.max(2, Math.floor(h / cell));
+  const g = new Float32Array(gw * gh);
+  for (let i = 0; i < g.length; i++) g[i] = rng.normal();
+  const out = new Float32Array(w * h);
+  for (let y = 0; y < h; y++) {
+    const fy = (y / Math.max(1, h - 1)) * (gh - 1), y0 = Math.min(gh - 2, Math.floor(fy)), ty = fy - y0;
+    for (let x = 0; x < w; x++) {
+      const fx = (x / Math.max(1, w - 1)) * (gw - 1), x0 = Math.min(gw - 2, Math.floor(fx)), tx = fx - x0;
+      const a = g[y0 * gw + x0], b = g[y0 * gw + x0 + 1], c = g[(y0 + 1) * gw + x0], d = g[(y0 + 1) * gw + x0 + 1];
+      out[y * w + x] = (a * (1 - tx) + b * tx) * (1 - ty) + (c * (1 - tx) + d * tx) * ty;
+    }
+  }
+  return out;
+}
+
+function addPaper(o, w, h, amount, seed, s) {
+  if (amount <= 0) return;
+  const rng = new Rng(seed), k = amount / 100, sc = Math.max(s, 0.5);
+  const big = noiseField(w, h, 90 * sc, rng), fibre = noiseField(w, h, 5 * sc, rng);
+  for (let y = 0; y < h; y++) {
+    const ey = Math.abs(y / h - 0.5) * 2;
+    for (let x = 0; x < w; x++) {
+      const i = y * w + x, edge = Math.max(Math.abs(x / w - 0.5) * 2, ey);
+      const v = 0.05 * rng.normal() + 0.055 * (0.35 * big[i] + 0.65 * fibre[i]) + (0.1 * Math.pow(clamp(edge - 0.6, 0, 1), 2)) / 0.16;
+      const f = 1 - k * v, p = i * 4;
+      o[p] = clamp(o[p] * f, 0, 255); o[p + 1] = clamp(o[p + 1] * f, 0, 255); o[p + 2] = clamp(o[p + 2] * f, 0, 255);
+    }
+  }
+}
+
 // ---------------------------------------------------------------- движок
 let faceDetector = null; // (canvas) => [[x, y, w, h], ...]
 export function setFaceDetector(fn) { faceDetector = fn; }
@@ -470,6 +532,8 @@ export async function renderPage(source, state, opts = {}) {
     }
   });
 
+  drawTape(ctx, boxes, Number(st.tape), seed + 31, s);
+
   // --- серый холст: полосы сканера и тень края копира
   {
     const id = ctx.getImageData(0, 0, cw, ch), d = id.data, n = cw * ch;
@@ -603,6 +667,24 @@ export async function renderPage(source, state, opts = {}) {
       o[p] = col[0]; o[p + 1] = col[1]; o[p + 2] = col[2]; o[p + 3] = 255;
     }
   }
+  // --- второй цвет (оверпринт): другой экран растра, свой сдвиг, смешение умножением
+  const over = Number(st.overprint);
+  if (over > 0) {
+    const k2 = Math.min(1, over / 100) * 0.9, lighter = new Uint8Array(n);
+    for (let i = 0; i < n; i++) lighter[i] = 255 - (255 - gray[i]) * k2;
+    const bits2 = halftoneBits(lighter, cw, ch, st.dot_size * s * 1.3, (Number(st.angle) + 30) % 90);
+    const sx = Math.round((3 + Number(st.misreg)) * s), sy = Math.round((2 + Number(st.misreg) / 2) * s);
+    const [r2, g2, b2] = st.ink2;
+    for (let y = sy; y < ch; y++) {
+      for (let x = 0; x < cw - sx; x++) {
+        if (bits2[(y - sy) * cw + x + sx] === 0) {
+          const p = (y * cw + x) * 4;
+          o[p] = (o[p] * r2) / 255; o[p + 1] = (o[p + 1] * g2) / 255; o[p + 2] = (o[p + 2] * b2) / 255;
+        }
+      }
+    }
+  }
+  addPaper(o, cw, ch, Number(st.paper), seed + 21, s);
   const result = makeCanvas(cw, ch);
   ctx2d(result).putImageData(out, 0, 0);
   return { canvas: result, bits, width: cw, height: ch };

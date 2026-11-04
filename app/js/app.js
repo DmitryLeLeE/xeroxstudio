@@ -24,7 +24,7 @@ const EN = {
   left: "Left", center: "Center", right: "Right",
   "Пользовательская (Custom)": "Custom",
   "Классический ксерокс": "Classic Xerox", "Газетная печать": "Newsprint", "Кислотный райот": "Acid Riot", "Панк-флаер": "Punk Flyer",
-  "Синька (cyanotype)": "Cyanotype", "Контактный лист 35 мм": "35 mm Contact Sheet", "Ночное видение": "Night Vision",
+  "Синька (cyanotype)": "Cyanotype", "Контактный лист 35 мм": "35 mm Contact Sheet", "Ночное видение": "Night Vision", "Ризо-оверпринт": "Riso Overprint", "Склейка со скотчем": "Tape Collage",
   "Мои": "Mine",
 };
 const lbl = (ru, key) => (LANG === "ru" ? ru : EN[key] || EN[ru] || ru);
@@ -131,6 +131,7 @@ const SECTIONS = () => [
     { k: "edge_x", t: "range", label: T("Рваный край по X", "Torn edge X"), min: 0, max: 50, step: 1 },
     { k: "edge_y", t: "range", label: T("Рваный край по Y", "Torn edge Y"), min: 0, max: 50, step: 1 },
     { k: "loss", t: "range", label: T("Потеря качества копий", "Generation loss"), min: 0, max: 100, step: 1 },
+    { k: "tape", t: "range", label: T("Малярный скотч на кадрах", "Masking tape on frames"), min: 0, max: 100, step: 1 },
     { k: "censor", t: "check", label: T("Чёрная полоса на глазах (поиск лиц)", "Black bar over eyes (face detection)") },
     { k: "sticker", t: "check", label: T("Вырезка-стикер (тёмный объект на светлом фоне)", "Sticker cut-out (dark object on light background)") },
     { t: "button", label: T("🎲 Другие края и пыль", "🎲 New edges & dust"), act: () => { flushCommit(); page().seed = newSeed(); commit(); requestRender(); } },
@@ -144,6 +145,9 @@ const SECTIONS = () => [
     { k: "streaks", t: "range", label: T("Полосы сканера", "Scanner streaks"), min: 0, max: 100, step: 1 },
     { k: "misreg", t: "range", label: T("Приводка (сдвиг краски)", "Misregistration"), min: 0, max: 12, step: 1 },
     { k: "copier_edge", t: "range", label: T("Тень края копира", "Copier edge shadow"), min: 0, max: 100, step: 1 },
+    { k: "paper", t: "range", label: T("Фактура бумаги", "Paper texture"), min: 0, max: 100, step: 1 },
+    { k: "overprint", t: "range", label: T("Второй цвет (оверпринт)", "Second ink (overprint)"), min: 0, max: 100, step: 1 },
+    { k: "ink2", t: "color2", label: T("Цвет второй краски", "Second ink colour") },
   ] },
   { tab: "style", title: T("4. ПАЛИТРА (RISOGRAPH)", "4. PALETTE (RISOGRAPH)"), items: [
     { k: "palette", t: "select", label: T("Бумага / краска", "Paper / ink"),
@@ -253,6 +257,12 @@ function buildControl(it) {
     ta.addEventListener("blur", () => flushCommit());
     wrap.append(ta);
     ctlEls[it.k] = { el: ta };
+  } else if (it.t === "color2") {
+    wrap.innerHTML = `<div class="ctl-h"><label for="${id}">${it.label}</label></div><input type="color" id="${id}" class="col2" aria-label="${it.label}">`;
+    const col = $("input", wrap);
+    col.addEventListener("input", () => { page().ink2 = hexRgb(col.value); touch(); requestRender({ draft: true }); });
+    col.addEventListener("change", () => { commit(); requestRender(); });
+    ctlEls[it.k] = { el: col, rgb: true };
   } else if (it.t === "button") {
     const b = document.createElement("button");
     b.className = `btn wide ${it.kind || ""}`; b.textContent = it.label;
@@ -307,7 +317,8 @@ function syncUI() {
   if (!st) return;
   for (const [k, c] of Object.entries(ctlEls)) {
     const v = st[k];
-    if (c.el.type === "checkbox") c.el.checked = !!v;
+    if (c.rgb) c.el.value = rgbHex(v || [255, 60, 140]);
+    else if (c.el.type === "checkbox") c.el.checked = !!v;
     else { c.el.value = v ?? ""; if (c.out) c.out.textContent = Number(v).toFixed(c.dec); }
   }
   updateSwatches();

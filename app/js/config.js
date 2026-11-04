@@ -1,6 +1,6 @@
-// Сгенерировано из config.py и presets.py (gen_config_js.py). Не править вручную.
+// Сгенерировано из config.py и presets.py (tools/gen_config_js.py). Не править вручную.
 export const CFG = {
- "APP_VERSION": "1.0.1",
+ "APP_VERSION": "1.1.0",
  "CANVAS_FORMATS": {
   "2:3 Постер (1000×1500)": [
    1000,
@@ -273,6 +273,14 @@ export const CFG = {
   "txt_y2": 70,
   "text_rot": 0.0,
   "copier_edge": 0,
+  "paper": 0,
+  "overprint": 0,
+  "ink2": [
+   255,
+   60,
+   140
+  ],
+  "tape": 0,
   "crop": [
    0.0,
    0.0,
@@ -299,6 +307,10 @@ export const CFG = {
   "streaks",
   "misreg",
   "copier_edge",
+  "paper",
+  "overprint",
+  "ink2",
+  "tape",
   "palette",
   "invert",
   "custom_colors",
@@ -329,6 +341,14 @@ export const CFG = {
    "streaks": 25,
    "misreg": 2,
    "copier_edge": 35,
+   "paper": 0,
+   "overprint": 0,
+   "ink2": [
+    255,
+    60,
+    140
+   ],
+   "tape": 0,
    "palette": "Classic B&W (Xerox)",
    "invert": false,
    "custom_colors": [
@@ -369,6 +389,14 @@ export const CFG = {
    "streaks": 12,
    "misreg": 1,
    "copier_edge": 15,
+   "paper": 0,
+   "overprint": 0,
+   "ink2": [
+    255,
+    60,
+    140
+   ],
+   "tape": 0,
    "palette": "Vintage Newsprint (Cream / Charcoal)",
    "invert": false,
    "custom_colors": [
@@ -409,6 +437,14 @@ export const CFG = {
    "streaks": 30,
    "misreg": 5,
    "copier_edge": 0,
+   "paper": 0,
+   "overprint": 0,
+   "ink2": [
+    255,
+    60,
+    140
+   ],
+   "tape": 0,
    "palette": "Acid Cyberpunk (Neon Lime / Black)",
    "invert": false,
    "custom_colors": [
@@ -449,6 +485,14 @@ export const CFG = {
    "streaks": 35,
    "misreg": 6,
    "copier_edge": 0,
+   "paper": 0,
+   "overprint": 0,
+   "ink2": [
+    255,
+    60,
+    140
+   ],
+   "tape": 0,
    "palette": "Hot Pink Riot (Fluo Pink / Black)",
    "invert": false,
    "custom_colors": [
@@ -489,6 +533,14 @@ export const CFG = {
    "streaks": 10,
    "misreg": 1,
    "copier_edge": 0,
+   "paper": 0,
+   "overprint": 0,
+   "ink2": [
+    255,
+    60,
+    140
+   ],
+   "tape": 0,
    "palette": "Blueprint / Cyanotype (Navy / Cyan)",
    "invert": false,
    "custom_colors": [
@@ -529,6 +581,14 @@ export const CFG = {
    "streaks": 18,
    "misreg": 1,
    "copier_edge": 0,
+   "paper": 0,
+   "overprint": 0,
+   "ink2": [
+    255,
+    60,
+    140
+   ],
+   "tape": 0,
    "palette": "Classic B&W (Xerox)",
    "invert": false,
    "custom_colors": [
@@ -552,6 +612,102 @@ export const CFG = {
    "txt_y2": 70,
    "text_rot": 0.0
   },
+  "Ризо-оверпринт": {
+   "layout": "staggered",
+   "rows": 4,
+   "tilt": 1.2,
+   "fit_mode": "contain",
+   "bright": 1.3,
+   "edge_x": 15,
+   "edge_y": 10,
+   "loss": 25,
+   "dither": "halftone",
+   "dot_size": 8,
+   "angle": 30,
+   "contrast": 2.2,
+   "noise": 18,
+   "streaks": 12,
+   "misreg": 5,
+   "copier_edge": 0,
+   "paper": 55,
+   "overprint": 70,
+   "ink2": [
+    255,
+    60,
+    140
+   ],
+   "tape": 0,
+   "palette": "Пользовательская (Custom)",
+   "invert": false,
+   "custom_colors": [
+    [
+     244,
+     238,
+     224
+    ],
+    [
+     25,
+     55,
+     170
+    ]
+   ],
+   "font": "Impact",
+   "font_size": 46,
+   "tstyle": "white_box",
+   "text_align": "left",
+   "txt_x": 7,
+   "txt_y1": 10,
+   "txt_y2": 70,
+   "text_rot": 0.0
+  },
+  "Склейка со скотчем": {
+   "layout": "center_hero",
+   "rows": 5,
+   "tilt": 3.5,
+   "fit_mode": "contain",
+   "bright": 1.3,
+   "edge_x": 20,
+   "edge_y": 14,
+   "loss": 28,
+   "dither": "halftone",
+   "dot_size": 6,
+   "angle": 15,
+   "contrast": 2.0,
+   "noise": 34,
+   "streaks": 20,
+   "misreg": 2,
+   "copier_edge": 0,
+   "paper": 70,
+   "overprint": 0,
+   "ink2": [
+    255,
+    60,
+    140
+   ],
+   "tape": 85,
+   "palette": "Vintage Newsprint (Cream / Charcoal)",
+   "invert": false,
+   "custom_colors": [
+    [
+     255,
+     255,
+     255
+    ],
+    [
+     0,
+     0,
+     0
+    ]
+   ],
+   "font": "Courier New Bold",
+   "font_size": 32,
+   "tstyle": "dymo_tape",
+   "text_align": "left",
+   "txt_x": 7,
+   "txt_y1": 10,
+   "txt_y2": 70,
+   "text_rot": 0.0
+  },
   "Ночное видение": {
    "layout": "center_hero",
    "rows": 5,
@@ -569,6 +725,14 @@ export const CFG = {
    "streaks": 50,
    "misreg": 3,
    "copier_edge": 30,
+   "paper": 0,
+   "overprint": 0,
+   "ink2": [
+    255,
+    60,
+    140
+   ],
+   "tape": 0,
    "palette": "Nightvision (Muted Green / Phosphor)",
    "invert": false,
    "custom_colors": [
