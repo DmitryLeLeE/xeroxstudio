@@ -826,6 +826,17 @@ $("#mApply").addEventListener("click", applyManifest);
 $("#mSpread").addEventListener("click", spreadManifests);
 $("#mRandom").addEventListener("click", () => { if (M.shown.length) { selectManifest(rnd(0, M.shown.length - 1)); applyManifest(); } });
 $("#mDelete").addEventListener("click", deleteMyManifesto);
+$("#mWrite").addEventListener("click", () => { const f = $("#mNew"); f.hidden = !f.hidden; if (!f.hidden) $("#mNewTop").focus(); });
+$("#mNewCancel").addEventListener("click", () => { $("#mNew").hidden = true; });
+$("#mNewSave").addEventListener("click", () => {
+  const top = $("#mNewTop").value.trim().toUpperCase(), bottom = $("#mNewBottom").value.trim().toUpperCase();
+  if (!top || !bottom) { toast(T("Заполните обе строки", "Fill in both lines"), "err"); return; }
+  const u = userManifests();
+  if (!u.some((m) => m.top === top && m.bottom === bottom)) { u.push({ top, bottom }); ls.set("zine.manifestos", u); }
+  $("#mNewTop").value = ""; $("#mNewBottom").value = ""; $("#mNew").hidden = true;
+  $("#mQuery").value = ""; openManifest(); $("#mCat").value = "Мои"; filterManifests(); selectManifest(M.shown.length - 1);
+  toast(T("★ Сохранено в «Мои»", "★ Saved to Mine"));
+});
 $("#mList").addEventListener("keydown", (e) => {
   if (e.key === "ArrowDown") { e.preventDefault(); selectManifest(Math.min(M.shown.length - 1, M.sel + 1)); }
   if (e.key === "ArrowUp") { e.preventDefault(); selectManifest(Math.max(0, M.sel - 1)); }

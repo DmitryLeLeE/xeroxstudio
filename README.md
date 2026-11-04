@@ -32,7 +32,7 @@ engine design, one preset library and one project format:
 - **Riso overprint.** A second ink layer on another screen angle, shifted and multiplied over the first. Nine paper / ink pairs plus your own colours.
 - **Paper and tape.** Fibre and blotch texture, edge vignette, torn tape strips that get photocopied along with the page.
 - **Generation loss.** Four layouts (staggered, column, contact sheet, hero + copies); every next copy is blurrier and harsher.
-- **Manifestos.** 30 built-in English manifestos in five categories, search, your own texts, three backings (box, Dymo tape, outline), draggable caption.
+- **Manifestos.** 54 built-in English manifestos in eight categories, search, your own texts, three backings (box, Dymo tape, outline), draggable caption.
 - **Faces.** Optional black bar over the eyes and sticker cut-outs (Haar cascade; runs in-browser too).
 - **Print-ready.** PNG up to 3×, book PDF, A4 PDF with margins, **8-page mini-zine** with fold and cut lines, 1-bit PNG for stencil printing.
 - **Projects.** `.zine` files (a zip with `manifest.json` and PNGs) open in both versions. Autosave, undo / redo.
