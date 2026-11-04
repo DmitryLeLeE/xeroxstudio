@@ -36,7 +36,7 @@ def test_user_manifestos(tmp_path, monkeypatch):
 def test_broken_user_file_is_ignored(tmp_path, monkeypatch):
     monkeypatch.setenv("LOCALAPPDATA", str(tmp_path))
     import appdata
-    open(f"{appdata.data_dir()}/manifestos.json", "w").write('[{"top": 1}, "x", {"top": "a", "bottom": "b"}]')
+    open(f"{appdata.data_dir()}/manifestos.json", "w", encoding="utf-8").write('[{"top": 1}, "x", {"top": "a", "bottom": "b"}]')
     assert [i["top"] for i in manifestos.load_user()] == ["a"]
 
 

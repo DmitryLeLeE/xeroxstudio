@@ -26,5 +26,5 @@ def test_user_presets_roundtrip(tmp_path, monkeypatch):
 def test_broken_presets_file_is_ignored(tmp_path, monkeypatch):
     monkeypatch.setenv("LOCALAPPDATA", str(tmp_path))
     import appdata
-    open(f"{appdata.data_dir()}/presets.json", "w").write("{не json")
+    open(f"{appdata.data_dir()}/presets.json", "w", encoding="utf-8").write("{не json")
     assert presets.load_user() == {}
