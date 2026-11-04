@@ -1,4 +1,5 @@
 import functools
+import os
 import http.server
 import threading
 from pathlib import Path
@@ -26,7 +27,7 @@ def base_url():
 def browser():
     with pw.sync_playwright() as p:
         try:
-            b = p.chromium.launch()
+            b = getattr(p, os.environ.get("ZINE_BROWSER", "chromium")).launch()
         except Exception as e:  # браузер не установлен: python -m playwright install chromium
             pytest.skip(f"Chromium is not available: {e}")
         yield b

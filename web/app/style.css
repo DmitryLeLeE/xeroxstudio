@@ -266,3 +266,5 @@ html[data-theme="paper"] body, html[data-theme="paper"] .btn { font-family: "Rub
 @media (max-width: 520px) { .top .brand { flex: none; } .top .brand em { display: none; } .top .btn { padding-left: 8px; padding-right: 8px; } .top .brand img { flex: none; } .top { padding-left: 6px; padding-right: 6px; } }
 @media (max-width: 400px) { #btnHelp { display: none; } }
 @media (max-width: 360px) { .top .btn { min-width: 40px; padding-left: 5px; padding-right: 5px; } .top-actions { gap: 2px; } .top .brand img { width: 24px; height: 24px; } }
+
+.viewport.cmp { cursor: ew-resize; }

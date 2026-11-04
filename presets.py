@@ -58,6 +58,41 @@ BUILTIN = {
         "dot_size": 6, "angle": 15, "contrast": 2.0, "noise": 34, "streaks": 20, "misreg": 2, "loss": 28, "tilt": 3.5,
         "edge_x": 20, "edge_y": 14, "paper": 70, "tape": 85, "font": "Courier New Bold", "font_size": 32, "tstyle": "dymo_tape",
     },
+    "Диагональ-панк": {
+        "layout": "diagonal", "rows": 5, "palette": "Safety Orange (Blaze Orange / Charcoal)", "dither": "halftone", "fit_mode": "cover",
+        "dot_size": 9, "contrast": 2.8, "noise": 28, "streaks": 30, "misreg": 5, "loss": 50, "tilt": 4.0, "edge_x": 18, "edge_y": 12,
+        "font": "Impact", "font_size": 48, "tstyle": "white_box",
+    },
+    "Стопка снимков": {
+        "layout": "pile", "rows": 5, "palette": "Vintage Newsprint (Cream / Charcoal)", "dither": "halftone", "fit_mode": "cover",
+        "dot_size": 5, "angle": 15, "contrast": 1.9, "noise": 32, "streaks": 14, "misreg": 2, "loss": 20, "tilt": 6.0, "edge_x": 6, "edge_y": 5,
+        "paper": 65, "tape": 60, "font": "Courier New Bold", "font_size": 30, "tstyle": "white_box",
+    },
+    "Газетная мозаика": {
+        "layout": "mosaic", "rows": 6, "palette": "Vintage Newsprint (Cream / Charcoal)", "dither": "halftone", "fit_mode": "cover",
+        "dot_size": 5, "angle": 15, "contrast": 1.8, "noise": 36, "streaks": 10, "misreg": 1, "loss": 18, "copier_edge": 20,
+        "edge_x": 6, "edge_y": 5, "paper": 50, "font": "Times New Roman Bold", "font_size": 40, "tstyle": "white_box",
+    },
+    "Триптих-синька": {
+        "layout": "triptych", "palette": "Blueprint / Cyanotype (Navy / Cyan)", "dither": "floyd", "fit_mode": "cover",
+        "dot_size": 6, "contrast": 2.1, "noise": 14, "streaks": 10, "misreg": 1, "loss": 22, "tilt": 0.0, "edge_x": 10, "edge_y": 8,
+        "font": "Courier New Bold", "font_size": 30, "tstyle": "dymo_tape",
+    },
+    "Постер во весь лист": {
+        "layout": "full_page", "palette": "Classic B&W (Xerox)", "dither": "halftone", "fit_mode": "cover",
+        "dot_size": 9, "contrast": 2.6, "noise": 24, "streaks": 28, "misreg": 3, "loss": 0, "tilt": 0.0, "copier_edge": 45,
+        "edge_x": 14, "edge_y": 10, "font": "Impact", "font_size": 64, "tstyle": "outline",
+    },
+    "Лента кинопроб": {
+        "layout": "ribbon", "rows": 5, "palette": "Acid Cyberpunk (Neon Lime / Black)", "dither": "halftone", "fit_mode": "cover",
+        "dot_size": 7, "contrast": 2.7, "noise": 22, "streaks": 26, "misreg": 4, "loss": 35, "tilt": 0.0,
+        "font": "Consolas Bold", "font_size": 34, "tstyle": "dymo_tape",
+    },
+    "Ризо-диптих": {
+        "layout": "duo", "palette": config.CUSTOM_PALETTE, "custom_colors": ((244, 238, 224), (25, 55, 170)), "dither": "halftone", "fit_mode": "cover",
+        "dot_size": 8, "angle": 30, "contrast": 2.2, "noise": 18, "streaks": 10, "misreg": 5, "loss": 15, "tilt": 0.0,
+        "paper": 55, "overprint": 75, "ink2": (255, 60, 140), "font": "Impact", "font_size": 46, "tstyle": "white_box",
+    },
     "Ночное видение": {
         "layout": "center_hero", "rows": 5, "palette": "Nightvision (Muted Green / Phosphor)", "dither": "halftone",
         "dot_size": 6, "contrast": 2.6, "noise": 45, "streaks": 50, "misreg": 3, "loss": 40, "copier_edge": 30,

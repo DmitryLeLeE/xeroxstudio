@@ -36,7 +36,8 @@ engine design, one preset library and one project format:
 - **Faces.** Optional black bar over the eyes and sticker cut-outs (Haar cascade; runs in-browser too).
 - **Print-ready.** PNG up to 3×, book PDF, A4 PDF with margins, **8-page mini-zine** with fold and cut lines, 1-bit PNG for stencil printing.
 - **Projects.** `.zine` files (a zip with `manifest.json` and PNGs) open in both versions. Autosave, undo / redo.
-- **Nine presets.** Classic Xerox, Newsprint, Acid Riot, Punk Flyer, Cyanotype, 35 mm Contact Sheet, Night Vision, Riso Overprint, Tape Collage — or save your own.
+- **16 presets.** Classic Xerox, Newsprint, Acid Riot, Punk Flyer, Cyanotype, 35 mm Contact Sheet, Night Vision, Riso Overprint, Tape Collage, Diagonal Punk, Photo Pile, Newsprint Mosaic, Cyanotype Triptych, Full-page Poster, Film-test Ribbon, Riso Diptych — or save your own.
+- **Before / after.** Drag a divider across the sheet to compare with the original photo (browser version).
 
 ## Run it
 

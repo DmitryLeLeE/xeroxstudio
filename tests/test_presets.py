@@ -28,3 +28,16 @@ def test_broken_presets_file_is_ignored(tmp_path, monkeypatch):
     import appdata
     open(f"{appdata.data_dir()}/presets.json", "w", encoding="utf-8").write("{не json")
     assert presets.load_user() == {}
+
+
+def test_all_builtin_presets_render_and_use_known_layouts():
+    import numpy as np
+    from engine import ZineGraphicEngine
+    eng = ZineGraphicEngine()
+    img = np.random.default_rng(3).integers(0, 255, (300, 400, 3), dtype=np.uint8)
+    assert len(presets.BUILTIN) >= 16
+    for name, p in presets.BUILTIN.items():
+        assert p.get("layout", "staggered") in config.LAYOUTS.values(), name
+        st = {**config.DEFAULT_STATE, **p, "txt_top": "A", "txt_bottom": "B"}
+        out, _ = eng.render_zine_page(img, st, scale=0.3)
+        assert out.size[0] > 100, name

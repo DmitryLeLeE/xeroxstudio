@@ -131,3 +131,24 @@ def test_layouts_match_python_engine(page_factory):
     for (lay, rows, w, h), got in zip(cases, js):
         want = [list(b) for b in ZineGraphicEngine._layout_boxes(lay, w, h, rows, 12, 1.0)]
         assert got == want, (lay, rows)
+
+
+def test_before_after_compare_toggles_and_draws(page_factory):
+    pg = page_factory(width=1300, height=860)
+    wait_ready(pg)
+    pg.wait_for_timeout(800)
+    before = pg.evaluate("document.querySelector('#preview').toDataURL()")
+    pg.click("#btnCompare")
+    assert pg.evaluate("document.querySelector('#btnCompare').getAttribute('aria-pressed')") == "true"
+    after = pg.evaluate("document.querySelector('#preview').toDataURL()")
+    assert before != after  # слева нарисовано исходное фото
+    pg.click("#btnCompare")
+    assert pg.evaluate("document.querySelector('#preview').toDataURL()") == before
+
+
+def test_new_layout_presets_exist(page_factory):
+    pg = page_factory()
+    wait_ready(pg)
+    names = pg.evaluate("[...document.querySelectorAll('#presetRow select option')].map(o => o.textContent)")
+    for n in ("Diagonal Punk", "Photo Pile", "Newsprint Mosaic", "Cyanotype Triptych", "Full-page Poster", "Film-test Ribbon", "Riso Diptych"):
+        assert n in names, n
