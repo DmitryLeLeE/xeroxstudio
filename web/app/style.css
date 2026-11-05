@@ -314,13 +314,13 @@ html[data-mode="pro"] .more-btn { display: none; }
 .preset-row { position: sticky; top: 0; z-index: 5; }
 
 /* ---------- плавающие кнопки над листом */
-.hud { position: absolute; z-index: 12; right: var(--gap); top: var(--gap); display: flex; flex-direction: column; align-items: stretch; gap: 7px; width: 118px; }
-.hud .btn { justify-content: flex-start; gap: 8px; padding: 5px 10px; min-height: 36px; }
+.hud { position: absolute; z-index: 12; right: var(--gap); top: var(--gap); display: flex; flex-direction: column; align-items: stretch; gap: 7px; width: 136px; }
+.hud .btn { justify-content: flex-start; gap: 8px; padding: 5px 8px; min-height: 36px; font-size: 13px; white-space: nowrap; }
 .hud .ico { font-size: 17px; line-height: 1; width: 20px; text-align: center; font-weight: 900; }
 .hud .menu-wrap { display: block; } .hud .menu-wrap .btn { width: 100%; }
 .hud-zoom { display: flex; align-items: center; gap: 6px; }
 .hud-zoom .btn { min-width: 0; padding: 3px 8px; min-height: 30px; } .zoom { color: var(--muted); font: 700 12px "JetBrains Mono", ui-monospace, monospace; font-variant-numeric: tabular-nums; }
-.hud-scale { display: grid; gap: 3px; } .hud-scale .sel { width: 100%; font-size: 12px; padding: 3px 2px; } .hud-scale .small { font-family: "JetBrains Mono", ui-monospace, monospace; font-weight: 700; text-transform: uppercase; font-size: 11px; }
+.hud-scale { display: grid; gap: 3px; } .hud-scale .sel { width: 100%; font-size: 11px; padding: 3px 0; text-overflow: ellipsis; } .hud-scale .small { font-family: "JetBrains Mono", ui-monospace, monospace; font-weight: 700; text-transform: uppercase; font-size: 11px; }
 .menu-sm { right: calc(100% + 8px); left: auto; top: 0; min-width: 240px; }
 .menu button.toggle[aria-pressed="true"] { background: var(--accent); color: var(--on-accent); }
 .menu .more-toggle { color: var(--muted); font-size: 13px; }
@@ -359,10 +359,10 @@ html[data-theme] .top .btn:disabled { opacity: .35; }
 .top .menu { color: var(--fg); }
 
 /* ---------- ТЕЛЕФОН, портрет: лента внизу, панель выезжает снизу */
-@media (max-width: 860px) and (min-height: 521px) {
+@media (max-width: 700px) and (min-height: 521px) {
   .hide-sm { display: none !important; }
   .top { padding: 4px 8px; } .brand span { display: none; }
-  .app { --rail-h: 62px; --pages-h: 66px; --panel-h: 42dvh;
+  .app { --rail-h: 62px; --pages-h: 66px; --panel-h: clamp(230px, 38dvh, 380px);
     --b: calc(var(--rail-h) + var(--pages-h) + var(--gap) * 3 + var(--safe-b)); --l: 0px; }
   .app:not([data-fly=""]) { --l: 0px; --b: calc(var(--rail-h) + var(--panel-h) + var(--gap) * 3 + var(--safe-b)); }
   .app[data-size="tall"]:not([data-fly=""]) { --panel-h: 68dvh; }
@@ -444,3 +444,23 @@ html:not([data-theme="paper"]) .top { background: #000; }
 /* сенсорные экраны: бегунок берётся пальцем только за сам бегунок, остальное — прокрутка панели */
 .rng-touch { touch-action: pan-y; padding: 6px 0; margin: -6px 0; }
 .rng-touch input[type=range] { pointer-events: none; touch-action: pan-y; }
+
+/* ---------- средние окна: панель уже, подписи у кнопок страниц прячутся */
+@media (max-width: 1100px) {
+  .app { --drawer-w: 310px; }
+  .strip-head { display: none; } .pctl .hide-sm { display: none; } .pctl .btn { min-width: 40px; padding-left: 9px; padding-right: 9px; }
+}
+@media (pointer: coarse) {
+  html[data-theme] .top .btn, html[data-theme] .drawer-head .btn { min-height: 44px; min-width: 44px; }
+  .top .brand { min-width: 44px; min-height: 44px; justify-content: center; }
+  .pctl .btn { min-width: 42px; }
+}
+@media (pointer: coarse) {
+  .hud .btn { min-height: 44px; } .hud-zoom .btn { min-height: 44px; min-width: 44px; }
+  .sel, .inp { min-height: 44px; } .chip { min-height: 36px; padding: 6px 12px; }
+  .sheet-handle { height: 28px !important; }
+}
+@media (min-width: 701px) and (max-height: 760px) {
+  .app { --tile: 46px; } .rail { gap: 5px; } .rail button { min-height: var(--tile); padding: 3px 2px 2px; }
+  .rail button svg { width: 20px; height: 20px; }
+}

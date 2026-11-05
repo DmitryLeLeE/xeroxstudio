@@ -199,7 +199,7 @@ const SECTIONS = () => [
 
 // Панель: лента значков открывает по одной секции («иконки») или все сразу («подробно», значок «Всё»).
 let MODE = ls.get("zine.mode", "icons") === "pro" ? "pro" : "icons";
-const PHONE_MQ = matchMedia("(max-width: 860px) and (min-height: 521px)"); // узкий портрет: лента внизу
+const PHONE_MQ = matchMedia("(max-width: 700px) and (min-height: 521px)"); // узкий портрет: лента внизу
 const isPhone = () => PHONE_MQ.matches;
 function setMode(m) {
   MODE = m; ls.set("zine.mode", m);
@@ -2108,6 +2108,10 @@ $("#layerBar").addEventListener("click", (e) => {
 });
 const app = $("#app");
 $("#sheetHandle").addEventListener("click", () => { const t = app.dataset.size === "tall"; app.dataset.size = t ? "" : "tall"; $("#sheetHandle").setAttribute("aria-pressed", String(!t)); requestAnimationFrame(() => { if (V.fitted) fitView(); }); });
+document.addEventListener("keydown", (e) => { // Esc закрывает панель, если больше ничего не открыто и слой не выбран
+  if (e.key !== "Escape" || !app.dataset.fly || document.querySelector("dialog[open]") || !$("#menuFile").hidden || !$("#menuAdd").hidden || LY.sel >= 0) return;
+  if (MODE === "pro") setMode("icons"); setFly("");
+});
 $("#drawerClose").addEventListener("click", () => { if (MODE === "pro") setMode("icons"); setFly(""); });
 new ResizeObserver(() => requestAnimationFrame(drawSrc)).observe($("#srcWrap"));
 

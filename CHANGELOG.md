@@ -1,5 +1,11 @@
 # Changelog
 
+## 2.3.0
+- **Polish pass across screen sizes.** Tablets in portrait now get the side panel (the sheet no longer shrinks under a bottom sheet), narrow desktop windows compact the page buttons and panel so nothing runs off the edge, short windows get smaller ribbon tiles, the floating buttons fit their English labels.
+- **Touch.** Header, floating and page buttons, selects and the panel handle all reach the 44 px target size on touch screens.
+- **Keyboard.** Esc closes the panel.
+- New screenshots in the README and on the landing page.
+
 ## 2.2.2
 - **Phones: scrolling no longer moves sliders.** On touch screens a slider only moves when you grab its handle; touching anywhere else on the track scrolls the panel.
 

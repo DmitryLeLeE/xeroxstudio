@@ -527,3 +527,25 @@ def test_phone_sheet_handle_and_hidden_strip(page_factory):
     assert pg.evaluate("getComputedStyle(document.querySelector('#strip')).display") == "flex"
     assert pg.evaluate("document.documentElement.scrollWidth <= innerWidth")
     assert pg.errors == []
+
+
+def test_escape_closes_panel_and_gallery_is_styled(page_factory):
+    pg = page_factory(mode="icons")
+    wait_ready(pg)
+    pg.click("#rail button[data-fly=s2]")
+    assert pg.evaluate("getComputedStyle(document.querySelector('#drawer')).display") == "flex"
+    pg.keyboard.press("Escape")
+    assert pg.evaluate("getComputedStyle(document.querySelector('#drawer')).display") == "none"
+    pg.click("#rail button[data-fly=gallery]")
+    pg.wait_for_selector("#dlgGallery[open]")
+    assert pg.evaluate("getComputedStyle(document.querySelector('#galGrid')).display") == "grid"   # стили галереи на месте
+    assert pg.errors == []
+
+
+def test_tablet_portrait_uses_side_panel(page_factory):
+    pg = page_factory(mobile=True, width=768, height=1024, mode="icons")
+    wait_ready(pg)
+    pg.tap("#rail button[data-fly=s2]")
+    r = pg.evaluate("(() => { const d = document.querySelector('#drawer').getBoundingClientRect(), v = document.querySelector('#preview').getBoundingClientRect(); return [d.right, v.left, v.width]; })()")
+    assert r[0] <= r[1] + 1 and r[2] > 300           # лист рядом с панелью, а не под ней
+    assert pg.evaluate("document.documentElement.scrollWidth <= innerWidth")

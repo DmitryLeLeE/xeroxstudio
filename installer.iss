@@ -1,7 +1,7 @@
 ; Установщик Inno Setup 6. Собирается командой:  python build.py --installer
 ; (build.py сам собирает папку dist\XeroxZineStudio и передаёт версию через /DAppVersion=...)
 #ifndef AppVersion
-  #define AppVersion "2.2.2"
+  #define AppVersion "2.3.0"
 #endif
 
 [Setup]
