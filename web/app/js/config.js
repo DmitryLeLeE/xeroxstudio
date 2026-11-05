@@ -3533,6 +3533,396 @@ export const CFG = {
    "cat": "CITY",
    "top": "FLYER FOR A\nPARTY THAT NEVER HAPPENED",
    "bottom": "EVERYONE CAME"
+  },
+  {
+   "lang": "en",
+   "cat": "ХАНДРА",
+   "top": "Я В ПОРЯДКЕ",
+   "bottom": "ПРОСТО ДАВНО НЕ ПРОВЕРЯЛ"
+  },
+  {
+   "lang": "en",
+   "cat": "ХАНДРА",
+   "top": "СЕГОДНЯ НИЧЕГО\nНЕ ПРОИЗОШЛО",
+   "bottom": "И ЭТО БЫЛО ТЯЖЕЛО"
+  },
+  {
+   "lang": "en",
+   "cat": "ХАНДРА",
+   "top": "ВСТАЛ. ПОЕЛ.\nСНОВА ЛЁГ",
+   "bottom": "СЧИТАЕТСЯ ЗА ДЕНЬ"
+  },
+  {
+   "lang": "en",
+   "cat": "ХАНДРА",
+   "top": "ГРУСТЬ — ЭТО СЕРЫЙ",
+   "bottom": "КОТОРЫЙ ВДРУГ ПОЯВИЛСЯ ВО ВСЁМ"
+  },
+  {
+   "lang": "en",
+   "cat": "ХАНДРА",
+   "top": "УСТАЛОСТЬ\nНЕ ОТ ДЕЛ",
+   "bottom": "А ОТ ТОГО, ЧТО НИКТО НЕ СПРОСИЛ"
+  },
+  {
+   "lang": "en",
+   "cat": "ХАНДРА",
+   "top": "ПИШУ ТЕБЕ\nИЗ СЕРЕДИНЫ НЕДЕЛИ",
+   "bottom": "ЗДЕСЬ ВСЕГДА ВТОРНИК"
+  },
+  {
+   "lang": "en",
+   "cat": "ХАНДРА",
+   "top": "ВСЕ ДОМА.\nМНЕ ТОЖЕ ДОМА",
+   "bottom": "ЭТО НЕ ОДНО И ТО ЖЕ"
+  },
+  {
+   "lang": "en",
+   "cat": "ХАНДРА",
+   "top": "ТИХО, КАК В ЧАТЕ\nГДЕ ВСЕ ПРОЧИТАЛИ",
+   "bottom": "И НИКТО НЕ ОТВЕТИЛ"
+  },
+  {
+   "lang": "en",
+   "cat": "ХАНДРА",
+   "top": "ДУША В РЕЖИМЕ\nЭНЕРГОСБЕРЕЖЕНИЯ",
+   "bottom": "ЯРКОСТЬ 10%"
+  },
+  {
+   "lang": "en",
+   "cat": "ХАНДРА",
+   "top": "НЕ ТО ЧТОБЫ ПЛОХО",
+   "bottom": "СКОРЕЕ НИКАК"
+  },
+  {
+   "lang": "en",
+   "cat": "ХАНДРА",
+   "top": "ЗАВТРА НАЧНУ",
+   "bottom": "ГОВОРИЛ ВЧЕРА ТОЖЕ ОН"
+  },
+  {
+   "lang": "en",
+   "cat": "ХАНДРА",
+   "top": "ГОЛОВА ПОЛНА,",
+   "bottom": "А ВНУТРИ ПУСТО"
+  },
+  {
+   "lang": "en",
+   "cat": "БЕССОННИЦА",
+   "top": "03:47.\nПОТОЛОК СНОВА СМОТРИТ ПЕРВЫМ",
+   "bottom": "Я ПРОИГРАЛ"
+  },
+  {
+   "lang": "en",
+   "cat": "БЕССОННИЦА",
+   "top": "ТЕЛО ЛЕЖИТ,\nГОЛОВА В КОМАНДИРОВКЕ",
+   "bottom": "ВЕРНЁТСЯ К УТРУ ПОД УТРО"
+  },
+  {
+   "lang": "en",
+   "cat": "БЕССОННИЦА",
+   "top": "ВЕСЬ ГОРОД СПИТ",
+   "bottom": "А МЫСЛИ В НОЧНУЮ СМЕНУ"
+  },
+  {
+   "lang": "en",
+   "cat": "БЕССОННИЦА",
+   "top": "ЕЩЁ ОДНА СЕРИЯ.\nЕЩЁ ОДНА ПАЧКА СВЕТА",
+   "bottom": "ЗА ОКНОМ УЖЕ СЕРО"
+  },
+  {
+   "lang": "en",
+   "cat": "БЕССОННИЦА",
+   "top": "ПОДУШКА ТЕПЛАЯ\nС ОБЕИХ СТОРОН",
+   "bottom": "ПОВЕРНУЛСЯ — НЕ ПОМОГЛО"
+  },
+  {
+   "lang": "en",
+   "cat": "БЕССОННИЦА",
+   "top": "СНЫ ОТМЕНЕНЫ\nПО ТЕХНИЧЕСКИМ ПРИЧИНАМ",
+   "bottom": "ПРИНОСИМ ИЗВИНЕНИЯ"
+  },
+  {
+   "lang": "en",
+   "cat": "ГОРОД",
+   "top": "ПАНЕЛЬКИ, ЛАМПЫ,\nМОКРЫЙ АСФАЛЬТ",
+   "bottom": "ДОМА ДАЖЕ СТЕНЫ УСТАЛИ"
+  },
+  {
+   "lang": "en",
+   "cat": "ГОРОД",
+   "top": "ПОСЛЕДНЯЯ МАРШРУТКА\nУЕХАЛА БЕЗ НАС",
+   "bottom": "ЗНАЧИТ, ИДЁМ ПЕШКОМ"
+  },
+  {
+   "lang": "en",
+   "cat": "ГОРОД",
+   "top": "ГАРАЖИ. ЗАБОРЫ.\nНЕБО В ДЫРКУ",
+   "bottom": "ВСЁ, ЧТО ОСТАЛОСЬ ОТ ЛЕТА"
+  },
+  {
+   "lang": "en",
+   "cat": "ГОРОД",
+   "top": "ЛИФТ СНОВА СЛОМАН",
+   "bottom": "ВЫБЕРУ ЭТАЖ ПОВЫШЕ ПО ЖИЗНИ"
+  },
+  {
+   "lang": "en",
+   "cat": "ГОРОД",
+   "top": "ПОДЪЕЗД ПАХНЕТ\nЧУЖИМ УЖИНОМ",
+   "bottom": "МОЙ ПАХНЕТ ПУСТОТОЙ"
+  },
+  {
+   "lang": "en",
+   "cat": "ГОРОД",
+   "top": "ОСЕНЬ ОТМЕНЯЕТ\nВСЕ ПЛАНЫ",
+   "bottom": "КРОМЕ ТЕХ, ЧТО ПОД ОДЕЯЛОМ"
+  },
+  {
+   "lang": "en",
+   "cat": "ГОРОД",
+   "top": "ФОНАРЬ МИГАЕТ\nПО-СВОЕМУ",
+   "bottom": "ПОНИМАЮ ЕГО"
+  },
+  {
+   "lang": "en",
+   "cat": "ГОРОД",
+   "top": "РАЙОН СПИТ\nПОД ЛЕНТОЙ ДОЖДЯ",
+   "bottom": "Я В НЁМ ЗА ЧЕРТОЙ"
+  },
+  {
+   "lang": "en",
+   "cat": "ИТ-ВЫГОРАНИЕ",
+   "top": "ЗАДАЧА ЗАКРЫТА.\nЛЮДИ — НЕТ",
+   "bottom": "СТАТУС: ЖДЁТ РЕВЬЮ"
+  },
+  {
+   "lang": "en",
+   "cat": "ИТ-ВЫГОРАНИЕ",
+   "top": "В ПРОДЕ ВСЁ ХОРОШО",
+   "bottom": "ВО МНЕ — КРИТИЧЕСКАЯ ОШИБКА"
+  },
+  {
+   "lang": "en",
+   "cat": "ИТ-ВЫГОРАНИЕ",
+   "top": "ОТВЕЧАЮ\nНА ПИСЬМА В 2 НОЧИ",
+   "bottom": "РЕЗУЛЬТАТ — ТОЛЬКО ХУЖЕ"
+  },
+  {
+   "lang": "en",
+   "cat": "ИТ-ВЫГОРАНИЕ",
+   "top": "ДЕДЛАЙН ПЕРЕНЕСЁН.\nНА ЭТОТ РАЗ — НА ВЧЕРА",
+   "bottom": "НЕ СПРАШИВАЙТЕ КАК"
+  },
+  {
+   "lang": "en",
+   "cat": "ИТ-ВЫГОРАНИЕ",
+   "top": "ВЫХОДНЫЕ\nЭТО ПРОСТО\nДЕНЬ БЕЗ КОММИТОВ",
+   "bottom": "НЕ ОТДЫХ"
+  },
+  {
+   "lang": "en",
+   "cat": "ИТ-ВЫГОРАНИЕ",
+   "top": "ПЕРЕЗАГРУЗИ МЕНЯ",
+   "bottom": "ПОЖАЛУЙСТА, БЕЗ ПОТЕРИ ДАННЫХ"
+  },
+  {
+   "lang": "en",
+   "cat": "ИТ-ВЫГОРАНИЕ",
+   "top": "КОД РАБОТАЕТ.\nНИКТО НЕ ЗНАЕТ ПОЧЕМУ",
+   "bottom": "КАК И СО МНОЙ"
+  },
+  {
+   "lang": "en",
+   "cat": "ИТ-ВЫГОРАНИЕ",
+   "top": "ЗВОНОК В 18:00\nО ТОМ, ЧТО МОЖНО БЫЛО В ПОЧТЕ",
+   "bottom": "ЖИЗНЬ ТОЖЕ МОГЛА БЫ"
+  },
+  {
+   "lang": "en",
+   "cat": "ПАМЯТЬ",
+   "top": "ПЛЁНКА ДЕРЖИТ\nТО, ЧТО Я ОТПУСТИЛ",
+   "bottom": "ТЕПЕРЬ ЖДЁТ ПРОЯВИТЕЛЯ"
+  },
+  {
+   "lang": "en",
+   "cat": "ПАМЯТЬ",
+   "top": "ТЫ — ЛУЧШАЯ\nИЗ МОИХ ПОМЕХ",
+   "bottom": "В СИГНАЛЕ ТЕБЯ БОЛЬШЕ"
+  },
+  {
+   "lang": "en",
+   "cat": "ПАМЯТЬ",
+   "top": "КОПИЯ КОПИИ\nМОЕГО ЛЕТА",
+   "bottom": "ПОЧТИ УЖЕ НЕ ВИДНО ЛИЦ"
+  },
+  {
+   "lang": "en",
+   "cat": "ПАМЯТЬ",
+   "top": "СТАРЫЕ ФОТО\nМОЛЧАТ ГРОМЧЕ ВСЕХ",
+   "bottom": "ПЕРЕСМОТРЮ ЕЩЁ РАЗ"
+  },
+  {
+   "lang": "en",
+   "cat": "ПАМЯТЬ",
+   "top": "МЫ БЫЛИ ЗДЕСЬ.\nЭТО ТОЧНО",
+   "bottom": "ПО ПЯТНУ ОТ КОФЕ ВИДНО"
+  },
+  {
+   "lang": "en",
+   "cat": "ПАМЯТЬ",
+   "top": "ПИСАЛ ТЕБЕ\nТРИ РАЗА И СТЁР",
+   "bottom": "ЧЕТВЁРТЫЙ — В ЗИН"
+  },
+  {
+   "lang": "en",
+   "cat": "ПАМЯТЬ",
+   "top": "ТЕПЛО ОТ КСЕРОКСА\nЕДИНСТВЕННОЕ ТЕПЛО СЕГОДНЯ",
+   "bottom": "ЧЕСТНО"
+  },
+  {
+   "lang": "en",
+   "cat": "ЗИН",
+   "top": "СДЕЛАЙ ПЛОХО.\nСДЕЛАЙ СЕЙЧАС",
+   "bottom": "ХОРОШО ПОДОЖДЁТ"
+  },
+  {
+   "lang": "en",
+   "cat": "ЗИН",
+   "top": "ТОНЕР ЗАКАНЧИВАЕТСЯ",
+   "bottom": "МОЖЕТ, ТАК И НАДО"
+  },
+  {
+   "lang": "en",
+   "cat": "ЗИН",
+   "top": "ОДИН ОРИГИНАЛ",
+   "bottom": "ТЫСЯЧА СОУЧАСТНИКОВ"
+  },
+  {
+   "lang": "en",
+   "cat": "ЗИН",
+   "top": "НЕ ВЫКЛАДЫВАЙ В СЕТЬ.\nРАСКЛЕЙ НА ОСТАНОВКЕ",
+   "bottom": "ПУСТЬ ПРОЧТУТ ПОД ДОЖДЁМ"
+  },
+  {
+   "lang": "en",
+   "cat": "ЗИН",
+   "top": "ЗАЛОМ — ЭТО КОРЕШОК",
+   "bottom": "СКРЕПКА — ПЕРЕПЛЁТ"
+  },
+  {
+   "lang": "en",
+   "cat": "ЗИН",
+   "top": "ПЕЧАТАЮ ДЛЯ ТЕХ,\nКТО НЕ ГОВОРИТ ВСЛУХ",
+   "bottom": "ЧИТАЮ ИХ МОЛЧАНИЕ"
+  },
+  {
+   "lang": "en",
+   "cat": "ЗИН",
+   "top": "ЛУЧШЕ КРИВО,\nЧЕМ НИКОГДА",
+   "bottom": "ДАЖЕ ЕСЛИ НИКТО НЕ УВИДИТ"
+  },
+  {
+   "lang": "en",
+   "cat": "ЗИН",
+   "top": "ЭТО НЕ ИСКУССТВО.\nЭТО ЛИСТОК",
+   "bottom": "С МОИМ КРИКОМ ВНУТРИ"
+  },
+  {
+   "lang": "en",
+   "cat": "GLOOM",
+   "top": "I'M FINE.\nTHE LIGHT IS JUST LOW",
+   "bottom": "SO IS EVERYTHING ELSE"
+  },
+  {
+   "lang": "en",
+   "cat": "GLOOM",
+   "top": "SLEEP WELL\nWHEN YOU CAN",
+   "bottom": "I STILL HAVE THE WINDOW"
+  },
+  {
+   "lang": "en",
+   "cat": "GLOOM",
+   "top": "WEEKDAYS ARE A LOOP",
+   "bottom": "WEEKENDS ARE THE SAME LOOP, QUIETER"
+  },
+  {
+   "lang": "en",
+   "cat": "GLOOM",
+   "top": "EMPTY INBOX.\nEMPTY ROOM",
+   "bottom": "FULL SCREEN BRIGHTNESS"
+  },
+  {
+   "lang": "en",
+   "cat": "GLOOM",
+   "top": "3 A.M. THOUGHTS\nARE ALWAYS OVERTIME",
+   "bottom": "NOBODY PAYS FOR THEM"
+  },
+  {
+   "lang": "en",
+   "cat": "GLOOM",
+   "top": "NOTHING IS WRONG",
+   "bottom": "THAT IS THE WRONG PART"
+  },
+  {
+   "lang": "en",
+   "cat": "GLOOM",
+   "top": "SOFT STATIC\nIN THE CHEST",
+   "bottom": "SCAN AGAIN. STILL GREY"
+  },
+  {
+   "lang": "en",
+   "cat": "GLOOM",
+   "top": "I WANT TO BE\nA PHOTOCOPY",
+   "bottom": "NOBODY EXPECTS A COPY TO FEEL"
+  },
+  {
+   "lang": "en",
+   "cat": "GLOOM",
+   "top": "EVERY DAY IS A\nLOW-RES SCAN OF YESTERDAY",
+   "bottom": "MORE NOISE EACH TIME"
+  },
+  {
+   "lang": "en",
+   "cat": "GLOOM",
+   "top": "WRITE IT DOWN.\nPRINT IT. LET IT GO",
+   "bottom": "THE PAPER CAN CARRY IT"
+  },
+  {
+   "lang": "en",
+   "cat": "ROOT",
+   "top": "SUDO MAKE ME\nFEEL SOMETHING",
+   "bottom": "PERMISSION DENIED"
+  },
+  {
+   "lang": "en",
+   "cat": "ROOT",
+   "top": "ALL SYSTEMS NOMINAL.\nONE USER OFFLINE",
+   "bottom": "NO TICKET OPENED"
+  },
+  {
+   "lang": "en",
+   "cat": "ROOT",
+   "top": "REBOOT THE WORLD.\nKEEP MY DATA",
+   "bottom": "ERROR: NOT FOUND"
+  },
+  {
+   "lang": "en",
+   "cat": "ROOT",
+   "top": "I SPEAK FLUENT\nCOMMAND LINE",
+   "bottom": "AND NO SMALL TALK"
+  },
+  {
+   "lang": "en",
+   "cat": "ROOT",
+   "top": "NO SIGNAL.\nNO PROBLEM",
+   "bottom": "THE MACHINE IS LISTENING ANYWAY"
+  },
+  {
+   "lang": "en",
+   "cat": "ROOT",
+   "top": "EVERY PASSWORD IS A\nSMALL CONFESSION",
+   "bottom": "MINE IS OLD AND TIRED"
   }
  ],
  "WARPS": [

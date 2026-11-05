@@ -580,3 +580,14 @@ html[data-theme="robot"] .rail button:first-child, html[data-theme="robot"] .rai
 html[data-theme="robot"] .th { border-color: #1d5a1d; box-shadow: none; }
 html[data-theme="robot"] .ghost { border-color: #ff1f3dcc; } html[data-theme="robot"] .ghost::after { background: #ff1f3d; color: #000; }
 html[data-theme="robot"] ::selection { background: #00ff6a; color: #000; }
+html[data-theme="robot"] .rail .rail-all { background: #000; color: #00ff6a; border-color: #00ff6a; }
+html[data-theme="robot"] .rail .rail-all[aria-pressed="true"] { background: #00ff6a; color: #000; }
+/* зоны нажатия не меньше 36px (проверка UX) */
+#pgNew, #pgDup, #pgDel, #pgLeft, #pgRight, #btn100, #expScale { min-height: 36px; }
+#pgLeft, #pgRight, #btn100 { min-width: 38px; }
+html[data-theme="usa"] .rail .rail-all { background: #0b1030; color: #ffd21f; }
+html[data-theme="usa"] .rail .rail-all[aria-pressed="true"] { background: #e8222d; color: #fff; }
+html[data-theme="robot"] .top .btn { border-color: #1d5a1d; color: var(--fg); background: #000; }
+html[data-theme="robot"] .top .btn:hover { border-color: #00ff6a; color: #00ff6a; }
+html[data-theme="robot"] .top .btn.pink { border-color: #00ff6a; background: #00ff6a; color: #000; }
+html[data-theme="robot"] .brand em { background: #00ff6a; color: #000; border-radius: 0; }

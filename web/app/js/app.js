@@ -223,13 +223,51 @@ const ICONS = {
   s6: '<text x="12" y="17" text-anchor="middle" font-size="14" font-weight="800" fill="currentColor" stroke="none">Aa</text>',
   list: '<path d="M4 6h16M4 12h16M4 18h16"/>',
 };
+// Свои наборы значков под каждую тему: «Америка» — жирные, с заливкой и звёздами; «fsociety» — квадратные, терминальные; бумага и тёмная — рисованные.
+const ICON_SETS = {
+  usa: {
+    gallery: '<path fill="currentColor" d="M12 2.6l2.8 6 6.6.8-4.9 4.5 1.3 6.5L12 17.1l-5.8 3.3 1.3-6.5L2.6 9.4l6.6-.8z"/>',
+    photo: '<path d="M8 7l1.6-3h4.8L16 7"/><rect x="2.5" y="7" width="19" height="13" rx="1"/><circle cx="12" cy="13.5" r="3.6" fill="currentColor"/>',
+    s0: '<rect x="3" y="4" width="18" height="16"/><path d="M11 4v0M3 9h18M3 14h18M3 19h18"/><rect x="3" y="4" width="8" height="5" fill="currentColor"/>',
+    s1: '<path d="M7 2.5v14.5h14.5"/><path d="M2.5 7H17v14.5"/><rect x="10" y="10" width="3" height="3" fill="currentColor"/>',
+    s2: '<g fill="currentColor" stroke="none"><circle cx="6.5" cy="6.5" r="3"/><circle cx="16" cy="6.5" r="1.8"/><circle cx="6.5" cy="16" r="1.8"/><circle cx="16" cy="16" r="3"/><circle cx="21" cy="21" r="1.2"/></g>',
+    s3: '<path fill="currentColor" d="M12 2.5s6.5 6.8 6.5 11.5a6.5 6.5 0 0 1-13 0C5.5 9.3 12 2.5 12 2.5z"/>',
+    s4: '<path fill="currentColor" fill-opacity=".18" d="M4 3h16v15l-2 3-2-3-2 3-2-3-2 3-2-3-2 3-2-3z"/><path d="M8 9h8M8 13h5"/>',
+    s5: '<path fill="currentColor" d="M12 2.5l9.5 5-9.5 5-9.5-5z"/><path d="M2.5 12.5l9.5 5 9.5-5"/><path d="M2.5 17l9.5 5 9.5-5"/>',
+    s6: '<text x="12" y="18" text-anchor="middle" font-size="17" font-weight="900" font-family="Impact, Arial Black, sans-serif" fill="currentColor" stroke="none">Aa</text>',
+    list: '<path d="M8 6h13M8 12h13M8 18h13"/><path fill="currentColor" d="M3 4.5h2v3H3zM3 10.5h2v3H3zM3 16.5h2v3H3z"/>',
+    theme: '<path fill="currentColor" d="M12 2.6l2.8 6 6.6.8-4.9 4.5 1.3 6.5L12 17.1l-5.8 3.3 1.3-6.5-4.9-4.5 6.6-.8z"/>',
+  },
+  robot: {
+    gallery: '<path d="M7 4H3.5v16H7M17 4h3.5v16H17"/><path d="M12 7.5v9M8.2 9.7l7.6 4.6M15.8 9.7l-7.6 4.6"/>',
+    photo: '<path d="M3 4h18v16H3z"/><path d="M3 16l5-5 4 4 3-3 6 6"/><path fill="currentColor" d="M15 7h3v3h-3z"/>',
+    s0: '<path d="M3 3h18v18H3zM9 3v18M15 3v18M3 9h18M3 15h18"/>',
+    s1: '<path d="M6 2v16h16M2 6h16v16"/><path d="M12 10v4M10 12h4"/>',
+    s2: '<g fill="currentColor" stroke="none"><path d="M4 4h5v5H4zM15 4h3v3h-3zM4 15h3v3H4zM13 13h7v7h-7z"/></g>',
+    s3: '<path d="M5 20V11M12 20V4M19 20v-6" stroke-width="3.2"/>',
+    s4: '<path d="M3 5h12M9 10h12M3 15h8M14 15h7M6 20h10"/>',
+    s5: '<path d="M12 3l9 4-9 4-9-4z"/><path d="M3 12l9 4 9-4M3 17l9 4 9-4"/>',
+    s6: '<path d="M4 5h16M12 5v14M8 19h8"/><path fill="currentColor" d="M18 17h3v3h-3z"/>',
+    list: '<path d="M4 6l4 4-4 4M11 18h9"/>',
+    theme: '<path d="M3 4h18v16H3z"/><path d="M7 9l3 3-3 3M12 15h5"/>',
+  },
+  paper: { theme: '<circle cx="12" cy="12" r="8.5"/><path fill="currentColor" d="M12 3.5a8.5 8.5 0 0 0 0 17z"/>' },
+  dark: { theme: '<path fill="currentColor" d="M20 14.5A8.5 8.5 0 0 1 9.5 4a8.5 8.5 0 1 0 10.5 10.5z"/>' },
+};
+const ICON_STYLE = { usa: 'stroke-width="2.4" stroke-linecap="square" stroke-linejoin="miter"', robot: 'stroke-width="1.7" stroke-linecap="square" stroke-linejoin="miter"' };
+const curTheme = () => document.documentElement.dataset.theme || "usa";
+const iconSvg = (id) => `<svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" ${ICON_STYLE[curTheme()] || 'stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"'} aria-hidden="true">${(ICON_SETS[curTheme()] || {})[id] || ICONS[id] || ""}</svg>`;
+function applyIconTheme() {
+  $$("#rail button").forEach((b) => { const sv = b.querySelector("svg"); if (sv) sv.outerHTML = iconSvg(b.dataset.fly || "list"); });
+  const tb = $("#btnTheme"); if (tb) tb.innerHTML = iconSvg("theme");
+}
 let RAIL_TITLES = {};
 function buildRail() {
   const rail = $("#rail"); rail.textContent = ""; RAIL_TITLES = {};
   const names = [T("Фото", "Photo"), T("Сетка", "Grid"), T("Кадры", "Frames"), T("Растр", "Toner"), T("Цвет", "Colour"), T("Износ", "Wear"), T("Слои", "Layers"), T("Текст", "Text")];
   const items = [["gallery", T("Стили", "Styles"), T("Галерея стилей и случайных вариантов", "Gallery of styles and random variations")],
     ["photo", names[0], T("Фото страницы", "Page photo")], ...[0, 1, 2, 3, 4, 5, 6].map((i) => [`s${i}`, names[i + 1], SECTIONS()[i].title.replace(/^\d+\.\s*/, "")])];
-  const svg = (id) => `<svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ICONS[id]}</svg>`;
+  const svg = iconSvg;
   for (const [id, label, tip] of items) {
     RAIL_TITLES[id] = label;
     const b = document.createElement("button"); b.type = "button"; b.dataset.fly = id; b.title = tip; b.setAttribute("aria-label", tip);
@@ -247,6 +285,7 @@ function buildRail() {
   m.innerHTML = `${svg("list")}<span>${T("Всё", "All")}</span>`;
   m.addEventListener("click", () => { if (MODE === "pro") { setMode("icons"); setFly(""); } else setMode("pro"); });
   rail.append(m);
+  applyIconTheme();
 }
 function setFly(id, remember = true) {
   if (remember && id !== "all") ls.set("zine.fly", id || "");

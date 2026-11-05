@@ -4,12 +4,12 @@ import manifestos
 
 def test_builtin_library_is_complete():
     items = manifestos.builtin()
-    assert len(items) == len(config.ZINE_QUOTES) >= 54
+    assert len(items) == len(config.ZINE_QUOTES) >= 110
     assert {i["lang"] for i in items} == {"en"}
     for i in items:
         assert i["top"] and i["bottom"] and i["cat"], i
         assert "[" not in i["top"], "тег категории не должен попадать в текст"
-    assert manifestos.categories(items) == ["VISION", "SURVEILLANCE", "MEMORY", "BRUTAL", "POST-PUNK", "COPIER", "DIY", "CITY"]
+    assert manifestos.categories(items) == ["VISION", "SURVEILLANCE", "MEMORY", "BRUTAL", "POST-PUNK", "COPIER", "DIY", "CITY", "ХАНДРА", "БЕССОННИЦА", "ГОРОД", "ИТ-ВЫГОРАНИЕ", "ПАМЯТЬ", "ЗИН", "GLOOM", "ROOT"]
 
 
 def test_filter_by_source_category_and_query():

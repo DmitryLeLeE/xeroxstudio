@@ -48,18 +48,18 @@ def test_all_builtin_presets_render(page_factory):
     assert dark > 100
 
 
-def test_manifesto_library_has_54_and_write_your_own(page_factory):
+def test_manifesto_library_has_119_and_write_your_own(page_factory):
     pg = page_factory(width=1440, height=860)
     wait_ready(pg)
     pg.keyboard.press("Control+m")
     pg.wait_for_selector("dialog[open]")
-    assert pg.inner_text("#mCount").startswith("54 of 54")
+    assert pg.inner_text("#mCount").startswith("119 of 119")
     pg.click("#mWrite")
     pg.fill("#mNewTop", "make noise\nnot content")
     pg.fill("#mNewBottom", "print it yourself")
     pg.click("#mNewSave")
     pg.wait_for_timeout(300)
-    assert pg.inner_text("#mCount").startswith("1 of 55")
+    assert pg.inner_text("#mCount").startswith("1 of 120")
     assert "PRINT IT YOURSELF" in pg.inner_text("#mPrev")
     # кнопка закрытия не перекрыта другими элементами
     covered = pg.evaluate("""() => { const e = document.querySelector('dialog[open] .dlg-head button'); const r = e.getBoundingClientRect();
