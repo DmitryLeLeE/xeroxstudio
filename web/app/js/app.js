@@ -215,6 +215,28 @@ function setMode(m) {
   $$("#sections details.sect").forEach((d, i) => { d.open = m === "pro" && isPhone() ? i === 0 : true; });
   if (m === "pro") setFly("all", false); else if (app.dataset.fly === "all") setFly("", false);
 }
+const HINTS = {
+  bright: ["Светлее: меньше чёрного на листе", "Lighter: less black on the sheet"],
+  loss: ["Каждая следующая копия мутнее и грубее", "Every next copy gets blurrier and rougher"],
+  edge_x: ["Насколько неровно «оторван» край кадра", "How ragged the torn frame edge is"], edge_y: ["Насколько неровно «оторван» край кадра", "How ragged the torn frame edge is"],
+  tape: ["Полоски скотча на углах кадров", "Strips of tape on the frame corners"],
+  dot_size: ["Крупнее точки: грубее и заметнее зерно", "Bigger dots: a coarser, more visible grain"],
+  angle: ["Поворот сетки точек", "Rotation of the dot grid"],
+  contrast: ["Выше: больше чистого чёрного и белого", "Higher: more pure black and white"],
+  noise: ["Случайные крапинки тонера", "Random toner speckle"],
+  streaks: ["Тёмные полосы вдоль листа, как от грязного стекла", "Dark lines down the sheet, like dirty glass"],
+  misreg: ["Сдвиг слоёв краски друг относительно друга", "Ink layers shifted against each other"],
+  copier_edge: ["Чёрная кайма по краю листа, как у настоящего копира", "Dark rim along the sheet edge, like a real copier"],
+  paper: ["Зернистость и неровности бумаги", "Grain and unevenness of the paper"],
+  overprint: ["Добавляет вторую краску поверх первой", "Adds a second ink over the first"],
+  fold: ["Линия сгиба посередине листа", "A crease line across the middle of the sheet"],
+  stains: ["Пятна от кофе и жира", "Coffee and grease marks"], dust: ["Пылинки и волоски на стекле", "Specks and hairs on the glass"],
+  ghost: ["Бледный повтор картинки ниже по листу", "A faint repeat of the image further down"],
+  bands: ["Тёмные полосы поперёк, когда кончается тонер", "Dark bands across the sheet when toner runs low"],
+  smear: ["Одна строка размазана вниз: бумага заела", "One row smeared downward: a paper jam"],
+  gutter: ["Тёмная тень посередине, как при копировании книги", "A dark shadow in the middle, like copying a book"],
+  recopy: ["Лист перекопирован несколько раз подряд", "The sheet re-copied several times in a row"],
+};
 // Лента значков
 const ICONS = {
   gallery: '<path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8z"/><path d="M19 16l.7 2 2 .7-2 .7-.7 2-.7-2-2-.7 2-.7z"/>',
@@ -287,7 +309,7 @@ function buildRail() {
   RAIL_TITLES.all = T("Все настройки", "All settings");
   const m = document.createElement("button"); m.type = "button"; m.className = "rail-all"; m.title = T("Все настройки списком", "All settings in one list");
   m.setAttribute("aria-label", m.title);
-  m.innerHTML = `${svg("list")}<span>${T("Всё", "All")}</span>`;
+  m.innerHTML = `${svg("list")}<span>${T("Список", "List")}</span>`;
   m.addEventListener("click", () => { if (MODE === "pro") { setMode("icons"); setFly(""); } else setMode("pro"); });
   rail.append(m);
   applyIconTheme();
@@ -360,7 +382,7 @@ function buildControl(it) {
     ctlEls[it.k] = { el: sel };
   } else if (it.t === "range") {
     const dec = decimals(it.step);
-    wrap.innerHTML = `<div class="ctl-h"><label for="${id}">${it.label}</label><output></output></div>`;
+    wrap.innerHTML = `<div class="ctl-h"><label for="${id}">${it.label}</label><output></output></div>${HINTS[it.k] ? `<small class="ctl-hint">${HINTS[it.k][LANG === "ru" ? 0 : 1]}</small>` : ""}`;
     const inp = document.createElement("input");
     inp.type = "range"; inp.id = id; inp.min = it.min; inp.max = it.max; inp.step = it.step;
     const out = $("output", wrap);
@@ -1364,6 +1386,10 @@ async function addPhotos(files) {
   const n = loaded.length;
   toast((n === 1 ? T(`Фото загружено: ${loaded[0][0].name}`, `Photo loaded: ${loaded[0][0].name}`) : T(`Загружено фото: ${n} (добавлено страниц: ${n - 1})`, `Loaded ${n} photos (${n - 1} pages added)`)) +
     (failed.length ? T(` · не открылись: ${failed.length}`, ` · failed: ${failed.length}`) : ""), failed.length ? "err" : "ok");
+  if (!ls.get("zine.hint.move", false)) { // один раз подсказываем, как двигать объекты руками
+    ls.set("zine.hint.move", true);
+    setTimeout(() => toast(T("Хочешь двигать фото и подписи руками? Нажми «Слои» (L). Не знаешь, с чего начать? Кнопка 🎲 Remix.", "Want to move the photo and captions by hand? Press “Layers” (L). Not sure where to start? Hit 🎲 Remix."), "ok", 6500), 2600);
+  }
 }
 
 function transformPhoto(kind) {
@@ -2227,7 +2253,7 @@ function menuItems() {
     [T("Применить стиль страницы ко всем", "Apply this page's style to all pages"), applyStyleToAll],
     [T("Библиотека манифестов…", "Manifesto library…"), openManifest, "Ctrl+M"],
     "hr",
-    ...(isPhone() ? [[T("Тема: бумага / тёмная", "Theme: paper / dark"), () => $("#btnTheme").click()], [T("Язык: English", "Language: Русский"), () => $("#btnLang").click()]] : []),
+    ...(isPhone() ? [...THEMES().map(([id, name]) => [T("Тема: ", "Theme: ") + name, () => setTheme(id)]), [T("Язык: English", "Language: Русский"), () => $("#btnLang").click()]] : []),
     [T("Гайд для новичков", "Beginner's guide"), () => showGuide(0)],
     [T("Горячие клавиши", "Keyboard shortcuts"), showHelp, "F1"],
     [T("О программе и лицензии", "About & licenses"), showAbout],
@@ -2405,12 +2431,31 @@ $("#wPhoto").addEventListener("click", () => { closeWelcome(); $("#fileImg").cli
 $("#wCam").addEventListener("click", () => { closeWelcome(); $("#fileCam").click(); });
 $("#wSample").addEventListener("click", closeWelcome);
 if (!TOUCH) $("#wCam").hidden = true;
-$("#btnTheme").addEventListener("click", () => {
-  const order = ["usa", "paper", "dark", "robot"], cur = document.documentElement.dataset.theme, next = order[(order.indexOf(cur) + 1) % order.length];
-  document.documentElement.dataset.theme = next; ls.set("zine.theme", next);
-  document.querySelector('meta[name="theme-color"]').setAttribute("content", next === "paper" ? "#f1ece0" : next === "usa" ? "#081040" : next === "robot" ? "#050605" : "#121212");
-  toast(T({ usa: "Тема: Америка × терминал", paper: "Тема: бумага", dark: "Тема: тёмная", robot: "Тема: fsociety (терминал)" }[next], { usa: "Theme: Americana × terminal", paper: "Theme: paper", dark: "Theme: dark", robot: "Theme: fsociety (terminal)" }[next]), "ok", 1200);
+const THEMES = () => [["usa", T("Америка × терминал", "Americana × terminal"), T("яркая, звёзды и полосы", "bold, stars and stripes")], ["paper", T("Бумага", "Paper"), T("светлая, как ксерокс-лист", "light, like a copy sheet")], ["dark", T("Тёмная", "Dark"), T("спокойная, для ночи", "calm, for night work")], ["robot", T("fsociety", "fsociety"), T("чёрный терминал, зелёный шрифт", "black terminal, green type")]];
+const THEME_COLOR = { usa: "#081040", paper: "#f1ece0", dark: "#121212", robot: "#050605" };
+function setTheme(t, quiet) {
+  if (!THEME_COLOR[t]) t = "usa";
+  document.documentElement.dataset.theme = t; ls.set("zine.theme", t);
+  document.querySelector('meta[name="theme-color"]').setAttribute("content", THEME_COLOR[t]);
+  applyIconTheme(); buildThemeMenu();
+  if (!quiet) toast(T("Тема: ", "Theme: ") + THEMES().find((x) => x[0] === t)[1], "ok", 1200);
+}
+function buildThemeMenu() {
+  const m = $("#menuTheme"); if (!m) return; m.textContent = "";
+  const cur = document.documentElement.dataset.theme;
+  for (const [id, name, desc] of THEMES()) {
+    const b = document.createElement("button"); b.type = "button"; b.setAttribute("role", "menuitemradio"); b.setAttribute("aria-checked", String(id === cur));
+    b.innerHTML = "<span></span><kbd></kbd>"; $("span", b).textContent = (id === cur ? "● " : "○ ") + name; $("kbd", b).textContent = desc;
+    b.addEventListener("click", () => { m.hidden = true; $("#btnTheme").setAttribute("aria-expanded", "false"); setTheme(id); });
+    m.append(b);
+  }
+}
+$("#btnTheme").addEventListener("click", (e) => {
+  e.stopPropagation(); closeMenu();
+  const m = $("#menuTheme"), open = m.hidden; buildThemeMenu(); m.hidden = !open; $("#btnTheme").setAttribute("aria-expanded", String(open));
+  if (open) $("button", m).focus();
 });
+document.addEventListener("click", (e) => { if (!e.target.closest(".menu-wrap")) { const m = $("#menuTheme"); if (m) { m.hidden = true; $("#btnTheme").setAttribute("aria-expanded", "false"); } } });
 $("#fileProj").addEventListener("change", (e) => { const f = e.target.files[0]; e.target.value = ""; if (f) openProjectFile(f); });
 
 // ---------------------------------------------------------------- кнопки

@@ -603,3 +603,7 @@ html[data-theme="usa"] .rail .rail-all { background: #0b1030 !important; color: 
 html[data-theme="usa"] .rail .rail-all[aria-pressed="true"] { background: #e8222d !important; color: #fff !important; }
 html[data-theme="usa"] .hud-scale, html[data-theme="usa"] .hud-scale * { color: #fff; }
 html[data-theme="usa"] .hud-scale select { color: var(--fg); }
+
+.ctl-hint { display: block; margin: -1px 0 5px; font-size: 11px; line-height: 1.3; color: var(--muted); }
+#menuTheme { min-width: 280px; }
+#menuTheme kbd { white-space: normal; text-align: right; }

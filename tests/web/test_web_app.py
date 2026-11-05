@@ -16,21 +16,34 @@ def test_app_loads_clean_with_usa_theme_and_landmarks(page_factory):
     assert pg.evaluate("document.querySelector('canvas#preview').getAttribute('role')") == "img"
 
 
-def test_theme_toggle_persists(page_factory):
+def test_theme_menu_lists_four_named_themes_and_switches_icons(page_factory):
     pg = page_factory()
     wait_ready(pg)
+    before = pg.evaluate("document.querySelector('#rail button svg').outerHTML")
     pg.click("#btnTheme")
-    assert pg.evaluate("document.documentElement.dataset.theme") == "paper"
-    pg.click("#btnTheme")
-    assert pg.evaluate("document.documentElement.dataset.theme") == "dark"
-    assert pg.evaluate("localStorage.getItem('zine.theme')") == '"dark"'
+    assert pg.evaluate("document.querySelectorAll('#menuTheme button').length") == 4
+    pg.click("#menuTheme button:nth-child(4)")  # fsociety
+    assert pg.evaluate("document.documentElement.dataset.theme") == "robot"
+    assert pg.evaluate("localStorage.getItem('zine.theme')") == '"robot"'
+    assert pg.evaluate("document.querySelector('#rail button svg').outerHTML") != before  # значки сменились без перезагрузки
     pg.reload()
     wait_ready(pg)
-    assert pg.evaluate("document.documentElement.dataset.theme") == "dark"
-    pg.click("#btnTheme")
     assert pg.evaluate("document.documentElement.dataset.theme") == "robot"
     pg.click("#btnTheme")
-    assert pg.evaluate("document.documentElement.dataset.theme") == "usa"
+    pg.click("#menuTheme button:nth-child(2)")  # бумага
+    assert pg.evaluate("document.documentElement.dataset.theme") == "paper"
+    assert pg.evaluate("document.querySelector('#menuTheme').hidden") is True
+
+
+def test_jargon_sliders_have_plain_hints(page_factory):
+    pg = page_factory(lang="ru")
+    wait_ready(pg)
+    hints = pg.evaluate("[...document.querySelectorAll('.ctl-hint')].map(e => e.textContent)")
+    assert len(hints) >= 12 and all(len(h) > 10 for h in hints)
+    pg2 = page_factory(lang="en")
+    wait_ready(pg2)
+    en = pg2.evaluate("[...document.querySelectorAll('.ctl-hint')].map(e => e.textContent)")
+    assert len(en) == len(hints) and not any("а" <= c.lower() <= "я" for h in en for c in h)
 
 
 def test_all_builtin_presets_render(page_factory):

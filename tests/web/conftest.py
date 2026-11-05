@@ -44,7 +44,7 @@ def page_factory(browser, base_url):
         if mobile:
             kw = dict(viewport={"width": width, "height": height}, is_mobile=True, has_touch=True, device_scale_factor=2)
         ctx = browser.new_context(accept_downloads=True, **kw)
-        init = f"localStorage.setItem('zine.lang','{lang}');localStorage.setItem('zine.mode', JSON.stringify('{mode}'));localStorage.setItem('zine.hint.layers','true');"
+        init = f"localStorage.setItem('zine.lang','{lang}');localStorage.setItem('zine.mode', JSON.stringify('{mode}'));localStorage.setItem('zine.hint.layers','true');localStorage.setItem('zine.hint.move','true');"
         if welcomed:
             init += "localStorage.setItem('zine.welcomed','1');"
         ctx.add_init_script(init)

@@ -35,7 +35,10 @@
     <button class="btn icon" id="btnRedo" title="Ctrl+Y" data-ru-title="Вернуть (Ctrl+Y)" data-en-title="Redo (Ctrl+Y)" aria-label="Redo">↷</button>
     <button class="btn pink" id="btnRemix">🎲 <span class="hide-sm" data-ru="Remix" data-en="Remix"></span></button>
     <button class="btn icon" id="btnHelp" data-ru-title="Справка (F1)" data-en-title="Help (F1)" aria-label="Help">?</button>
-    <button class="btn icon hide-sm" id="btnTheme" aria-label="Theme" data-ru-title="Тема: бумага / тёмная" data-en-title="Theme: paper / dark"><svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="M8 1.5a6.5 6.5 0 0 0 0 13z" fill="currentColor"/></svg></button>
+    <div class="menu-wrap hide-sm">
+      <button class="btn icon" id="btnTheme" aria-haspopup="true" aria-expanded="false" aria-controls="menuTheme" aria-label="Theme" data-ru-title="Тема оформления" data-en-title="Colour theme"></button>
+      <div class="menu" id="menuTheme" role="menu" hidden></div>
+    </div>
     <button class="btn hide-sm" id="btnLang" aria-label="Language">EN</button>
     <a class="btn hide-sm" id="lnkGit" href="https://github.com/DmitryLeLeE/xeroxstudio" target="_blank" rel="noopener" data-ru="Для ПК ↗" data-en="Desktop ↗"></a>
   </div>
