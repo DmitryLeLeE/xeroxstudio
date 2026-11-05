@@ -31,7 +31,7 @@ const EN = {
   "Синька (cyanotype)": "Cyanotype", "Контактный лист 35 мм": "35 mm Contact Sheet", "Ночное видение": "Night Vision", "Ризо-оверпринт": "Riso Overprint", "Склейка со скотчем": "Tape Collage",
   "Диагональ-панк": "Diagonal Punk", "Стопка снимков": "Photo Pile", "Газетная мозаика": "Newsprint Mosaic", "Триптих-синька": "Cyanotype Triptych",
   "Постер во весь лист": "Full-page Poster", "Лента кинопроб": "Film-test Ribbon", "Ризо-диптих": "Riso Diptych",
-  "Линейная гравюра": "Line Engraving", "Мезотинт": "Mezzotint", "Грязный офис": "Dirty Office", "Байер 8-бит": "Bayer 8-bit",
+  "Линейная гравюра": "Line Engraving", "Мезотинт": "Mezzotint", "Грязный офис": "Dirty Office", "Байер 8-бит": "Bayer 8-bit", "Грязный панк": "Dirty Punk", "Стена из баллончика": "Spray Wall", "Глитч-кассета": "Glitch Tape", "Мокрая краска": "Wet Paint", "Копия копии копии": "Copy of a Copy of a Copy",
   "Мои": "Mine",
 };
 const lbl = (ru, key) => (LANG === "ru" ? ru : EN[key] || EN[ru] || ru);
@@ -661,6 +661,19 @@ function renderStrip() {
     b.setAttribute("aria-label", T(`Страница ${i + 1}`, `Page ${i + 1}`));
     b.innerHTML = `<canvas width="130" height="195"></canvas><b>${i + 1}</b>`;
     b.addEventListener("click", () => gotoPage(i));
+    // перетаскивание миниатюр мышью меняет порядок страниц (на тач-экранах есть кнопки ◀ ▶)
+    b.draggable = true;
+    b.addEventListener("dragstart", (e) => { e.dataTransfer.setData("text/x-zine-page", String(i)); e.dataTransfer.effectAllowed = "move"; b.classList.add("dragging"); });
+    b.addEventListener("dragend", () => b.classList.remove("dragging"));
+    b.addEventListener("dragover", (e) => { if ([...e.dataTransfer.types].includes("text/x-zine-page")) { e.preventDefault(); b.classList.add("over"); } });
+    b.addEventListener("dragleave", () => b.classList.remove("over"));
+    b.addEventListener("drop", (e) => {
+      const from = Number(e.dataTransfer.getData("text/x-zine-page")); b.classList.remove("over");
+      if (!Number.isInteger(from) || from === i || !S.pages[from]) return;
+      e.preventDefault(); flushCommit();
+      const cur = S.pages[S.cur], [m] = S.pages.splice(from, 1); S.pages.splice(i, 0, m); S.cur = S.pages.indexOf(cur);
+      commit(); renderStrip();
+    });
     box.append(b);
   });
   $("#pageInfo").textContent = T(`${S.cur + 1} из ${S.pages.length}`, `${S.cur + 1} of ${S.pages.length}`);
@@ -865,7 +878,7 @@ function refreshLayersUI() {
       ta.addEventListener("input", () => { ly.text = ta.value; resetPresetLabel(); requestRender({ draft: true }); updateLayerSel(); commitSoon(); });
       ta.addEventListener("blur", () => { flushCommit(); refreshLayersUI(); });
       w.append(ta); ed.append(w);
-      ed.append(mkSelect(T("Подложка", "Backing"), [["box", T("Плашка", "Box")], ["tape", T("Лента", "Tape")], ["plain", T("Без подложки", "Plain")]], () => ly.style || "box", (v) => (ly.style = v)));
+      ed.append(mkSelect(T("Подложка", "Backing"), [["box", T("Плашка", "Box")], ["tape", T("Лента", "Tape")], ["plain", T("Без подложки", "Plain")], ["ransom", T("Записка из газетных букв", "Ransom note")]], () => ly.style || "box", (v) => (ly.style = v)));
       ed.append(mkSelect(T("Шрифт", "Font"), Object.keys(CFG.FONTS).map((k) => [k, k]), () => ly.font || "Arial Black", (v) => (ly.font = v)));
     }
     ed.append(mkRange(T("Размер", "Size"), 0.04, 1, 0.01, () => ly.size, (v) => (ly.size = v)));
@@ -1891,6 +1904,7 @@ function menuItems() {
     [T("Применить стиль страницы ко всем", "Apply this page's style to all pages"), applyStyleToAll],
     [T("Библиотека манифестов…", "Manifesto library…"), openManifest, "Ctrl+M"],
     "hr",
+    ...(isPhone() ? [[T("Тема: бумага / тёмная", "Theme: paper / dark"), () => $("#btnTheme").click()], [T("Язык: English", "Language: Русский"), () => $("#btnLang").click()]] : []),
     [T("Горячие клавиши", "Keyboard shortcuts"), showHelp, "F1"],
     [T("О программе и лицензии", "About & licenses"), showAbout],
   ];
@@ -2076,6 +2090,7 @@ $("#layerBar").addEventListener("click", (e) => {
   touchLayers();
 });
 const app = $("#app");
+$("#sheetHandle").addEventListener("click", () => { const t = app.dataset.size === "tall"; app.dataset.size = t ? "" : "tall"; $("#sheetHandle").setAttribute("aria-pressed", String(!t)); requestAnimationFrame(() => { if (V.fitted) fitView(); }); });
 app.dataset.tab = innerWidth <= 860 ? "view" : "style"; // на телефоне сначала большой лист
 $$("#tabbar button").forEach((b) => b.addEventListener("click", () => {
   const go = b.dataset.go;

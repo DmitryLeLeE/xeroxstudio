@@ -1,6 +1,6 @@
 // Сгенерировано из config.py и presets.py (tools/gen_config_js.py). Не править вручную.
 export const CFG = {
- "APP_VERSION": "1.7.0",
+ "APP_VERSION": "2.0.0",
  "CANVAS_FORMATS": {
   "2:3 Постер (1000×1500)": [
    1000,
@@ -306,6 +306,26 @@ export const CFG = {
   },
   "Permanent Marker": {
    "css": "\"Permanent Marker\", \"Rubik\", sans-serif",
+   "weight": 400
+  },
+  "Rubik Dirt": {
+   "css": "\"Rubik Dirt\", \"Rubik\", sans-serif",
+   "weight": 400
+  },
+  "Rubik Distressed": {
+   "css": "\"Rubik Distressed\", \"Rubik\", sans-serif",
+   "weight": 400
+  },
+  "Rubik Wet Paint": {
+   "css": "\"Rubik Wet Paint\", \"Rubik\", sans-serif",
+   "weight": 400
+  },
+  "Rubik Spray Paint": {
+   "css": "\"Rubik Spray Paint\", \"Rubik\", sans-serif",
+   "weight": 400
+  },
+  "Rubik Glitch": {
+   "css": "\"Rubik Glitch\", \"Rubik\", sans-serif",
    "weight": 400
   }
  },
@@ -1705,6 +1725,326 @@ export const CFG = {
    "font": "Consolas Bold",
    "font_size": 30,
    "tstyle": "dymo_tape",
+   "text_align": "left",
+   "txt_x": 7,
+   "txt_y1": 10,
+   "txt_y2": 70,
+   "text_rot": 0.0
+  },
+  "Грязный панк": {
+   "layout": "staggered",
+   "rows": 5,
+   "tilt": 2.0,
+   "fit_mode": "contain",
+   "bright": 1.3,
+   "edge_x": 18,
+   "edge_y": 14,
+   "loss": 62,
+   "dither": "halftone",
+   "dot_size": 9,
+   "angle": 45,
+   "contrast": 3.0,
+   "noise": 45,
+   "streaks": 40,
+   "misreg": 4,
+   "copier_edge": 45,
+   "paper": 55,
+   "overprint": 0,
+   "ink2": [
+    255,
+    60,
+    140
+   ],
+   "overprint3": 0,
+   "ink3": [
+    0,
+    120,
+    190
+   ],
+   "overprint4": 0,
+   "ink4": [
+    255,
+    200,
+    0
+   ],
+   "tape": 0,
+   "fold": 0,
+   "holes": 0,
+   "stains": 45,
+   "dust": 70,
+   "palette": "Classic B&W (Xerox)",
+   "invert": false,
+   "custom_colors": [
+    [
+     255,
+     255,
+     255
+    ],
+    [
+     0,
+     0,
+     0
+    ]
+   ],
+   "font": "Rubik Dirt",
+   "font_size": 50,
+   "tstyle": "outline",
+   "text_align": "left",
+   "txt_x": 7,
+   "txt_y1": 10,
+   "txt_y2": 70,
+   "text_rot": 0.0
+  },
+  "Стена из баллончика": {
+   "layout": "center_hero",
+   "rows": 4,
+   "tilt": 1.0,
+   "fit_mode": "contain",
+   "bright": 1.3,
+   "edge_x": 15,
+   "edge_y": 10,
+   "loss": 35,
+   "dither": "stipple",
+   "dot_size": 8,
+   "angle": 45,
+   "contrast": 2.6,
+   "noise": 25,
+   "streaks": 15,
+   "misreg": 6,
+   "copier_edge": 20,
+   "paper": 0,
+   "overprint": 0,
+   "ink2": [
+    255,
+    60,
+    140
+   ],
+   "overprint3": 0,
+   "ink3": [
+    0,
+    120,
+    190
+   ],
+   "overprint4": 0,
+   "ink4": [
+    255,
+    200,
+    0
+   ],
+   "tape": 0,
+   "fold": 0,
+   "holes": 0,
+   "stains": 0,
+   "dust": 0,
+   "palette": "Safety Orange (Blaze Orange / Charcoal)",
+   "invert": false,
+   "custom_colors": [
+    [
+     255,
+     255,
+     255
+    ],
+    [
+     0,
+     0,
+     0
+    ]
+   ],
+   "font": "Rubik Spray Paint",
+   "font_size": 56,
+   "tstyle": "outline",
+   "text_align": "left",
+   "txt_x": 7,
+   "txt_y1": 10,
+   "txt_y2": 70,
+   "text_rot": 0.0
+  },
+  "Глитч-кассета": {
+   "layout": "contact_sheet",
+   "rows": 5,
+   "tilt": 0.0,
+   "fit_mode": "contain",
+   "bright": 1.3,
+   "edge_x": 15,
+   "edge_y": 10,
+   "loss": 40,
+   "dither": "bayer",
+   "dot_size": 7,
+   "angle": 45,
+   "contrast": 2.2,
+   "noise": 15,
+   "streaks": 55,
+   "misreg": 9,
+   "copier_edge": 25,
+   "paper": 0,
+   "overprint": 45,
+   "ink2": [
+    255,
+    60,
+    140
+   ],
+   "overprint3": 0,
+   "ink3": [
+    0,
+    120,
+    190
+   ],
+   "overprint4": 0,
+   "ink4": [
+    255,
+    200,
+    0
+   ],
+   "tape": 0,
+   "fold": 0,
+   "holes": 0,
+   "stains": 0,
+   "dust": 0,
+   "palette": "Blueprint / Cyanotype (Navy / Cyan)",
+   "invert": false,
+   "custom_colors": [
+    [
+     255,
+     255,
+     255
+    ],
+    [
+     0,
+     0,
+     0
+    ]
+   ],
+   "font": "Rubik Glitch",
+   "font_size": 40,
+   "tstyle": "dymo_tape",
+   "text_align": "left",
+   "txt_x": 7,
+   "txt_y1": 10,
+   "txt_y2": 70,
+   "text_rot": 0.0
+  },
+  "Мокрая краска": {
+   "layout": "full_page",
+   "rows": 4,
+   "tilt": 0.0,
+   "fit_mode": "cover",
+   "bright": 1.3,
+   "edge_x": 15,
+   "edge_y": 10,
+   "loss": 28,
+   "dither": "mezzo",
+   "dot_size": 8,
+   "angle": 45,
+   "contrast": 2.3,
+   "noise": 18,
+   "streaks": 10,
+   "misreg": 3,
+   "copier_edge": 15,
+   "paper": 50,
+   "overprint": 40,
+   "ink2": [
+    255,
+    60,
+    140
+   ],
+   "overprint3": 0,
+   "ink3": [
+    0,
+    120,
+    190
+   ],
+   "overprint4": 0,
+   "ink4": [
+    255,
+    200,
+    0
+   ],
+   "tape": 0,
+   "fold": 0,
+   "holes": 0,
+   "stains": 0,
+   "dust": 0,
+   "palette": "Crimson Zine (Off-White / Blood Red)",
+   "invert": false,
+   "custom_colors": [
+    [
+     255,
+     255,
+     255
+    ],
+    [
+     0,
+     0,
+     0
+    ]
+   ],
+   "font": "Rubik Wet Paint",
+   "font_size": 52,
+   "tstyle": "white_box",
+   "text_align": "left",
+   "txt_x": 7,
+   "txt_y1": 10,
+   "txt_y2": 70,
+   "text_rot": 0.0
+  },
+  "Копия копии копии": {
+   "layout": "staggered",
+   "rows": 6,
+   "tilt": 2.5,
+   "fit_mode": "contain",
+   "bright": 1.3,
+   "edge_x": 15,
+   "edge_y": 10,
+   "loss": 92,
+   "dither": "halftone",
+   "dot_size": 6,
+   "angle": 45,
+   "contrast": 3.4,
+   "noise": 60,
+   "streaks": 65,
+   "misreg": 3,
+   "copier_edge": 60,
+   "paper": 70,
+   "overprint": 0,
+   "ink2": [
+    255,
+    60,
+    140
+   ],
+   "overprint3": 0,
+   "ink3": [
+    0,
+    120,
+    190
+   ],
+   "overprint4": 0,
+   "ink4": [
+    255,
+    200,
+    0
+   ],
+   "tape": 0,
+   "fold": 80,
+   "holes": 1,
+   "stains": 0,
+   "dust": 80,
+   "palette": "Classic B&W (Xerox)",
+   "invert": false,
+   "custom_colors": [
+    [
+     255,
+     255,
+     255
+    ],
+    [
+     0,
+     0,
+     0
+    ]
+   ],
+   "font": "Special Elite",
+   "font_size": 34,
+   "tstyle": "white_box",
    "text_align": "left",
    "txt_x": 7,
    "txt_y1": 10,
@@ -3998,6 +4338,778 @@ export const CFG = {
       ]
      ],
      "w": 12
+    }
+   ]
+  },
+  "skull": {
+   "ru": "Череп",
+   "en": "Skull",
+   "prims": [
+    {
+     "t": "circle",
+     "c": [
+      50,
+      42
+     ],
+     "r": 34,
+     "m": "f"
+    },
+    {
+     "t": "poly",
+     "p": [
+      [
+       30,
+       60
+      ],
+      [
+       70,
+       60
+      ],
+      [
+       66,
+       90
+      ],
+      [
+       34,
+       90
+      ]
+     ],
+     "m": "f"
+    },
+    {
+     "t": "circle",
+     "c": [
+      37,
+      44
+     ],
+     "r": 9,
+     "m": "p"
+    },
+    {
+     "t": "circle",
+     "c": [
+      63,
+      44
+     ],
+     "r": 9,
+     "m": "p"
+    },
+    {
+     "t": "poly",
+     "p": [
+      [
+       50,
+       54
+      ],
+      [
+       44,
+       66
+      ],
+      [
+       56,
+       66
+      ]
+     ],
+     "m": "p"
+    },
+    {
+     "t": "poly",
+     "p": [
+      [
+       41,
+       78
+      ],
+      [
+       44,
+       78
+      ],
+      [
+       44,
+       90
+      ],
+      [
+       41,
+       90
+      ]
+     ],
+     "m": "p"
+    },
+    {
+     "t": "poly",
+     "p": [
+      [
+       48,
+       78
+      ],
+      [
+       51,
+       78
+      ],
+      [
+       51,
+       90
+      ],
+      [
+       48,
+       90
+      ]
+     ],
+     "m": "p"
+    },
+    {
+     "t": "poly",
+     "p": [
+      [
+       55,
+       78
+      ],
+      [
+       58,
+       78
+      ],
+      [
+       58,
+       90
+      ],
+      [
+       55,
+       90
+      ]
+     ],
+     "m": "p"
+    }
+   ]
+  },
+  "anarchy": {
+   "ru": "Анархия",
+   "en": "Anarchy",
+   "prims": [
+    {
+     "t": "circle",
+     "c": [
+      50,
+      50
+     ],
+     "r": 42,
+     "m": "s"
+    },
+    {
+     "t": "line",
+     "p": [
+      [
+       28,
+       86
+      ],
+      [
+       50,
+       14
+      ],
+      [
+       72,
+       86
+      ]
+     ],
+     "w": 8
+    },
+    {
+     "t": "line",
+     "p": [
+      [
+       14,
+       56
+      ],
+      [
+       86,
+       40
+      ]
+     ],
+     "w": 7
+    },
+    {
+     "t": "line",
+     "p": [
+      [
+       36,
+       66
+      ],
+      [
+       66,
+       66
+      ]
+     ],
+     "w": 6
+    }
+   ]
+  },
+  "copy": {
+   "ru": "Штамп COPY",
+   "en": "COPY stamp",
+   "prims": [
+    {
+     "t": "poly",
+     "p": [
+      [
+       6,
+       26
+      ],
+      [
+       94,
+       26
+      ],
+      [
+       94,
+       74
+      ],
+      [
+       6,
+       74
+      ]
+     ],
+     "m": "f"
+    },
+    {
+     "t": "text",
+     "s": "COPY",
+     "c": [
+      50,
+      52
+     ],
+     "h": 30
+    }
+   ]
+  },
+  "diy": {
+   "ru": "DIY",
+   "en": "DIY",
+   "prims": [
+    {
+     "t": "poly",
+     "p": [
+      [
+       6,
+       22
+      ],
+      [
+       94,
+       22
+      ],
+      [
+       94,
+       78
+      ],
+      [
+       6,
+       78
+      ]
+     ],
+     "m": "f"
+    },
+    {
+     "t": "poly",
+     "p": [
+      [
+       11,
+       27
+      ],
+      [
+       89,
+       27
+      ],
+      [
+       89,
+       73
+      ],
+      [
+       11,
+       73
+      ]
+     ],
+     "m": "k"
+    },
+    {
+     "t": "text",
+     "s": "DIY",
+     "c": [
+      50,
+      52
+     ],
+     "h": 34
+    }
+   ]
+  },
+  "pin": {
+   "ru": "Булавка",
+   "en": "Safety pin",
+   "prims": [
+    {
+     "t": "circle",
+     "c": [
+      20,
+      50
+     ],
+     "r": 12,
+     "m": "s"
+    },
+    {
+     "t": "line",
+     "p": [
+      [
+       20,
+       38
+      ],
+      [
+       80,
+       38
+      ]
+     ],
+     "w": 5
+    },
+    {
+     "t": "line",
+     "p": [
+      [
+       20,
+       62
+      ],
+      [
+       80,
+       62
+      ]
+     ],
+     "w": 5
+    },
+    {
+     "t": "line",
+     "p": [
+      [
+       80,
+       38
+      ],
+      [
+       90,
+       44
+      ],
+      [
+       90,
+       56
+      ],
+      [
+       80,
+       62
+      ]
+     ],
+     "w": 5
+    }
+   ]
+  },
+  "nosign": {
+   "ru": "Запрет",
+   "en": "No sign",
+   "prims": [
+    {
+     "t": "circle",
+     "c": [
+      50,
+      50
+     ],
+     "r": 42,
+     "m": "s"
+    },
+    {
+     "t": "line",
+     "p": [
+      [
+       21,
+       21
+      ],
+      [
+       79,
+       79
+      ]
+     ],
+     "w": 9
+    }
+   ]
+  },
+  "crown": {
+   "ru": "Корона",
+   "en": "Crown",
+   "prims": [
+    {
+     "t": "poly",
+     "p": [
+      [
+       10,
+       80
+      ],
+      [
+       10,
+       34
+      ],
+      [
+       30,
+       56
+      ],
+      [
+       50,
+       20
+      ],
+      [
+       70,
+       56
+      ],
+      [
+       90,
+       34
+      ],
+      [
+       90,
+       80
+      ]
+     ],
+     "m": "f"
+    },
+    {
+     "t": "circle",
+     "c": [
+      10,
+      30
+     ],
+     "r": 5,
+     "m": "f"
+    },
+    {
+     "t": "circle",
+     "c": [
+      50,
+      14
+     ],
+     "r": 5,
+     "m": "f"
+    },
+    {
+     "t": "circle",
+     "c": [
+      90,
+      30
+     ],
+     "r": 5,
+     "m": "f"
+    }
+   ]
+  },
+  "dead": {
+   "ru": "Мёртвая рожица",
+   "en": "Dead face",
+   "prims": [
+    {
+     "t": "circle",
+     "c": [
+      50,
+      50
+     ],
+     "r": 42,
+     "m": "s"
+    },
+    {
+     "t": "line",
+     "p": [
+      [
+       28,
+       34
+      ],
+      [
+       44,
+       50
+      ]
+     ],
+     "w": 6
+    },
+    {
+     "t": "line",
+     "p": [
+      [
+       44,
+       34
+      ],
+      [
+       28,
+       50
+      ]
+     ],
+     "w": 6
+    },
+    {
+     "t": "line",
+     "p": [
+      [
+       56,
+       34
+      ],
+      [
+       72,
+       50
+      ]
+     ],
+     "w": 6
+    },
+    {
+     "t": "line",
+     "p": [
+      [
+       72,
+       34
+      ],
+      [
+       56,
+       50
+      ]
+     ],
+     "w": 6
+    },
+    {
+     "t": "line",
+     "p": [
+      [
+       30,
+       72
+      ],
+      [
+       38,
+       66
+      ],
+      [
+       46,
+       74
+      ],
+      [
+       54,
+       66
+      ],
+      [
+       62,
+       74
+      ],
+      [
+       70,
+       68
+      ]
+     ],
+     "w": 6
+    }
+   ]
+  },
+  "cassette": {
+   "ru": "Кассета",
+   "en": "Cassette",
+   "prims": [
+    {
+     "t": "poly",
+     "p": [
+      [
+       6,
+       22
+      ],
+      [
+       94,
+       22
+      ],
+      [
+       94,
+       78
+      ],
+      [
+       6,
+       78
+      ]
+     ],
+     "m": "s"
+    },
+    {
+     "t": "circle",
+     "c": [
+      32,
+      46
+     ],
+     "r": 9,
+     "m": "s"
+    },
+    {
+     "t": "circle",
+     "c": [
+      68,
+      46
+     ],
+     "r": 9,
+     "m": "s"
+    },
+    {
+     "t": "poly",
+     "p": [
+      [
+       26,
+       64
+      ],
+      [
+       74,
+       64
+      ],
+      [
+       68,
+       78
+      ],
+      [
+       32,
+       78
+      ]
+     ],
+     "m": "s"
+    }
+   ]
+  },
+  "peace": {
+   "ru": "Пацифик",
+   "en": "Peace",
+   "prims": [
+    {
+     "t": "circle",
+     "c": [
+      50,
+      50
+     ],
+     "r": 42,
+     "m": "s"
+    },
+    {
+     "t": "line",
+     "p": [
+      [
+       50,
+       8
+      ],
+      [
+       50,
+       92
+      ]
+     ],
+     "w": 6
+    },
+    {
+     "t": "line",
+     "p": [
+      [
+       50,
+       50
+      ],
+      [
+       20,
+       80
+      ]
+     ],
+     "w": 6
+    },
+    {
+     "t": "line",
+     "p": [
+      [
+       50,
+       50
+      ],
+      [
+       80,
+       80
+      ]
+     ],
+     "w": 6
+    }
+   ]
+  },
+  "warning": {
+   "ru": "Осторожно",
+   "en": "Warning",
+   "prims": [
+    {
+     "t": "poly",
+     "p": [
+      [
+       50,
+       8
+      ],
+      [
+       94,
+       86
+      ],
+      [
+       6,
+       86
+      ]
+     ],
+     "m": "s"
+    },
+    {
+     "t": "line",
+     "p": [
+      [
+       50,
+       36
+      ],
+      [
+       50,
+       60
+      ]
+     ],
+     "w": 9
+    },
+    {
+     "t": "circle",
+     "c": [
+      50,
+      73
+     ],
+     "r": 5,
+     "m": "f"
+    }
+   ]
+  },
+  "vinyl": {
+   "ru": "Пластинка",
+   "en": "Vinyl",
+   "prims": [
+    {
+     "t": "circle",
+     "c": [
+      50,
+      50
+     ],
+     "r": 44,
+     "m": "s"
+    },
+    {
+     "t": "circle",
+     "c": [
+      50,
+      50
+     ],
+     "r": 30,
+     "m": "s"
+    },
+    {
+     "t": "circle",
+     "c": [
+      50,
+      50
+     ],
+     "r": 13,
+     "m": "f"
+    },
+    {
+     "t": "circle",
+     "c": [
+      50,
+      50
+     ],
+     "r": 3,
+     "m": "p"
     }
    ]
   }

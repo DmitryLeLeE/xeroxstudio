@@ -33,8 +33,8 @@
     <button class="btn icon" id="btnRedo" title="Ctrl+Y" data-ru-title="Вернуть (Ctrl+Y)" data-en-title="Redo (Ctrl+Y)" aria-label="Redo">↷</button>
     <button class="btn pink" id="btnRemix">🎲 <span class="hide-sm" data-ru="Remix" data-en="Remix"></span></button>
     <button class="btn icon" id="btnHelp" data-ru-title="Справка (F1)" data-en-title="Help (F1)" aria-label="Help">?</button>
-    <button class="btn icon" id="btnTheme" aria-label="Theme" data-ru-title="Тема: бумага / тёмная" data-en-title="Theme: paper / dark"><svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="M8 1.5a6.5 6.5 0 0 0 0 13z" fill="currentColor"/></svg></button>
-    <button class="btn" id="btnLang" aria-label="Language">EN</button>
+    <button class="btn icon hide-sm" id="btnTheme" aria-label="Theme" data-ru-title="Тема: бумага / тёмная" data-en-title="Theme: paper / dark"><svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="M8 1.5a6.5 6.5 0 0 0 0 13z" fill="currentColor"/></svg></button>
+    <button class="btn hide-sm" id="btnLang" aria-label="Language">EN</button>
     <a class="btn hide-sm" id="lnkGit" href="https://github.com/DmitryLeLeE/xeroxstudio" target="_blank" rel="noopener" data-ru="Для ПК ↗" data-en="Desktop ↗"></a>
   </div>
 </header>
@@ -46,8 +46,9 @@
 </div>
 
 <h1 class="sr-only">Xerox Zine Studio — xerox zine generator</h1>
-<main class="app" id="app" data-tab="style" data-fly="">
+<main class="app" id="app" data-tab="style" data-fly="" data-size="">
   <nav class="rail" id="rail" aria-label="Tools"></nav>
+  <button type="button" class="sheet-handle" id="sheetHandle" aria-pressed="false" data-ru-title="Растянуть / свернуть панель" data-en-title="Expand / collapse the panel" aria-label="Expand panel"><i></i></button>
   <!-- Фото -->
   <section class="panel col-source" id="colSource" data-tab="photo" aria-labelledby="hSource">
     <h2 id="hSource" class="cap" data-ru="ФОТО СТРАНИЦЫ" data-en="PAGE PHOTO"></h2>

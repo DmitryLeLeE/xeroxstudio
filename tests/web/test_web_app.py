@@ -479,3 +479,40 @@ def test_layer_bar_and_export_size_labels_and_more_menu(page_factory):
     pg.click("#menuFile .more-toggle")
     assert pg.evaluate("[...document.querySelectorAll('#menuFile button')].find(b => /stencil|трафарет/i.test(b.textContent)).offsetParent !== null")
     assert pg.errors == []
+
+
+def test_ransom_layer_new_fonts_and_page_reorder(page_factory):
+    pg = page_factory()
+    wait_ready(pg)
+    r = pg.evaluate("""async () => {
+      const { RC, E, page } = window.__zine;
+      const base = { ...page(), layers: [] };
+      const withL = { ...base, layers: [{ type: 'text', text: 'НЕТ БОГОВ', x: .5, y: .5, size: .25, rot: 0, color: 'ink', style: 'ransom', font: 'Rubik Dirt' }] };
+      const a = await RC.renderPage(null, base, { scale: 0.5 }), b = await RC.renderPage(null, withL, { scale: 0.5 });
+      const da = a.canvas.getContext('2d').getImageData(0, 0, a.width, a.height).data, db = b.canvas.getContext('2d').getImageData(0, 0, b.width, b.height).data;
+      let diff = 0; for (let i = 0; i < da.length; i += 4) if (da[i] !== db[i]) diff++;
+      return { diff, fonts: Object.keys(E.CFG ? E.CFG.FONTS : {}).length };
+    }""")
+    assert r["diff"] > 500
+    # порядок страниц: перетаскиваем третью миниатюру на первую
+    pg.evaluate("window.__zine.addPage(); window.__zine.addPage();")
+    pg.wait_for_timeout(300)
+    assert pg.evaluate("document.querySelectorAll('#thumbs .th').length") == 3
+    pg.evaluate("window.__zine.page().txt_top = 'THIRD'; window.__zine.commit();")
+    pg.drag_and_drop("#thumbs .th >> nth=2", "#thumbs .th >> nth=0")
+    pg.wait_for_timeout(300)
+    assert pg.evaluate("window.__zine.S.pages[0].txt_top") == "THIRD"
+    assert pg.errors == []
+
+
+def test_phone_sheet_handle_and_hidden_strip(page_factory):
+    pg = page_factory(mobile=True, width=390, height=844)
+    wait_ready(pg)
+    pg.click("#tabbar button[data-go=style]")
+    assert pg.evaluate("getComputedStyle(document.querySelector('#colView .strip')).display") == "none"
+    h0 = pg.evaluate("document.querySelector('#colSettings').getBoundingClientRect().height")
+    pg.click("#sheetHandle")
+    h1 = pg.evaluate("document.querySelector('#colSettings').getBoundingClientRect().height")
+    assert h1 > h0 * 1.4
+    assert pg.evaluate("document.documentElement.scrollWidth <= innerWidth")
+    assert pg.errors == []

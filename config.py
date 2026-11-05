@@ -6,7 +6,7 @@ import os
 import sys
 
 APP_NAME = "Xerox Zine Studio"
-APP_VERSION = "1.7.0"
+APP_VERSION = "2.0.0"
 
 
 def resource_path(name):
@@ -154,6 +154,12 @@ FONT_FILES = {
     "Marck Script": resource_path("assets/fonts/MarckScript-Regular.ttf"),
     "Special Elite": resource_path("assets/fonts/SpecialElite-Regular.ttf"),
     "Permanent Marker": resource_path("assets/fonts/PermanentMarker-Regular.ttf"),
+    # андеграундные Rubik (SIL OFL, с кириллицей), подрезаны до латиницы и кириллицы
+    "Rubik Dirt": resource_path("assets/fonts/RubikDirt-Regular.ttf"),
+    "Rubik Distressed": resource_path("assets/fonts/RubikDistressed-Regular.ttf"),
+    "Rubik Wet Paint": resource_path("assets/fonts/RubikWetPaint-Regular.ttf"),
+    "Rubik Spray Paint": resource_path("assets/fonts/RubikSprayPaint-Regular.ttf"),
+    "Rubik Glitch": resource_path("assets/fonts/RubikGlitch-Regular.ttf"),
 }
 FONT_FALLBACKS = [
     "arialbd.ttf",

@@ -71,6 +71,17 @@ def _apply_stain(arr, rng, cx, cy, r, grease, power=1.0):
     reg = arr[ya:yb, xa:xb]
     arr[ya:yb, xa:xb] = reg * (1.0 - alpha + alpha * col / 255.0)
 
+
+RANSOM_FONTS = ["Arial Black", "Times New Roman Bold", "Courier New Bold", "Impact", "Rubik Mono One", "Rubik Distressed", "Marck Script"]
+
+
+def _h01(cx, cy):
+    """Скалярная версия того же хеша, что и в JS (hash01)."""
+    h = (cx * 374761393 + cy * 668265263) & 0xFFFFFFFF
+    h = ((h ^ (h >> 13)) * 1274126177) & 0xFFFFFFFF
+    h = h ^ (h >> 16)
+    return (h & 0xFFFF) / 65536.0
+
 class ZineGraphicEngine:
 
     @staticmethod
@@ -485,6 +496,76 @@ class ZineGraphicEngine:
                     d.text((pr["c"][0] * k - 20, pr["c"][1] * k - 10), pr["s"], fill=pap, font=f)
         return img.resize((D // 2, D // 2), Image.LANCZOS)
 
+    def _text_layer_image(self, text, fpx, style, font_name, color, paper_rgb):
+        """Надпись-слой: плашка, лента или обводка."""
+        font = self.get_font(font_name, fpx)
+        probe = ImageDraw.Draw(Image.new("L", (1, 1)))
+        tb = probe.multiline_textbbox((0, 0), text, font=font, spacing=int(fpx * 0.15))
+        pad = int(fpx * 0.3)
+        tw, th = tb[2] - tb[0], tb[3] - tb[1]
+        loc = Image.new("RGBA", (tw + 2 * pad, th + 2 * pad), (0, 0, 0, 0))
+        d = ImageDraw.Draw(loc)
+        if style == "box":
+            d.rectangle([0, 0, loc.width, loc.height], fill=tuple(paper_rgb) + (255,))
+            fill, stroke = tuple(color) + (255,), None
+        elif style == "tape":
+            d.rectangle([0, 0, loc.width, loc.height], fill=tuple(color) + (255,))
+            fill, stroke = tuple(paper_rgb) + (255,), None
+        else:
+            fill, stroke = tuple(color) + (255,), tuple(paper_rgb) + (255,)
+        d.multiline_text((pad - tb[0], pad - tb[1]), text, font=font, fill=fill, spacing=int(fpx * 0.15),
+                         stroke_width=max(2, int(fpx * 0.08)) if stroke else 0, stroke_fill=stroke)
+        return loc
+
+    def _ransom_image(self, text, fpx, color, paper_rgb, accent):
+        """«Записка из газетных букв»: у каждой буквы свой клочок, шрифт, размер и наклон (раскладка как в JS)."""
+        paper, color, accent = tuple(paper_rgb), tuple(color), tuple(accent)
+        lines, rows, n = text.split("\n"), [], 0
+        for l in lines:
+            row = []
+            for ch in l:
+                i = n
+                n += 1
+                if ch == " ":
+                    row.append({"sp": True, "w": fpx * 0.45})
+                    continue
+                fname = RANSOM_FONTS[int(_h01(i, 11) * len(RANSOM_FONTS))]
+                sz = max(6, int(round(fpx * (0.78 + 0.5 * _h01(i, 12)))))
+                font = self.get_font(fname, sz)
+                try:
+                    cw = font.getlength(ch)
+                except Exception:
+                    cw = sz * 0.6
+                pad = sz * 0.16
+                row.append({"ch": ch, "font": font, "sz": sz, "rot": (_h01(i, 13) - 0.5) * 0.28, "mode": _h01(i, 14),
+                            "dy": (_h01(i, 15) - 0.5) * 0.22 * fpx, "w": cw + 2 * pad, "h": sz * 1.05 + 2 * pad})
+            rows.append(row)
+        lh = fpx * 1.55
+        adv = lambda it: it["w"] - (0 if it.get("sp") else fpx * 0.02)
+        maxw = max([sum(adv(it) for it in r) for r in rows] + [1])
+        W, H = int(maxw + fpx * 0.8), int(lh * len(rows) + fpx * 0.8)
+        out = Image.new("RGBA", (max(W, 4), max(H, 4)), (0, 0, 0, 0))
+        for ri, row in enumerate(rows):
+            x = (out.width - sum(adv(it) for it in row)) / 2
+            for it in row:
+                if it.get("sp"):
+                    x += it["w"]
+                    continue
+                inv = 0.45 <= it["mode"] < 0.75
+                acc = 0.75 <= it["mode"] < 0.9
+                bg = color if inv else accent if acc else paper
+                fg = paper if (inv or acc) else color
+                tw, th = int(it["w"]) + 2, int(it["h"]) + 2
+                tile = Image.new("RGBA", (tw, th), (0, 0, 0, 0))
+                d = ImageDraw.Draw(tile)
+                d.rectangle([1, 1, tw - 2, th - 2], fill=bg + (255,), outline=None if (inv or acc) else (80, 80, 80, 255))
+                d.text((tw / 2, th / 2 + it["sz"] * 0.05), it["ch"], fill=fg + (255,), font=it["font"], anchor="mm")
+                tile = tile.rotate(-math.degrees(it["rot"]), expand=True, resample=Image.BICUBIC)
+                cx, cy = x + it["w"] / 2, fpx * 0.4 + ri * lh + lh / 2 + it["dy"]
+                out.alpha_composite(tile, (max(0, int(cx - tile.width / 2)), max(0, int(cy - tile.height / 2))))
+                x += adv(it)
+        return out
+
     def draw_layers(self, img, st, paper_rgb, ink_rgb, s=1.0):
         """Свободные слои: стикеры и надписи поверх готового листа. Координаты - доли листа."""
         layers = st.get("layers") or []
@@ -505,24 +586,11 @@ class ZineGraphicEngine:
                     if not text:
                         continue
                     fpx = max(8, int(size * w * 0.5))
-                    font = self.get_font(ly.get("font", "Arial Black"), fpx)
-                    probe = ImageDraw.Draw(Image.new("L", (1, 1)))
-                    tb = probe.multiline_textbbox((0, 0), text, font=font, spacing=int(fpx * 0.15))
-                    pad = int(fpx * 0.3)
-                    tw, th = tb[2] - tb[0], tb[3] - tb[1]
-                    loc = Image.new("RGBA", (tw + 2 * pad, th + 2 * pad), (0, 0, 0, 0))
-                    d = ImageDraw.Draw(loc)
                     style = ly.get("style", "box")
-                    if style == "box":
-                        d.rectangle([0, 0, loc.width, loc.height], fill=tuple(paper_rgb) + (255,))
-                        fill, stroke = color + (255,), None
-                    elif style == "tape":
-                        d.rectangle([0, 0, loc.width, loc.height], fill=color + (255,))
-                        fill, stroke = tuple(paper_rgb) + (255,), None
+                    if style == "ransom":
+                        loc = self._ransom_image(text, fpx, color, paper_rgb, cols["ink2"])
                     else:
-                        fill, stroke = color + (255,), tuple(paper_rgb) + (255,)
-                    d.multiline_text((pad - tb[0], pad - tb[1]), text, font=font, fill=fill, spacing=int(fpx * 0.15),
-                                     stroke_width=max(2, int(fpx * 0.08)) if stroke else 0, stroke_fill=stroke)
+                        loc = self._text_layer_image(text, fpx, style, ly.get("font", "Arial Black"), color, paper_rgb)
                 rot = float(ly.get("rot", 0))
                 if rot:
                     loc = loc.rotate(-rot, expand=True, resample=Image.BICUBIC)

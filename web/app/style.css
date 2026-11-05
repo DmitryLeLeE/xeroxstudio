@@ -370,3 +370,17 @@ html[data-mode="pro"] .more-btn { display: none; }
 @media (max-width: 860px) { .mode-row, .preset-row { position: static; } }
 
 @media (max-width: 860px) { .mode-row { display: none; } .preset-row .cap { display: none; } .preset-row { padding: 6px 8px; } }
+
+/* ---------- 2.0: телефон и перетаскивание страниц */
+.sheet-handle { display: none; }
+.th.dragging { opacity: .4; } .th.over { outline: 3px solid var(--accent); outline-offset: 1px; }
+@media (max-width: 860px) {
+  .sheet-handle { display: none; order: 2; flex: none; background: var(--panel); border: 0; border-top: 1px solid var(--line); height: 22px; cursor: pointer; padding: 0; place-items: center; }
+  .sheet-handle i { display: block; width: 44px; height: 5px; border-radius: 3px; background: var(--muted); margin: 0 auto; }
+  .app[data-tab="photo"] .sheet-handle, .app[data-tab="style"] .sheet-handle, .app[data-tab="text"] .sheet-handle { display: block; }
+  .app[data-size="tall"] .col-source, .app[data-size="tall"] .col-settings { height: 68dvh; }
+  .app:not([data-tab="view"]) .strip { display: none; }           /* пока открыта панель, лента страниц не нужна */
+  .col-source, .col-settings { order: 3; }
+  .tabbar { order: 4; }
+}
+@media (max-width: 860px) and (max-height: 520px) and (orientation: landscape) { .sheet-handle { display: none !important; } }

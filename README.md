@@ -34,7 +34,9 @@ line, give it to someone. It comes in two versions with the same looks and the s
 - **Riso overprint.** A second ink layer on another screen angle, shifted and multiplied over the first. Nine paper / ink pairs plus your own colours.
 - **Paper and tape.** Fibre and blotch texture, edge vignette, torn tape strips that get photocopied along with the page.
 - **Generation loss.** 13 layouts (staggered, columns, diagonal cascade, overlapping pile, mosaic, diptych, triptych, ribbon, contact sheet, hero + copies, full page…); every next copy is blurrier and harsher.
-- **Layers.** Any number of texts and 16 vector stickers per page, draggable in the browser. Third and fourth ink for 3–4 colour prints.
+- **Layers.** Any number of texts and 28 vector stickers per page (skull, anarchy, COPY, DIY, cassette…), draggable in both versions. A *ransom note* backing cuts every letter from a different paper scrap. Third and fourth ink for 3–4 colour prints.
+- **Underground fonts.** Rubik Dirt, Distressed, Wet Paint, Spray Paint and Glitch (all with Cyrillic), plus the older bundled set.
+- **Style gallery.** Every preset rendered on your own photo, plus six random variations; click one to apply (browser).
 - **Sheet wear.** Fold crease, punch holes, stains, dust and a stamp with your own text. Remix has locks, Mutate nudges a look.
 - **Booklet.** Saddle-stitch PDF for any page count (A4 / Letter) and a printer calibration sheet (browser).
 - **Ink separations.** Export per-ink 1-bit plates with registration crosses (ZIP) to print on a real risograph.
@@ -43,7 +45,7 @@ line, give it to someone. It comes in two versions with the same looks and the s
 - **Faces.** Optional black bar over the eyes and sticker cut-outs (Haar cascade; runs in-browser too).
 - **Print-ready.** PNG up to 3×, book PDF, A4 PDF with margins, **8-page mini-zine** with fold and cut lines, 1-bit PNG for stencil printing.
 - **Projects.** `.zine` files (a zip with `manifest.json` and PNGs) open in both versions. Autosave, undo / redo.
-- **20 presets.** Classic Xerox, Newsprint, Acid Riot, Punk Flyer, Cyanotype, 35 mm Contact Sheet, Night Vision, Riso Overprint, Tape Collage, Diagonal Punk, Photo Pile, Newsprint Mosaic, Cyanotype Triptych, Full-page Poster, Film-test Ribbon, Riso Diptych, Line Engraving, Mezzotint, Dirty Office, Bayer 8-bit, or save your own.
+- **25 presets.** Dirty Punk, Spray Wall, Glitch Tape, Wet Paint, Copy of a Copy of a Copy, Classic Xerox, Newsprint, Acid Riot, Punk Flyer, Cyanotype, 35 mm Contact Sheet, Night Vision, Riso Overprint, Tape Collage, Diagonal Punk, Photo Pile, Newsprint Mosaic, Cyanotype Triptych, Full-page Poster, Film-test Ribbon, Riso Diptych, Line Engraving, Mezzotint, Dirty Office, Bayer 8-bit, or save your own.
 - **Share a look.** One link carries a style and caption (no photo), so anyone can try it on their own picture.
 - **Before / after.** Drag a divider across the sheet to compare with the original photo (browser version).
 

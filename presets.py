@@ -119,6 +119,31 @@ BUILTIN = {
         "dot_size": 9, "contrast": 2.0, "noise": 5, "streaks": 20, "misreg": 0, "loss": 20, "copier_edge": 15,
         "font": "Consolas Bold", "font_size": 30, "tstyle": "dymo_tape",
     },
+    "Грязный панк": {
+        "layout": "staggered", "rows": 5, "palette": "Classic B&W (Xerox)", "dither": "halftone", "dot_size": 9, "contrast": 3.0,
+        "noise": 45, "streaks": 40, "misreg": 4, "loss": 62, "paper": 55, "copier_edge": 45, "dust": 70, "stains": 45, "tilt": 2.0,
+        "edge_x": 18, "edge_y": 14, "font": "Rubik Dirt", "font_size": 50, "tstyle": "outline",
+    },
+    "Стена из баллончика": {
+        "layout": "center_hero", "rows": 4, "palette": "Safety Orange (Blaze Orange / Charcoal)", "dither": "stipple", "dot_size": 8, "contrast": 2.6,
+        "noise": 25, "streaks": 15, "misreg": 6, "loss": 35, "copier_edge": 20, "tilt": 1.0,
+        "font": "Rubik Spray Paint", "font_size": 56, "tstyle": "outline",
+    },
+    "Глитч-кассета": {
+        "layout": "contact_sheet", "rows": 5, "palette": "Blueprint / Cyanotype (Navy / Cyan)", "dither": "bayer", "dot_size": 7, "contrast": 2.2,
+        "noise": 15, "streaks": 55, "misreg": 9, "loss": 40, "copier_edge": 25, "overprint": 45,
+        "font": "Rubik Glitch", "font_size": 40, "tstyle": "dymo_tape",
+    },
+    "Мокрая краска": {
+        "layout": "full_page", "rows": 4, "palette": "Crimson Zine (Off-White / Blood Red)", "dither": "mezzo", "fit_mode": "cover", "dot_size": 8, "contrast": 2.3,
+        "noise": 18, "streaks": 10, "misreg": 3, "loss": 28, "paper": 50, "copier_edge": 15, "overprint": 40,
+        "font": "Rubik Wet Paint", "font_size": 52, "tstyle": "white_box",
+    },
+    "Копия копии копии": {
+        "layout": "staggered", "rows": 6, "palette": "Classic B&W (Xerox)", "dither": "halftone", "dot_size": 6, "contrast": 3.4,
+        "noise": 60, "streaks": 65, "misreg": 3, "loss": 92, "paper": 70, "copier_edge": 60, "fold": 80, "holes": 1, "dust": 80, "tilt": 2.5,
+        "font": "Special Elite", "font_size": 34, "tstyle": "white_box",
+    },
 }
 
 

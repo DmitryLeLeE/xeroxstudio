@@ -21,6 +21,11 @@ fonts = {
   "Marck Script":         {"css": '"Marck Script", cursive', "weight": 400},
   "Special Elite":        {"css": '"Special Elite", "JetBrains Mono", monospace', "weight": 400},
   "Permanent Marker":     {"css": '"Permanent Marker", "Rubik", sans-serif', "weight": 400},
+  "Rubik Dirt":           {"css": '"Rubik Dirt", "Rubik", sans-serif', "weight": 400},
+  "Rubik Distressed":     {"css": '"Rubik Distressed", "Rubik", sans-serif', "weight": 400},
+  "Rubik Wet Paint":      {"css": '"Rubik Wet Paint", "Rubik", sans-serif', "weight": 400},
+  "Rubik Spray Paint":    {"css": '"Rubik Spray Paint", "Rubik", sans-serif', "weight": 400},
+  "Rubik Glitch":         {"css": '"Rubik Glitch", "Rubik", sans-serif', "weight": 400},
 }
 assert set(fonts) == set(config.FONT_FILES)
 data = {

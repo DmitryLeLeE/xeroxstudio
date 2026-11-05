@@ -16,3 +16,10 @@
 @font-face { font-family: 'Marck Script'; font-display: swap; src: url(./MarckScript-Regular.ttf) format('truetype'); }
 @font-face { font-family: 'Special Elite'; font-display: swap; src: url(./SpecialElite-Regular.ttf) format('truetype'); }
 @font-face { font-family: 'Permanent Marker'; font-display: swap; src: url(./PermanentMarker-Regular.ttf) format('truetype'); }
+
+/* Андеграундные Rubik (SIL OFL 1.1, LICENSE-RubikFiltered.txt): Dirt, Distressed, Wet Paint, Spray Paint, Glitch. Латиница и кириллица. */
+@font-face { font-family: 'Rubik Dirt'; font-display: swap; src: url(./RubikDirt-Regular.woff2) format('woff2'); }
+@font-face { font-family: 'Rubik Distressed'; font-display: swap; src: url(./RubikDistressed-Regular.woff2) format('woff2'); }
+@font-face { font-family: 'Rubik Wet Paint'; font-display: swap; src: url(./RubikWetPaint-Regular.woff2) format('woff2'); }
+@font-face { font-family: 'Rubik Spray Paint'; font-display: swap; src: url(./RubikSprayPaint-Regular.woff2) format('woff2'); }
+@font-face { font-family: 'Rubik Glitch'; font-display: swap; src: url(./RubikGlitch-Regular.woff2) format('woff2'); }

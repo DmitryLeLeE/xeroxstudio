@@ -239,6 +239,40 @@ export function drawSticker(c, name, size, color, paper) {
   c.restore();
 }
 /** Свободные слои поверх листа (аналог draw_layers в engine.py). */
+// «Записка из газетных букв»: каждая буква на своём клочке, свой шрифт, размер и наклон (раскладка детерминирована: тот же результат в engine.py).
+const RANSOM_FONTS = ["Arial Black", "Times New Roman Bold", "Courier New Bold", "Impact", "Rubik Mono One", "Rubik Distressed", "Marck Script"];
+function drawRansom(c, text, fpx, color, paper, accent) {
+  const lines = text.split("\n"), rows = []; let n = 0, maxW = 0;
+  for (const l of lines) {
+    const row = []; let wsum = 0;
+    for (const ch of [...l]) {
+      const i = n++;
+      if (ch === " ") { row.push({ sp: true, w: fpx * 0.45 }); wsum += fpx * 0.45; continue; }
+      const f = RANSOM_FONTS[Math.floor(hash01(i, 11) * RANSOM_FONTS.length)], sz = Math.round(fpx * (0.78 + 0.5 * hash01(i, 12)));
+      const rot = (hash01(i, 13) - 0.5) * 0.28, mode = hash01(i, 14), dy = (hash01(i, 15) - 0.5) * 0.22 * fpx;
+      c.font = fontSpec(f, sz);
+      const pad = sz * 0.16, w = c.measureText(ch).width + 2 * pad, h = sz * 1.05 + 2 * pad;
+      row.push({ ch, f, sz, rot, mode, dy, w, h }); wsum += w - fpx * 0.02;
+    }
+    rows.push(row); maxW = Math.max(maxW, wsum);
+  }
+  const lh = fpx * 1.55, top = (-lh * lines.length) / 2;
+  rows.forEach((row, ri) => {
+    const rw = row.reduce((a, it) => a + it.w - (it.sp ? 0 : fpx * 0.02), 0);
+    let x = -rw / 2;
+    for (const it of row) {
+      if (it.sp) { x += it.w; continue; }
+      c.save(); c.translate(x + it.w / 2, top + ri * lh + lh / 2 + it.dy); c.rotate(it.rot);
+      const inv = it.mode >= 0.45 && it.mode < 0.75, acc = it.mode >= 0.75 && it.mode < 0.9;
+      c.fillStyle = inv ? color : acc ? accent : paper; c.fillRect(-it.w / 2, -it.h / 2, it.w, it.h);
+      if (!inv && !acc) { c.strokeStyle = "rgba(0,0,0,.35)"; c.lineWidth = Math.max(1, fpx * 0.03); c.strokeRect(-it.w / 2, -it.h / 2, it.w, it.h); }
+      c.fillStyle = inv || acc ? paper : color; c.font = fontSpec(it.f, it.sz); c.textAlign = "center"; c.textBaseline = "middle";
+      c.fillText(it.ch, 0, it.sz * 0.05); c.restore();
+      x += it.w - fpx * 0.02;
+    }
+  });
+}
+
 function drawLayers(canvas, st, paper, ink) {
   const layers = st.layers; if (!Array.isArray(layers) || !layers.length) return;
   const w = canvas.width, c = ctx2d(canvas), h = canvas.height;
@@ -249,7 +283,9 @@ function drawLayers(canvas, st, paper, ink) {
     if (ly.type === "sticker") drawSticker(c, ly.sticker, size * w, color, cols.paper);
     else {
       const text = String(ly.text || "").trim(); if (!text) { c.restore(); continue; }
-      const fpx = Math.max(8, Math.round(size * w * 0.5)), lines = text.split("\n"), pad = fpx * 0.3, lh = fpx * 1.15;
+      const fpx = Math.max(8, Math.round(size * w * 0.5));
+      if (ly.style === "ransom") { drawRansom(c, text, fpx, color, cols.paper, cols.ink2); c.restore(); continue; }
+      const lines = text.split("\n"), pad = fpx * 0.3, lh = fpx * 1.15;
       c.font = fontSpec(ly.font || "Arial Black", fpx); c.textBaseline = "top"; c.textAlign = "left";
       const tw = Math.max(...lines.map((l) => c.measureText(l).width)), th = lh * lines.length, bw = tw + 2 * pad, bh = th + 2 * pad;
       const style = ly.style || "box";
@@ -688,6 +724,9 @@ export async function ensureFonts(state, text) {
   const st = mergeState(state);
   const sample = (text || `${st.txt_top} ${st.txt_bottom}`) + " ABCabc012";
   const jobs = [fonts.load(fontSpec(st.font, 40), sample)];
+  const layerFonts = new Set();
+  for (const ly of Array.isArray(st.layers) ? st.layers : []) if (ly.type !== "sticker") { layerFonts.add(ly.font || "Arial Black"); if (ly.style === "ransom") RANSOM_FONTS.forEach((f) => layerFonts.add(f)); }
+  for (const f of layerFonts) jobs.push(fonts.load(fontSpec(f, 40), sample));
   if (st.layout === "contact_sheet") jobs.push(fonts.load(fontSpec("Courier New Bold", 15), "0123456789A"));
   await Promise.all(jobs.map((p) => p.catch(() => null)));
 }

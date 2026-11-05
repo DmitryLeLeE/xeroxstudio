@@ -1,5 +1,12 @@
 # Changelog
 
+## 2.0.0
+- **Underground kit.** 12 new stickers (skull, anarchy, COPY, DIY, safety pin, no sign, crown, dead face, cassette, peace, warning, vinyl); a *ransom note* text backing where each letter sits on its own paper scrap in its own font, size and tilt (browser and desktop draw it the same way); five underground fonts with Cyrillic (Rubik Dirt, Distressed, Wet Paint, Spray Paint, Glitch); five new presets (Dirty Punk, Spray Wall, Glitch Tape, Wet Paint, Copy of a Copy of a Copy). Layer fonts are now loaded before rendering, so a chosen font no longer falls back on first use.
+- **Phone layout.** The settings panel has a drag handle to make it taller, the page strip hides while a panel is open (more room for the sheet), theme and language moved into the File menu on phones.
+- **Pages.** Drag thumbnails to reorder pages (mouse; touch keeps the arrow buttons).
+- **Desktop:** a backing selector for text layers (box, tape, outline, ransom note).
+- Together with 1.4–1.7: render workers, free layers, icon rail and detailed mode, style gallery, realistic stains.
+
 ## 1.7.0
 - **Style gallery (browser).** The ✨ button (and the Styles icon) shows every ready style rendered on your own photo; click a tile to apply it. A second tab shows six random variations (respecting Remix locks), with "six more" for another batch.
 - **Two panel modes (browser).** *Icons* (default): a slim rail of icons on the side, each opens one settings section next to the sheet, rare sliders are tucked under "More settings". *Detailed*: every setting in one list, as before. The choice is remembered.

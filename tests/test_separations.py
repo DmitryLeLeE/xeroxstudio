@@ -30,3 +30,18 @@ def test_copier_sound_is_valid_wav():
     import copier_sound
     with wave.open(io.BytesIO(copier_sound.make_wav(0.5))) as w:
         assert w.getnchannels() == 1 and w.getframerate() == copier_sound.RATE and w.getnframes() > 1000
+
+
+def test_ransom_layer_and_all_stickers_render_in_python():
+    import config
+    import engine
+    from PIL import Image
+    import stickers
+    g = engine.ZineGraphicEngine()
+    st = dict(config.DEFAULT_STATE)
+    st["layers"] = [{"type": "text", "text": "НЕТ БОГОВ\nNO GODS", "x": 0.5, "y": 0.5, "size": 0.2, "rot": -5, "color": "ink", "style": "ransom"}]
+    st["layers"] += [{"type": "sticker", "sticker": name, "x": 0.5, "y": 0.5, "size": 0.2, "rot": 0, "color": "ink"} for name in stickers.STICKERS]
+    img = Image.new("RGB", (600, 900), (240, 235, 220))
+    out = g.draw_layers(img, st, (240, 235, 220), (10, 10, 10))
+    assert out.size == img.size and out.tobytes() != img.tobytes()
+    assert len(stickers.STICKERS) >= 28

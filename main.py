@@ -507,6 +507,11 @@ class XeroxZineStudioApp:
         self._label(c, "Цвет слоя")
         ttk.Combobox(c, textvariable=self.ly_color, values=["ink", "paper", "ink2", "ink3", "ink4"], state="readonly", font=FONT).pack(fill=tk.X, pady=(0, 3))
 
+        self.ly_style = tk.StringVar(value="box")
+        self.ly_style.trace_add("write", lambda *a: self._layer_var_changed("style"))
+        self._label(c, "Подложка надписи")
+        ttk.Combobox(c, textvariable=self.ly_style, values=["box", "tape", "plain", "ransom"], state="readonly", font=FONT).pack(fill=tk.X, pady=(0, 3))
+
         # 7. Текст
         c = self._section(p, "7. МАНИФЕСТЫ И ТИПОГРАФИКА")
         self._label(c, "Верхняя надпись")
@@ -768,6 +773,7 @@ class XeroxZineStudioApp:
                 self.ly_vars["rot"].set(round(float(ly.get("rot", 0))))
                 self.ly_text.set(ly.get("text", ""))
                 self.ly_color.set(ly.get("color", "ink"))
+                self.ly_style.set(ly.get("style", "box"))
         finally:
             self._layer_loading = False
 
@@ -785,6 +791,8 @@ class XeroxZineStudioApp:
             ly["text"] = self.ly_text.get()
         elif key == "color":
             ly["color"] = self.ly_color.get()
+        elif key == "style":
+            ly["style"] = self.ly_style.get()
         self.preset_var.set(PRESET_HINT)
         self.schedule_render()
 
