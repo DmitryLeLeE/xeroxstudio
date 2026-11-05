@@ -1,5 +1,8 @@
 # Changelog
 
+## 2.1.1
+- **Worn stickers.** Stickers no longer look cleaner than the rest of the sheet: toner dropouts, faded patches and scratches are eroded into them (browser and desktop use the same formulas).
+
 ## 2.1.0
 - **Browser app redesign: the sheet fills the whole screen.** Tools float over it instead of sitting in columns. A ribbon of icon "stickers" opens one slide-out panel at a time (left side on desktop, bottom on phones, same behaviour everywhere); the ✕ or a second tap on the icon puts the sheet back on the full screen. The All icon shows every setting in one list. Add / Before-after / Fit / PNG float over the sheet, pages live in a bottom strip, and the sheet always re-fits to the free space.
 - **New look.** Black header with an acid underline, halftone stage, paper panels with hard shadows and dotted title bars, tilted ribbon tiles, lifted active page. Both the paper and dark themes.

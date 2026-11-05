@@ -273,14 +273,43 @@ function drawRansom(c, text, fpx, color, paper, accent) {
   });
 }
 
+// Износ стикера: пропуски тонера, пятна, царапины. Те же формулы, что _wear_sticker в engine.py.
+function wearSticker(off, px, seed) {
+  const c = ctx2d(off), W = off.width, H = off.height, u = Math.max(1.2, px / 150), k = seed * 100;
+  c.globalCompositeOperation = "destination-out";
+  const dot = (x, y, r, a) => { c.fillStyle = `rgba(0,0,0,${a})`; c.beginPath(); c.arc(x, y, r, 0, Math.PI * 2); c.fill(); };
+  const n = Math.min(1600, Math.floor((px * px) / 40));
+  for (let i = 0; i < n; i++) dot(hash01(i, k + 21) * W, hash01(i, k + 22) * H, (0.4 + hash01(i, k + 23) ** 2 * 1.6) * u, 0.55 + 0.45 * hash01(i, k + 24));
+  for (let j = 0; j < 9; j++) {
+    const cx = hash01(j, k + 31) * W, cy = hash01(j, k + 32) * H;
+    for (let i = 0; i < 18; i++) {
+      const a = hash01(i + 100 * j, k + 33) * 6.2832, rr = hash01(i + 100 * j, k + 34) * px * 0.1, r = (0.8 + hash01(i + 100 * j, k + 35) * 2.2) * u;
+      dot(cx + Math.cos(a) * rr, cy + Math.sin(a) * rr, r, 0.8);
+    }
+  }
+  for (let j = 0; j < 10; j++) dot(hash01(j, k + 51) * W, hash01(j, k + 52) * H, px * (0.03 + hash01(j, k + 53) * 0.06), 70 / 255);
+  c.strokeStyle = "rgba(0,0,0,0.9)"; c.lineWidth = Math.max(1, Math.round(px / 220)); c.lineCap = "butt";
+  for (let j = 0; j < 5; j++) {
+    const x = hash01(j, k + 41) * W, y = hash01(j, k + 42) * H, a = hash01(j, k + 43) * 6.2832, ln = px * (0.2 + hash01(j, k + 44) * 0.4);
+    c.beginPath(); c.moveTo(x, y); c.lineTo(x + Math.cos(a) * ln, y + Math.sin(a) * ln); c.stroke();
+  }
+  c.globalCompositeOperation = "source-over";
+}
+
 function drawLayers(canvas, st, paper, ink) {
   const layers = st.layers; if (!Array.isArray(layers) || !layers.length) return;
   const w = canvas.width, c = ctx2d(canvas), h = canvas.height;
   const cols = { ink: rgbCss(ink), paper: rgbCss(paper), ink2: rgbCss(st.ink2 || [255, 60, 140]), ink3: rgbCss(st.ink3 || [0, 120, 190]), ink4: rgbCss(st.ink4 || [255, 200, 0]) };
+  let li = -1;
   for (const ly of layers) {
+    li++;
     const color = cols[ly.color] || cols.ink, size = Math.max(0.02, Number(ly.size) || 0.2);
     c.save(); c.translate((Number(ly.x) || 0.5) * w, (Number(ly.y) || 0.5) * h); c.rotate(((Number(ly.rot) || 0) * Math.PI) / 180);
-    if (ly.type === "sticker") drawSticker(c, ly.sticker, size * w, color, cols.paper);
+    if (ly.type === "sticker") {
+      const px = Math.max(8, Math.floor(size * w)), off = makeCanvas(px, px), oc = ctx2d(off);
+      oc.translate(px / 2, px / 2); drawSticker(oc, ly.sticker, px, color, cols.paper); wearSticker(off, px, li + 1);
+      c.drawImage(off, -px / 2, -px / 2);
+    }
     else {
       const text = String(ly.text || "").trim(); if (!text) { c.restore(); continue; }
       const fpx = Math.max(8, Math.round(size * w * 0.5));

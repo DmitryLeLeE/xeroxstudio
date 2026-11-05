@@ -566,6 +566,40 @@ class ZineGraphicEngine:
                 x += adv(it)
         return out
 
+    @staticmethod
+    def _wear_sticker(loc, seed):
+        """Износ стикера: пропуски тонера, пятна, царапины. Те же формулы, что wearSticker в engine.js."""
+        W, H = loc.size
+        px = float(W)
+        mask = Image.new("L", (W, H), 0)
+        d = ImageDraw.Draw(mask)
+        u = max(1.2, px / 150.0)
+        n = min(1600, int(px * px / 40))
+        k = seed * 100
+        for i in range(n):
+            x, y = _h01(i, k + 21) * W, _h01(i, k + 22) * H
+            r = (0.4 + _h01(i, k + 23) ** 2 * 1.6) * u
+            d.ellipse([x - r, y - r, x + r, y + r], fill=int(255 * (0.55 + 0.45 * _h01(i, k + 24))))
+        for j in range(9):  # пятна, где краска стёрлась кучнее
+            cx, cy = _h01(j, k + 31) * W, _h01(j, k + 32) * H
+            for i in range(18):
+                a = _h01(i + 100 * j, k + 33) * 6.2832
+                rr = _h01(i + 100 * j, k + 34) * px * 0.1
+                r = (0.8 + _h01(i + 100 * j, k + 35) * 2.2) * u
+                x, y = cx + math.cos(a) * rr, cy + math.sin(a) * rr
+                d.ellipse([x - r, y - r, x + r, y + r], fill=204)
+        for j in range(10):  # выцветшие места: мягкие полупрозрачные пятна
+            x, y = _h01(j, k + 51) * W, _h01(j, k + 52) * H
+            r = px * (0.03 + _h01(j, k + 53) * 0.06)
+            d.ellipse([x - r, y - r, x + r, y + r], fill=70)
+        for j in range(5):  # царапины
+            x, y = _h01(j, k + 41) * W, _h01(j, k + 42) * H
+            a, ln = _h01(j, k + 43) * 6.2832, px * (0.2 + _h01(j, k + 44) * 0.4)
+            d.line([x, y, x + math.cos(a) * ln, y + math.sin(a) * ln], fill=230, width=max(1, int(round(px / 220))))
+        arr = np.asarray(loc, dtype=np.float32).copy()
+        arr[..., 3] *= 1.0 - np.asarray(mask, dtype=np.float32) / 255.0
+        return Image.fromarray(arr.astype(np.uint8), "RGBA")
+
     def draw_layers(self, img, st, paper_rgb, ink_rgb, s=1.0):
         """Свободные слои: стикеры и надписи поверх готового листа. Координаты - доли листа."""
         layers = st.get("layers") or []
@@ -575,12 +609,13 @@ class ZineGraphicEngine:
         base = img.convert("RGBA")
         cols = {"ink": tuple(ink_rgb), "paper": tuple(paper_rgb), "ink2": tuple(st.get("ink2", (255, 60, 140))),
                 "ink3": tuple(st.get("ink3", (0, 120, 190))), "ink4": tuple(st.get("ink4", (255, 200, 0)))}
-        for ly in layers:
+        for li, ly in enumerate(layers):
             try:
                 color = cols.get(ly.get("color", "ink"), cols["ink"])
                 size = max(0.02, float(ly.get("size", 0.2)))
                 if ly.get("type") == "sticker":
                     loc = self._sticker_image(ly.get("sticker", "star"), size * w, color, paper_rgb)
+                    loc = self._wear_sticker(loc, li + 1)
                 else:
                     text = str(ly.get("text", "")).strip()
                     if not text:
