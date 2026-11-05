@@ -1,5 +1,8 @@
 # Changelog
 
+## 1.5.0
+- **Browser: several render workers.** Exporting a book (ZIP of pages, PDF) renders neighbouring pages in parallel while the previous one is being written. On a 2-core machine six 2x pages take 3.5 s instead of 6.1 s. Up to 3 workers on desktop, 1 on phones (memory). `?workers=N` overrides it.
+
 ## 1.4.2
 - **Stains look real now** (both versions): coffee leaves an uneven ring with a dark rim and a few splashes around it, grease is a soft translucent spot. They are multiplied onto the sheet, so paper and ink show through.
 

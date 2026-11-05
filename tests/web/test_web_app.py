@@ -382,3 +382,20 @@ def test_noworker_flag_falls_back_to_main_thread(page_factory):
     r = pg.evaluate(_PARITY_JS, 1)
     assert r["mode"] == "main" and r["same"] and r["frac"] == 0
     assert pg.errors == []
+
+
+def test_worker_pool_renders_in_parallel_and_matches(page_factory):
+    pg = page_factory(path="/app/?workers=3")
+    wait_ready(pg)
+    r = pg.evaluate("""async () => {
+      const { RC, E, page } = window.__zine;
+      const st = page();
+      const outs = await Promise.all([1, 2, 3, 4].map((i) => RC.renderPage(null, { ...st, seed: i }, { scale: 0.5 })));
+      const ref = await E.renderPage(null, { ...st, seed: 3 }, { scale: 0.5 });
+      let bd = 0; for (let i = 0; i < ref.bits.length; i++) if (ref.bits[i] !== outs[2].bits[i]) bd++;
+      return { pool: RC.poolSize(), mode: RC.renderMode(), sizes: outs.map((o) => o.width), frac: bd / ref.bits.length };
+    }""")
+    if r["mode"] == "worker":
+        assert r["pool"] >= 1 and r["frac"] < 0.01
+    assert r["sizes"] == [r["sizes"][0]] * 4
+    assert pg.errors == []

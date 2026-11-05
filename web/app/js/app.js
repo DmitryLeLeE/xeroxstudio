@@ -1287,6 +1287,12 @@ scaleSel.addEventListener("change", () => ls.set("zine.scale", scaleSel.value));
 const exportScale = () => Number(scaleSel.value) || 2;
 const pageName = (i, n = S.pages.length) => `${S.name || "zine"}_page_${pad(i + 1, Math.max(2, String(n).length))}`;
 const render = (i, opts) => RC.renderPage(srcFor(S.pages[i]), S.pages[i], opts);
+// Считает страницы на несколько шагов вперёд: пока одна пишется в файл, соседние уже готовятся в других воркерах.
+const renderAhead = (optsFor) => {
+  const cache = new Map(), ahead = Math.max(1, RC.poolSize());
+  const start = (i) => { if (i < S.pages.length && !cache.has(i)) { const p = render(i, optsFor(i)); p.catch(() => {}); cache.set(i, p); } };
+  return async (i) => { for (let k = 0; k <= ahead; k++) start(i + k); const p = cache.get(i); cache.delete(i); return p; };
+};
 const pngU8 = async (canvas) => IO.pngSetDpi(await IO.blobToU8(await IO.canvasToBlob(canvas)), 300);
 const memHint = (e) => (/memory|alloc|canvas/i.test(String(e && e.message)) ? T(" Не хватило памяти — попробуйте масштаб поменьше.", " Out of memory — try a lower scale.") : "");
 
@@ -1585,10 +1591,10 @@ async function exportAllPng() {
   if (!sink) return;
   const n = S.pages.length, scale = exportScale();
   await job(T("Экспорт всех страниц", "Export all pages"), async (progress) => {
-    const entries = [];
+    const entries = [], get = renderAhead(() => ({ scale }));
     for (let i = 0; i < n; i++) {
       await progress(T(`Страница ${i + 1} из ${n}…`, `Page ${i + 1} of ${n}…`), i / (n + 1));
-      const r = await render(i, { scale });
+      const r = await get(i);
       entries.push({ name: `${pageName(i, n)}.png`, data: await pngU8(r.canvas) });
     }
     await sink.write(new Blob([IO.writeZip(entries)], { type: "application/zip" }));
@@ -1648,10 +1654,11 @@ async function exportPdf() {
   if (!sink) return;
   const n = S.pages.length, scale = exportScale();
   await job(T("Экспорт книги в PDF", "Export book as PDF"), async (progress) => {
+    const get = renderAhead(() => ({ scale }));
     async function* pages() {
       for (let i = 0; i < n; i++) {
         await progress(T(`Рендеринг страницы ${i + 1} из ${n}…`, `Rendering page ${i + 1} of ${n}…`), i / (n + 1));
-        const r = await render(i, { scale });
+        const r = await get(i);
         yield r.canvas.getContext("2d", { willReadFrequently: true }).getImageData(0, 0, r.width, r.height);
       }
     }
