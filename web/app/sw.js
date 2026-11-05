@@ -1,5 +1,5 @@
 // Автогенерация (tools/gen_sw.py). Офлайн-кэш: после первого запуска приложение открывается без сети.
-const CACHE = "zine-studio-f8133f1713";
+const CACHE = "zine-studio-85dd426dd4";
 const CORE = ['./', 'data/face.json', 'fonts/OFL-JetBrainsMono.txt', 'fonts/OFL-Oswald.txt', 'fonts/OFL-PTSerif.txt', 'fonts/OFL-Rubik.txt', 'fonts/fonts.css', 'fonts/jetbrains-mono-cyrillic-700-normal.woff2', 'fonts/jetbrains-mono-latin-700-normal.woff2', 'fonts/oswald-cyrillic-700-normal.woff2', 'fonts/oswald-latin-700-normal.woff2', 'fonts/pt-serif-cyrillic-700-normal.woff2', 'fonts/pt-serif-latin-700-normal.woff2', 'fonts/rubik-cyrillic-700-normal.woff2', 'fonts/rubik-cyrillic-900-normal.woff2', 'fonts/rubik-latin-700-normal.woff2', 'fonts/rubik-latin-900-normal.woff2', 'icons/apple-180.png', 'icons/icon-192.png', 'icons/icon-512.png', 'icons/maskable-512.png', 'index.html', 'js/app.js', 'js/config.js', 'js/engine.js', 'js/faces.js', 'js/io.js', 'js/theme-init.js', 'js/util.js', 'licenses.txt', 'manifest.webmanifest', 'style.css', '../img/sample.jpg', '../img/favicon.png', '../img/xerox.png', '../index.html', '../style.css', '../landing.js'];
 
 self.addEventListener("install", (e) => {

@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.3.0
+- **Five new screens** (both versions): lines, cross-hatch, stipple, mezzotint, Bayer. Python and JS give the same plate (tested).
+- **Sheet wear** (both versions): fold crease, punch holes, coffee and grease stains, dust and hairs, and a rubber stamp with your own text.
+- **Remix locks and Mutate:** keep palette, layout, raster, text, font or wear while remixing; Mutate nudges the numeric settings a little.
+- **Four new presets:** Line Engraving, Mezzotint, Dirty Office, Bayer 8-bit (20 in total). New 4:5 Instagram canvas.
+- **Browser:** saddle-stitch booklet PDF for any page count (A4 or Letter, correct page order for double-sided printing), printer calibration sheet, palette from the current photo.
+- Landing page copy rewritten.
+
 ## 1.2.0
 - **Riso ink separations** (both versions): ZIP with one 1-bit plate per ink, corner registration crosses and a README with ink colours and print order.
 - **Fold guide:** illustrated 5-step guide to folding the 8-page mini-zine, printable from the app.

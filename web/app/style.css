@@ -301,3 +301,7 @@ html[data-theme="paper"] body, html[data-theme="paper"] .btn { font-family: "Rub
 @keyframes sheetOut { from { transform: translateY(-120px); } to { transform: translateY(0); } }
 @keyframes ritualBg { 0% { opacity: 0; } 12% { opacity: 1; } 80% { opacity: 1; } 100% { opacity: 0; } }
 @media (prefers-reduced-motion: reduce) { .ritual .sheet { animation: none; transform: none; } .ritual { animation-duration: 1.2s; } }
+
+.locks .chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 4px; }
+.chip { font: inherit; font-size: 12px; padding: 4px 9px; border: 1.5px solid currentColor; border-radius: 999px; background: transparent; color: inherit; cursor: pointer; }
+.chip[aria-pressed="true"] { background: var(--fg); color: var(--panel); }

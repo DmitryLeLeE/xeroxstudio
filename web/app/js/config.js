@@ -1,6 +1,6 @@
 // Сгенерировано из config.py и presets.py (tools/gen_config_js.py). Не править вручную.
 export const CFG = {
- "APP_VERSION": "1.2.0",
+ "APP_VERSION": "1.3.0",
  "CANVAS_FORMATS": {
   "2:3 Постер (1000×1500)": [
    1000,
@@ -17,6 +17,10 @@ export const CFG = {
   "3:4 Принт (1200×1600)": [
    1200,
    1600
+  ],
+  "4:5 Instagram (1080×1350)": [
+   1080,
+   1350
   ]
  },
  "RISO_PALETTES": {
@@ -199,6 +203,26 @@ export const CFG = {
   [
    "Трафарет (порог)",
    "stencil"
+  ],
+  [
+   "Линии (штриховка)",
+   "lines"
+  ],
+  [
+   "Кросс-штрих",
+   "cross"
+  ],
+  [
+   "Стипль (случайные точки)",
+   "stipple"
+  ],
+  [
+   "Мезотинт (шум)",
+   "mezzo"
+  ],
+  [
+   "Байер (упорядоченный)",
+   "bayer"
   ]
  ],
  "FIT_MODES": [
@@ -317,6 +341,12 @@ export const CFG = {
    140
   ],
   "tape": 0,
+  "fold": 0,
+  "holes": 0,
+  "stains": 0,
+  "dust": 0,
+  "stamp": "",
+  "stamp_rot": -12,
   "crop": [
    0.0,
    0.0,
@@ -347,6 +377,10 @@ export const CFG = {
   "overprint",
   "ink2",
   "tape",
+  "fold",
+  "holes",
+  "stains",
+  "dust",
   "palette",
   "invert",
   "custom_colors",
@@ -385,6 +419,10 @@ export const CFG = {
     140
    ],
    "tape": 0,
+   "fold": 0,
+   "holes": 0,
+   "stains": 0,
+   "dust": 0,
    "palette": "Classic B&W (Xerox)",
    "invert": false,
    "custom_colors": [
@@ -433,6 +471,10 @@ export const CFG = {
     140
    ],
    "tape": 0,
+   "fold": 0,
+   "holes": 0,
+   "stains": 0,
+   "dust": 0,
    "palette": "Vintage Newsprint (Cream / Charcoal)",
    "invert": false,
    "custom_colors": [
@@ -481,6 +523,10 @@ export const CFG = {
     140
    ],
    "tape": 0,
+   "fold": 0,
+   "holes": 0,
+   "stains": 0,
+   "dust": 0,
    "palette": "Acid Cyberpunk (Neon Lime / Black)",
    "invert": false,
    "custom_colors": [
@@ -529,6 +575,10 @@ export const CFG = {
     140
    ],
    "tape": 0,
+   "fold": 0,
+   "holes": 0,
+   "stains": 0,
+   "dust": 0,
    "palette": "Hot Pink Riot (Fluo Pink / Black)",
    "invert": false,
    "custom_colors": [
@@ -577,6 +627,10 @@ export const CFG = {
     140
    ],
    "tape": 0,
+   "fold": 0,
+   "holes": 0,
+   "stains": 0,
+   "dust": 0,
    "palette": "Blueprint / Cyanotype (Navy / Cyan)",
    "invert": false,
    "custom_colors": [
@@ -625,6 +679,10 @@ export const CFG = {
     140
    ],
    "tape": 0,
+   "fold": 0,
+   "holes": 0,
+   "stains": 0,
+   "dust": 0,
    "palette": "Classic B&W (Xerox)",
    "invert": false,
    "custom_colors": [
@@ -673,6 +731,10 @@ export const CFG = {
     140
    ],
    "tape": 0,
+   "fold": 0,
+   "holes": 0,
+   "stains": 0,
+   "dust": 0,
    "palette": "Пользовательская (Custom)",
    "invert": false,
    "custom_colors": [
@@ -721,6 +783,10 @@ export const CFG = {
     140
    ],
    "tape": 85,
+   "fold": 0,
+   "holes": 0,
+   "stains": 0,
+   "dust": 0,
    "palette": "Vintage Newsprint (Cream / Charcoal)",
    "invert": false,
    "custom_colors": [
@@ -769,6 +835,10 @@ export const CFG = {
     140
    ],
    "tape": 0,
+   "fold": 0,
+   "holes": 0,
+   "stains": 0,
+   "dust": 0,
    "palette": "Safety Orange (Blaze Orange / Charcoal)",
    "invert": false,
    "custom_colors": [
@@ -817,6 +887,10 @@ export const CFG = {
     140
    ],
    "tape": 60,
+   "fold": 0,
+   "holes": 0,
+   "stains": 0,
+   "dust": 0,
    "palette": "Vintage Newsprint (Cream / Charcoal)",
    "invert": false,
    "custom_colors": [
@@ -865,6 +939,10 @@ export const CFG = {
     140
    ],
    "tape": 0,
+   "fold": 0,
+   "holes": 0,
+   "stains": 0,
+   "dust": 0,
    "palette": "Vintage Newsprint (Cream / Charcoal)",
    "invert": false,
    "custom_colors": [
@@ -913,6 +991,10 @@ export const CFG = {
     140
    ],
    "tape": 0,
+   "fold": 0,
+   "holes": 0,
+   "stains": 0,
+   "dust": 0,
    "palette": "Blueprint / Cyanotype (Navy / Cyan)",
    "invert": false,
    "custom_colors": [
@@ -961,6 +1043,10 @@ export const CFG = {
     140
    ],
    "tape": 0,
+   "fold": 0,
+   "holes": 0,
+   "stains": 0,
+   "dust": 0,
    "palette": "Classic B&W (Xerox)",
    "invert": false,
    "custom_colors": [
@@ -1009,6 +1095,10 @@ export const CFG = {
     140
    ],
    "tape": 0,
+   "fold": 0,
+   "holes": 0,
+   "stains": 0,
+   "dust": 0,
    "palette": "Acid Cyberpunk (Neon Lime / Black)",
    "invert": false,
    "custom_colors": [
@@ -1057,6 +1147,10 @@ export const CFG = {
     140
    ],
    "tape": 0,
+   "fold": 0,
+   "holes": 0,
+   "stains": 0,
+   "dust": 0,
    "palette": "Пользовательская (Custom)",
    "invert": false,
    "custom_colors": [
@@ -1105,6 +1199,10 @@ export const CFG = {
     140
    ],
    "tape": 0,
+   "fold": 0,
+   "holes": 0,
+   "stains": 0,
+   "dust": 0,
    "palette": "Nightvision (Muted Green / Phosphor)",
    "invert": false,
    "custom_colors": [
@@ -1121,6 +1219,214 @@ export const CFG = {
    ],
    "font": "Consolas Bold",
    "font_size": 32,
+   "tstyle": "dymo_tape",
+   "text_align": "left",
+   "txt_x": 7,
+   "txt_y1": 10,
+   "txt_y2": 70,
+   "text_rot": 0.0
+  },
+  "Линейная гравюра": {
+   "layout": "center_hero",
+   "rows": 4,
+   "tilt": 0.0,
+   "fit_mode": "contain",
+   "bright": 1.3,
+   "edge_x": 15,
+   "edge_y": 10,
+   "loss": 15,
+   "dither": "cross",
+   "dot_size": 6,
+   "angle": 30,
+   "contrast": 2.2,
+   "noise": 12,
+   "streaks": 10,
+   "misreg": 1,
+   "copier_edge": 10,
+   "paper": 45,
+   "overprint": 0,
+   "ink2": [
+    255,
+    60,
+    140
+   ],
+   "tape": 0,
+   "fold": 0,
+   "holes": 0,
+   "stains": 0,
+   "dust": 0,
+   "palette": "Vintage Newsprint (Cream / Charcoal)",
+   "invert": false,
+   "custom_colors": [
+    [
+     255,
+     255,
+     255
+    ],
+    [
+     0,
+     0,
+     0
+    ]
+   ],
+   "font": "Arial Black",
+   "font_size": 36,
+   "tstyle": "white_box",
+   "text_align": "left",
+   "txt_x": 7,
+   "txt_y1": 10,
+   "txt_y2": 70,
+   "text_rot": 0.0
+  },
+  "Мезотинт": {
+   "layout": "full_page",
+   "rows": 4,
+   "tilt": 0.0,
+   "fit_mode": "cover",
+   "bright": 1.3,
+   "edge_x": 15,
+   "edge_y": 10,
+   "loss": 10,
+   "dither": "mezzo",
+   "dot_size": 8,
+   "angle": 45,
+   "contrast": 2.0,
+   "noise": 10,
+   "streaks": 0,
+   "misreg": 0,
+   "copier_edge": 20,
+   "paper": 30,
+   "overprint": 0,
+   "ink2": [
+    255,
+    60,
+    140
+   ],
+   "tape": 0,
+   "fold": 0,
+   "holes": 0,
+   "stains": 0,
+   "dust": 0,
+   "palette": "Classic B&W (Xerox)",
+   "invert": false,
+   "custom_colors": [
+    [
+     255,
+     255,
+     255
+    ],
+    [
+     0,
+     0,
+     0
+    ]
+   ],
+   "font": "Impact",
+   "font_size": 44,
+   "tstyle": "outline",
+   "text_align": "left",
+   "txt_x": 7,
+   "txt_y1": 10,
+   "txt_y2": 70,
+   "text_rot": 0.0
+  },
+  "Грязный офис": {
+   "layout": "staggered",
+   "rows": 4,
+   "tilt": 1.2,
+   "fit_mode": "contain",
+   "bright": 1.3,
+   "edge_x": 15,
+   "edge_y": 10,
+   "loss": 45,
+   "dither": "halftone",
+   "dot_size": 7,
+   "angle": 45,
+   "contrast": 2.4,
+   "noise": 40,
+   "streaks": 40,
+   "misreg": 2,
+   "copier_edge": 50,
+   "paper": 60,
+   "overprint": 0,
+   "ink2": [
+    255,
+    60,
+    140
+   ],
+   "tape": 0,
+   "fold": 70,
+   "holes": 1,
+   "stains": 55,
+   "dust": 60,
+   "palette": "Classic B&W (Xerox)",
+   "invert": false,
+   "custom_colors": [
+    [
+     255,
+     255,
+     255
+    ],
+    [
+     0,
+     0,
+     0
+    ]
+   ],
+   "font": "Consolas Bold",
+   "font_size": 30,
+   "tstyle": "white_box",
+   "text_align": "left",
+   "txt_x": 7,
+   "txt_y1": 10,
+   "txt_y2": 70,
+   "text_rot": 0.0
+  },
+  "Байер 8-бит": {
+   "layout": "contact_sheet",
+   "rows": 5,
+   "tilt": 0.0,
+   "fit_mode": "contain",
+   "bright": 1.3,
+   "edge_x": 15,
+   "edge_y": 10,
+   "loss": 20,
+   "dither": "bayer",
+   "dot_size": 9,
+   "angle": 45,
+   "contrast": 2.0,
+   "noise": 5,
+   "streaks": 20,
+   "misreg": 0,
+   "copier_edge": 15,
+   "paper": 0,
+   "overprint": 0,
+   "ink2": [
+    255,
+    60,
+    140
+   ],
+   "tape": 0,
+   "fold": 0,
+   "holes": 0,
+   "stains": 0,
+   "dust": 0,
+   "palette": "Nightvision (Muted Green / Phosphor)",
+   "invert": false,
+   "custom_colors": [
+    [
+     255,
+     255,
+     255
+    ],
+    [
+     0,
+     0,
+     0
+    ]
+   ],
+   "font": "Consolas Bold",
+   "font_size": 30,
    "tstyle": "dymo_tape",
    "text_align": "left",
    "txt_x": 7,

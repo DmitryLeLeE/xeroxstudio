@@ -16,11 +16,12 @@ const MAX_SIDE = TOUCH ? 3072 : 4096; // длинная сторона загр�
 // ---------------------------------------------------------------- подписи (RU — как в .zine и десктопе)
 const EN = {
   "2:3 Постер (1000×1500)": "2:3 Poster (1000×1500)", "1:1 Квадрат / Обложка (1200×1200)": "1:1 Square / Cover (1200×1200)",
-  "9:16 Stories / Обои (1080×1920)": "9:16 Stories / Wallpaper (1080×1920)", "3:4 Принт (1200×1600)": "3:4 Print (1200×1600)",
+  "9:16 Stories / Обои (1080×1920)": "9:16 Stories / Wallpaper (1080×1920)", "3:4 Принт (1200×1600)": "3:4 Print (1200×1600)", "4:5 Instagram (1080×1350)": "4:5 Instagram (1080×1350)",
   staggered: "Staggered (zigzag)", column: "Column (room for text)", contact_sheet: "Contact sheet (frames)", center_hero: "Hero + copies",
   column_right: "Column on the right", diagonal: "Diagonal cascade", pile: "Pile (overlapping collage)", two_columns: "Two columns",
   mosaic: "Mosaic (one big + small)", duo: "Diptych (two large)", triptych: "Triptych (three strips)", ribbon: "Ribbon (a row of frames)", full_page: "Full page",
   halftone: "Halftone (dots)", floyd: "Floyd–Steinberg grain", stencil: "Stencil (threshold)",
+  lines: "Lines (hatching)", cross: "Cross-hatch", stipple: "Stipple (random dots)", mezzo: "Mezzotint (noise)", bayer: "Bayer (ordered)",
   contain: "Fit whole photo", cover: "Fill the frame",
   white_box: "White box", dymo_tape: "Black tape (Dymo)", outline: "Outline (black, white stroke)",
   left: "Left", center: "Center", right: "Right",
@@ -29,6 +30,7 @@ const EN = {
   "Синька (cyanotype)": "Cyanotype", "Контактный лист 35 мм": "35 mm Contact Sheet", "Ночное видение": "Night Vision", "Ризо-оверпринт": "Riso Overprint", "Склейка со скотчем": "Tape Collage",
   "Диагональ-панк": "Diagonal Punk", "Стопка снимков": "Photo Pile", "Газетная мозаика": "Newsprint Mosaic", "Триптих-синька": "Cyanotype Triptych",
   "Постер во весь лист": "Full-page Poster", "Лента кинопроб": "Film-test Ribbon", "Ризо-диптих": "Riso Diptych",
+  "Линейная гравюра": "Line Engraving", "Мезотинт": "Mezzotint", "Грязный офис": "Dirty Office", "Байер 8-бит": "Bayer 8-bit",
   "Мои": "Mine",
 };
 const lbl = (ru, key) => (LANG === "ru" ? ru : EN[key] || EN[ru] || ru);
@@ -139,6 +141,8 @@ const SECTIONS = () => [
     { k: "censor", t: "check", label: T("Чёрная полоса на глазах (поиск лиц)", "Black bar over eyes (face detection)") },
     { k: "sticker", t: "check", label: T("Вырезка-стикер (тёмный объект на светлом фоне)", "Sticker cut-out (dark object on light background)") },
     { t: "button", label: T("🎲 Другие края и пыль", "🎲 New edges & dust"), act: () => { flushCommit(); page().seed = newSeed(); commit(); requestRender(); } },
+    { t: "buttons", items: [[T("🧬 Мутировать вид", "🧬 Mutate look"), () => mutate()]] },
+    { t: "locks" },
   ] },
   { tab: "style", title: T("3. РАСТР И ТОНЕР", "3. HALFTONE & TONER"), items: [
     { k: "dither", t: "select", label: T("Тип растра", "Raster type"), opts: () => pairs(CFG.DITHERS) },
@@ -157,9 +161,18 @@ const SECTIONS = () => [
     { k: "palette", t: "select", label: T("Бумага / краска", "Paper / ink"),
       opts: () => [...Object.keys(CFG.RISO_PALETTES).map((k) => [k, k]), [CFG.CUSTOM_PALETTE, lbl(CFG.CUSTOM_PALETTE, CFG.CUSTOM_PALETTE)]] },
     { t: "swatches" },
+    { t: "button", label: T("🎨 Палитра из фото", "🎨 Palette from photo"), act: () => paletteFromPhoto() },
     { k: "invert", t: "check", label: T("Инвертировать цвета", "Invert colors") },
   ] },
-  { tab: "text", title: T("5. МАНИФЕСТЫ И ТИПОГРАФИКА", "5. MANIFESTOS & TYPOGRAPHY"), items: [
+  { tab: "style", title: T("5. ИЗНОС ЛИСТА И ШТАМП", "5. SHEET WEAR & STAMP"), items: [
+    { k: "fold", t: "range", label: T("Сгиб листа", "Fold crease"), min: 0, max: 100, step: 1 },
+    { k: "holes", t: "check", label: T("Дырки от дырокола", "Punch holes") },
+    { k: "stains", t: "range", label: T("Пятна (кофе, жир)", "Stains (coffee, grease)"), min: 0, max: 100, step: 1 },
+    { k: "dust", t: "range", label: T("Пыль и волоски", "Dust & hairs"), min: 0, max: 100, step: 1 },
+    { k: "stamp", t: "text", label: T("Штамп (пусто = нет)", "Stamp (empty = none)") },
+    { k: "stamp_rot", t: "range", label: T("Поворот штампа (°)", "Stamp rotation (°)"), min: -45, max: 45, step: 1 },
+  ] },
+  { tab: "text", title: T("6. МАНИФЕСТЫ И ТИПОГРАФИКА", "6. MANIFESTOS & TYPOGRAPHY"), items: [
     { k: "txt_top", t: "text", label: T("Верхняя надпись", "Top caption") },
     { k: "txt_bottom", t: "text", label: T("Нижняя надпись", "Bottom caption") },
     { t: "button", kind: "primary", label: T("📚 Библиотека манифестов…", "📚 Manifesto library…"), act: () => openManifest() },
@@ -278,6 +291,17 @@ function buildControl(it) {
       const b = document.createElement("button");
       b.className = "btn grow"; b.textContent = text; b.addEventListener("click", fn);
       wrap.append(b);
+    }
+  } else if (it.t === "locks") {
+    wrap.className = "ctl locks";
+    wrap.innerHTML = `<div class="ctl-h"><span>${T("🔒 Не менять при Remix", "🔒 Keep when remixing")}</span></div><div class="chips"></div>`;
+    const chips = $(".chips", wrap);
+    for (const [key, ru, en] of LOCK_DEFS) {
+      const b = document.createElement("button");
+      b.type = "button"; b.className = "chip"; b.textContent = T(ru, en);
+      b.setAttribute("aria-pressed", String(!!LOCKS[key]));
+      b.addEventListener("click", () => { LOCKS[key] = !LOCKS[key]; ls.set("zine.locks", LOCKS); b.setAttribute("aria-pressed", String(!!LOCKS[key])); });
+      chips.append(b);
     }
   } else if (it.t === "swatches") {
     wrap.innerHTML = `<div class="swatches"><div class="sw" id="swPaper" title="${T("Бумага", "Paper")}"></div><div class="sw" id="swInk" title="${T("Краска", "Ink")}"></div>
@@ -927,16 +951,34 @@ $("#mList").addEventListener("keydown", (e) => {
 document.addEventListener("keydown", (e) => { if (e.key === "Escape" && mDlg.open) mDlg.close(); });
 
 // ---------------------------------------------------------------- Remix
+const LOCK_DEFS = [["palette", "Палитра", "Palette"], ["layout", "Раскладка", "Layout"], ["raster", "Растр", "Raster"], ["text", "Текст", "Text"], ["font", "Шрифт", "Font"], ["wear", "Износ", "Wear"]];
+const LOCKS = ls.get("zine.locks", {}) || {};
 function remix() {
   flushCommit();
-  const st = page(), q = pick(CFG.MANIFESTOS);
-  setQuote(st, q);
-  Object.assign(st, {
-    palette: pick(Object.keys(CFG.RISO_PALETTES)), layout: pick(CFG.LAYOUTS)[1], rows: rnd(4, 8), dot_size: rnd(5, 12),
-    tilt: +(Math.random() * 2.5).toFixed(1), loss: rnd(10, 60), tstyle: pick(CFG.TEXT_STYLES)[1], font: pick(Object.keys(CFG.FONTS)), seed: newSeed(),
-  });
+  const st = page(), L = LOCKS, patch = { seed: newSeed(), tilt: +(Math.random() * 2.5).toFixed(1), loss: rnd(10, 60) };
+  if (!L.text) { setQuote(st, pick(CFG.MANIFESTOS)); patch.tstyle = pick(CFG.TEXT_STYLES)[1]; }
+  if (!L.palette) patch.palette = pick(Object.keys(CFG.RISO_PALETTES));
+  if (!L.layout) { patch.layout = pick(CFG.LAYOUTS)[1]; patch.rows = rnd(4, 8); }
+  if (!L.raster) { patch.dither = pick(CFG.DITHERS)[1]; patch.dot_size = rnd(5, 12); patch.angle = rnd(0, 90); }
+  if (!L.font) patch.font = pick(Object.keys(CFG.FONTS));
+  if (!L.wear) Object.assign(patch, { fold: Math.random() < 0.25 ? rnd(30, 90) : 0, stains: Math.random() < 0.3 ? rnd(20, 80) : 0, dust: Math.random() < 0.4 ? rnd(15, 70) : 0, holes: Math.random() < 0.15 });
+  Object.assign(st, patch);
   syncUI(); resetPresetLabel(); commit(); requestRender(); scanSweep();
   toast(T("🎲 Новый стиль", "🎲 New style"), "ok", 1000);
+}
+const MUTATE_KEYS = ["dot_size", "angle", "contrast", "noise", "streaks", "misreg", "loss", "paper", "copier_edge", "tilt", "fold", "stains", "dust", "overprint", "tape"];
+function mutate() {
+  flushCommit();
+  const st = page();
+  for (const k of MUTATE_KEYS) {
+    const el = ctlEls[k]?.el; if (!el || el.type !== "range") continue;
+    const lo = Number(el.min), hi = Number(el.max), dec = decimals(el.step);
+    const v = clamp(Number(st[k] ?? 0) + (Math.random() - 0.5) * (hi - lo) * 0.18, lo, hi);
+    st[k] = Number(v.toFixed(dec));
+  }
+  st.seed = newSeed();
+  syncUI(); resetPresetLabel(); commit(); requestRender();
+  toast(T("🧬 Вид слегка изменён", "🧬 Look mutated"), "ok", 1000);
 }
 
 // ---------------------------------------------------------------- проект .zine
@@ -1178,6 +1220,93 @@ function showFoldGuide() {
   $("#dlgFold").showModal();
 }
 
+// ---------------------------------------------------------------- буклет на скрепку, лист калибровки, палитра из фото
+async function exportBooklet(paper) {
+  flushCommit();
+  const [PW, PH] = paper === "letter" ? [3300, 2550] : [3508, 2480]; // альбомный лист, 300 DPI
+  const n = S.pages.length, total = Math.ceil(n / 4) * 4, sheets = total / 4, label = paper === "letter" ? "Letter" : "A4";
+  const sink = await askSave(`${S.name || "zine"}_booklet_${label}.pdf`, { mime: "application/pdf", ext: ".pdf", desc: `PDF ${label}` });
+  if (!sink) return;
+  await job(T(`Буклет ${label}`, `Booklet ${label}`), async (progress) => {
+    const M = 70, half = PW / 2;
+    // порядок страниц при двусторонней печати со сшивкой по центру: лицо (N-1-2k | 2k), оборот (2k+1 | N-2-2k)
+    const sides = [];
+    for (let k = 0; k < sheets; k++) { sides.push([total - 1 - 2 * k, 2 * k]); sides.push([2 * k + 1, total - 2 - 2 * k]); }
+    async function* gen() {
+      for (let si = 0; si < sides.length; si++) {
+        await progress(T(`Сторона листа ${si + 1} из ${sides.length}…`, `Sheet side ${si + 1} of ${sides.length}…`), si / (sides.length + 1));
+        const sheet = E.makeCanvas(PW, PH), c = sheet.getContext("2d", { willReadFrequently: true });
+        c.fillStyle = "#fff"; c.fillRect(0, 0, PW, PH);
+        for (let h = 0; h < 2; h++) {
+          const idx = sides[si][h];
+          if (idx >= n) continue; // пустая страница добивки
+          const [bw, bh] = baseSize(S.pages[idx]), k = Math.min((half - 2 * M) / bw, (PH - 2 * M) / bh);
+          const size = [Math.floor(bw * k), Math.floor(bh * k)];
+          const r = await render(idx, { outSize: size });
+          c.drawImage(r.canvas, Math.floor(h * half + (half - size[0]) / 2), Math.floor((PH - size[1]) / 2));
+        }
+        c.strokeStyle = "#999"; c.lineWidth = 2; c.setLineDash([14, 12]);
+        c.beginPath(); c.moveTo(half, 0); c.lineTo(half, PH); c.stroke();
+        yield c.getImageData(0, 0, PW, PH);
+      }
+    }
+    await sink.write(await IO.buildPdf(gen(), 300));
+  }, T(`✓ Буклет готов: ${sheets} л. Печатай двусторонне, переворот по короткой стороне, сложи пополам.`, `✓ Booklet ready: ${sheets} sheet(s). Print double-sided, flip on the short edge, fold in half.`));
+}
+
+async function exportCalibration() {
+  flushCommit();
+  const sink = await askSave("printer_calibration_A4.png", { mime: "image/png", ext: ".png", desc: "PNG A4" });
+  if (!sink) return;
+  await job(T("Лист калибровки", "Calibration sheet"), async () => {
+    const W = 2480, H = 3508, sheet = E.makeCanvas(W, H), c = sheet.getContext("2d", { willReadFrequently: true });
+    c.fillStyle = "#fff"; c.fillRect(0, 0, W, H);
+    c.fillStyle = "#000"; c.font = "bold 54px sans-serif"; c.textBaseline = "top";
+    c.fillText("Xerox Zine Studio: printer calibration", 150, 130);
+    c.font = "32px sans-serif";
+    c.fillText(T("Распечатай в 100% без масштабирования. Выбери ячейку, где точки читаются и не слипаются.", "Print at 100%, no scaling. Pick the cell where dots stay readable and do not clog."), 150, 210);
+    const dots = [4, 6, 8, 11, 15], tones = [0.1, 0.25, 0.4, 0.55, 0.7, 0.85], cw = 300, ch = 300, x0 = 250, y0 = 420, gap = 20;
+    c.font = "bold 30px sans-serif";
+    dots.forEach((d, row) => {
+      c.fillStyle = "#000"; c.fillText(`dot ${d}`, 150, y0 + row * (ch + gap) + ch / 2 - 15);
+      tones.forEach((t, col) => {
+        const gray = new Uint8Array(cw * ch).fill(Math.round(255 * (1 - t)));
+        const bits = E.halftoneBits(gray, cw, ch, d * 2, 45), img = c.createImageData(cw, ch);
+        for (let i = 0; i < bits.length; i++) { const v = bits[i] ? 255 : 0; img.data.set([v, v, v, 255], i * 4); }
+        c.putImageData(img, x0 + col * (cw + gap), y0 + row * (ch + gap));
+        if (row === 0) { c.fillStyle = "#000"; c.fillText(`${Math.round(t * 100)}%`, x0 + col * (cw + gap) + 100, y0 - 44); }
+      });
+    });
+    const by = y0 + dots.length * (ch + gap) + 40;
+    c.fillStyle = "#000"; c.font = "30px sans-serif";
+    c.fillText(T("Заливка 100% и тонкие линии: проверь, нет ли полос и сколько краски не доходит до края.", "Solid 100% and hairlines: look for banding and how much ink fails to reach the edge."), 150, by);
+    c.fillRect(150, by + 70, W - 300, 120);
+    for (let i = 0; i < 12; i++) c.fillRect(150 + i * 190, by + 240, 1 + i, 120);
+    for (const [cx, cy] of [[90, 90], [W - 90, 90], [90, H - 90], [W - 90, H - 90]]) { c.fillRect(cx - 40, cy - 1, 80, 3); c.fillRect(cx - 1, cy - 40, 3, 80); }
+    await sink.write(new Blob([await pngU8(sheet)], { type: "image/png" }));
+  }, T("✓ Лист калибровки сохранён", "✓ Calibration sheet saved"));
+}
+
+function paletteFromPhoto() {
+  flushCommit();
+  const src = srcFor(page());
+  if (!src) { toast(T("Сначала добавьте фото", "Add a photo first"), "err"); return; }
+  const k = 64 / Math.max(src.canvas.width, src.canvas.height), w = Math.max(8, Math.round(src.canvas.width * k)), h = Math.max(8, Math.round(src.canvas.height * k));
+  const tmp = E.makeCanvas(w, h), c = tmp.getContext("2d", { willReadFrequently: true });
+  c.drawImage(src.canvas, 0, 0, w, h);
+  const d = c.getImageData(0, 0, w, h).data, px = [];
+  for (let i = 0; i < d.length; i += 4) px.push([d[i], d[i + 1], d[i + 2], 0.299 * d[i] + 0.587 * d[i + 1] + 0.114 * d[i + 2]]);
+  px.sort((a, b) => a[3] - b[3]);
+  const q = Math.max(1, Math.floor(px.length * 0.12)), avg = (arr) => [0, 1, 2].map((j) => Math.round(arr.reduce((s2, p) => s2 + p[j], 0) / arr.length));
+  let ink = avg(px.slice(0, q)), paper = avg(px.slice(-q));
+  ink = ink.map((v) => Math.round(v * 0.55)); // краска темнее, чем тени на фото
+  paper = paper.map((v) => Math.round(v + (255 - v) * 0.5));
+  const st = page();
+  st.custom_colors = [paper, ink]; st.palette = CFG.CUSTOM_PALETTE; st.invert = false;
+  syncUI(); resetPresetLabel(); commit(); requestRender();
+  toast(T("🎨 Палитра взята из фото", "🎨 Palette taken from the photo"), "ok", 1400);
+}
+
 async function exportPng() {
   flushCommit();
   const sink = await askSave(`${pageName(S.cur)}.png`, { mime: "image/png", ext: ".png", desc: "PNG" });
@@ -1364,6 +1493,9 @@ function menuItems() {
     [T("Книга в PDF", "Book as PDF"), exportPdf],
     [T("PDF для печати (A4, поля 10 мм)", "Print PDF (A4, 10 mm margins)"), exportPdfA4],
     [T("Мини-зин на 8 страниц (A4)", "8-page mini-zine (A4)"), exportMiniZine],
+    [T("Буклет на скрепку, A4 (любое число страниц)", "Saddle-stitch booklet, A4 (any page count)"), () => exportBooklet("a4")],
+    [T("Буклет на скрепку, Letter", "Saddle-stitch booklet, Letter"), () => exportBooklet("letter")],
+    [T("Лист калибровки принтера (A4)", "Printer calibration sheet (A4)"), exportCalibration],
     [T("Как сложить мини-зин (схема)", "How to fold the mini-zine (guide)"), showFoldGuide],
     [SOUND.on ? T("Звук копира: выключить", "Copier sound: turn off") : T("Звук копира: включить", "Copier sound: turn on"), toggleSound],
     "hr", T("СТРАНИЦЫ И ТЕКСТ", "PAGES & TEXT"),

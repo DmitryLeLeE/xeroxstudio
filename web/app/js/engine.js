@@ -68,6 +68,105 @@ export function halftoneBits(gray, w, h, dotSize, angleDeg) {
   return out;
 }
 
+
+const BAYER8 = [[0,32,8,40,2,34,10,42],[48,16,56,24,50,18,58,26],[12,44,4,36,14,46,6,38],[60,28,52,20,62,30,54,22],[3,35,11,43,1,33,9,41],[51,19,59,27,49,17,57,25],[15,47,7,39,13,45,5,37],[63,31,55,23,61,29,53,21]];
+function hash01(cx, cy) {
+  let h = (Math.imul(cx | 0, 374761393) + Math.imul(cy | 0, 668265263)) >>> 0;
+  h = Math.imul((h ^ (h >>> 13)) >>> 0, 1274126177) >>> 0;
+  h = (h ^ (h >>> 16)) >>> 0;
+  return (h & 0xffff) / 65536;
+}
+/** Линейные и шумовые растры (те же формулы, что в engine.py): 1 = бумага, 0 = краска. */
+export function patternBits(gray, w, h, dotSize, angleDeg, kind) {
+  const out = new Uint8Array(w * h), ds = Math.max(2, dotSize);
+  const rad = (angleDeg * Math.PI) / 180, c = Math.cos(rad), sn = Math.sin(rad);
+  const cell = kind === "bayer" ? Math.max(1, Math.round(ds / 3)) : kind === "stipple" ? Math.max(1, Math.round(ds / 2)) : Math.max(1, Math.round(ds / 5));
+  let i = 0;
+  for (let y = 0; y < h; y++) {
+    for (let x = 0; x < w; x++, i++) {
+      const dark = 1 - gray[i] / 255;
+      let ink;
+      if (kind === "lines" || kind === "cross") {
+        const yr = x * sn + y * c;
+        ink = Math.abs(yr - Math.round(yr / ds) * ds) < dark * ds * 0.5;
+        if (!ink && kind === "cross") {
+          const xr = x * c - y * sn;
+          ink = Math.abs(xr - Math.round(xr / ds) * ds) < Math.max(0, dark - 0.5) * ds;
+        }
+      } else if (kind === "bayer") {
+        ink = dark > (BAYER8[Math.floor(y / cell) % 8][Math.floor(x / cell) % 8] + 0.5) / 64;
+      } else {
+        ink = dark > hash01(Math.floor(x / cell), Math.floor(y / cell));
+      }
+      out[i] = ink ? 0 : 1;
+    }
+  }
+  return out;
+}
+
+
+/** Износ листа поверх готового кадра: пятна, пыль и волоски, сгиб, дырки, штамп (аналог add_wear в engine.py). */
+function addWear(canvas, st, seed, s) {
+  const stains = Number(st.stains), dust = Number(st.dust), fold = Number(st.fold), holes = Number(st.holes), stamp = String(st.stamp || "").replace(/\n/g, " ").trim();
+  if (!(stains > 0 || dust > 0 || fold > 0 || holes || stamp)) return;
+  const w = canvas.width, h = canvas.height, m = Math.min(w, h), c = ctx2d(canvas), rng = new Rng(seed);
+  if (stains > 0) {
+    c.save(); c.filter = `blur(${Math.max(1, 2 * s)}px)`;
+    for (let i = 0; i < 1 + Math.floor(stains / 25); i++) {
+      const cx = rng.uniform(0.1, 0.9) * w, cy = rng.uniform(0.1, 0.9) * h, r = rng.uniform(0.04, 0.1) * m * (0.6 + stains / 100);
+      c.beginPath(); c.ellipse(cx, cy, r, r * 0.9, 0, 0, Math.PI * 2);
+      c.fillStyle = `rgba(150,105,55,${(28 + stains * 0.3) / 255})`; c.fill();
+      c.lineWidth = Math.max(2, 3 * s); c.strokeStyle = `rgba(105,65,28,${(70 + stains * 0.8) / 255})`; c.stroke();
+    }
+    c.restore();
+  }
+  if (dust > 0) {
+    c.fillStyle = "rgba(20,20,20,.78)";
+    const n = Math.floor((dust * w * h) / 60000);
+    for (let i = 0; i < n; i++) { const r = rng.uniform(0.6, 2.2) * s; c.beginPath(); c.arc(rng.uniform(0, w), rng.uniform(0, h), r, 0, Math.PI * 2); c.fill(); }
+    c.strokeStyle = "rgba(30,30,30,.66)"; c.lineWidth = Math.max(1, s);
+    for (let i = 0; i < Math.floor(dust / 20); i++) {
+      let x = rng.uniform(0, w), y = rng.uniform(0, h); c.beginPath(); c.moveTo(x, y);
+      for (let k = 0; k < 5; k++) { x += rng.normal() * 14 * s; y += rng.normal() * 14 * s; c.lineTo(x, y); }
+      c.stroke();
+    }
+  }
+  if (fold > 0) {
+    const band = (horizontal, k) => {
+      const n = horizontal ? h : w, pos = n / 2, sig = Math.max(2, n * 0.025);
+      const g = horizontal ? c.createLinearGradient(0, pos - sig * 2.5, 0, pos + sig * 2.5) : c.createLinearGradient(pos - sig * 2.5, 0, pos + sig * 2.5, 0);
+      for (let i = 0; i <= 10; i++) { const t = i / 10, d = (t - 0.5) * 5; g.addColorStop(t, `rgba(0,0,0,${(Math.exp(-d * d) * (fold / 100) * 70 * k) / 255})`); }
+      c.fillStyle = g;
+      if (horizontal) c.fillRect(0, pos - sig * 2.5, w, sig * 5); else c.fillRect(pos - sig * 2.5, 0, sig * 5, h);
+    };
+    band(true, 1); if (fold >= 50) band(false, 0.6);
+    c.fillStyle = `rgba(255,255,255,${(40 + fold * 1.2) / 255})`; c.fillRect(0, h / 2 + Math.max(2, 2 * s), w, Math.max(1, s));
+  }
+  if (holes) {
+    const r = 0.014 * w;
+    for (const fy of [0.2, 0.5, 0.8]) {
+      c.fillStyle = "rgba(0,0,0,.16)"; c.beginPath(); c.arc(0.05 * w, fy * h, r + 2 * s, 0, Math.PI * 2); c.fill();
+      c.fillStyle = "#1a1a1a"; c.beginPath(); c.arc(0.05 * w, fy * h, r, 0, Math.PI * 2); c.fill();
+    }
+  }
+  if (stamp) {
+    const size = Math.max(14, Math.round(0.06 * w)), text = stamp.toUpperCase(), pad = 0.02 * w;
+    c.save();
+    c.font = fontSpec(st.font, size);
+    const tw = c.measureText(text).width, sw = tw + 2 * pad, sh = size * 1.2 + 2 * pad;
+    const tmp = makeCanvas(Math.ceil(sw) + 4, Math.ceil(sh) + 4), t = ctx2d(tmp);
+    t.font = c.font; t.textBaseline = "middle"; t.fillStyle = t.strokeStyle = "rgb(190,30,30)";
+    t.lineWidth = Math.max(3, 4 * s); t.strokeRect(2, 2, sw, sh); t.fillText(text, 2 + pad, 2 + sh / 2);
+    t.globalCompositeOperation = "destination-out"; t.fillStyle = "#000";
+    const sr = new Rng(seed + 1);
+    for (let i = 0; i < sw * sh * 0.2 / 6; i++) t.fillRect(sr.uniform(0, sw), sr.uniform(0, sh), 2, 2);
+    c.globalAlpha = 0.85;
+    c.translate(0.66 * w, 0.8 * h); c.rotate((Number(st.stamp_rot) * Math.PI) / -180);
+    c.drawImage(tmp, -tmp.width / 2, -tmp.height / 2);
+    c.restore();
+  }
+}
+
 function stencilBits(gray, w, h) {
   const out = new Uint8Array(w * h);
   for (let i = 0; i < out.length; i++) out[i] = gray[i] >= 128 ? 1 : 0;
@@ -676,6 +775,7 @@ export async function renderPage(source, state, opts = {}) {
   }
   let bits;
   if (st.dither === "halftone") bits = halftoneBits(gray, cw, ch, st.dot_size * s, st.angle);
+  else if (["lines", "cross", "stipple", "mezzo", "bayer"].includes(st.dither)) bits = patternBits(gray, cw, ch, st.dot_size * s, st.angle, st.dither);
   else if (st.dither === "stencil") bits = stencilBits(gray, cw, ch);
   else bits = floydBits(gray, cw, ch);
 
@@ -717,5 +817,6 @@ export async function renderPage(source, state, opts = {}) {
   addPaper(o, cw, ch, Number(st.paper), seed + 21, s);
   const result = makeCanvas(cw, ch);
   ctx2d(result).putImageData(out, 0, 0);
+  addWear(result, st, seed + 51, s);
   return { canvas: result, bits, plate2, inks: { paper, ink, ink2: plate2 ? st.ink2 : null }, width: cw, height: ch };
 }

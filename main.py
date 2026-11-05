@@ -250,6 +250,13 @@ class XeroxZineStudioApp:
         cb.pack(fill=tk.X, pady=1)
         return cb
 
+    def _entry(self, parent, key, label):
+        self._label(parent, label)
+        e = tk.Entry(parent, textvariable=self._var(key), bg=FIELD, fg=FG, insertbackground=ACCENT, font=("Consolas", 9), relief="flat",
+                     highlightthickness=1, highlightbackground=LINE, highlightcolor=ACCENT)
+        e.pack(fill=tk.X, pady=(0, 3), ipady=3)
+        return e
+
     def _text_box(self, parent):
         t = tk.Text(
             parent, height=3, bg=FIELD, fg=FG, insertbackground=ACCENT, font=("Consolas", 9), relief="flat",
@@ -404,6 +411,16 @@ class XeroxZineStudioApp:
         self._check(c, "censor", "Чёрная полоса на глазах (поиск лиц)", command=self._on_censor_toggle)
         self._check(c, "sticker", "Вырезка-стикер (тёмный объект на светлом фоне)")
         make_button(c, "🎲  Другие края и пыль", self.reshuffle_seed, kind="secondary").pack(fill=tk.X, pady=(6, 0))
+        make_button(c, "🧬  Мутировать вид", self.mutate_look, kind="secondary").pack(fill=tk.X, pady=(3, 0))
+        self._label(c, "Не менять при Remix:")
+        self.locks = {}
+        saved = self.settings.get("remix_locks", {}) or {}
+        for key, text in (("palette", "палитру"), ("layout", "раскладку"), ("raster", "растр"), ("text", "текст"), ("font", "шрифт"), ("wear", "износ")):
+            var = tk.BooleanVar(value=bool(saved.get(key, False)))
+            var.trace_add("write", lambda *a: self.settings.set("remix_locks", {k: v.get() for k, v in self.locks.items()}))
+            self.locks[key] = var
+            tk.Checkbutton(c, text=text, variable=var, bg=PANEL2, fg=FG, selectcolor=FIELD, activebackground=PANEL2, activeforeground=ACCENT,
+                           bd=0, highlightthickness=0, font=FONT, anchor="w", cursor="hand2").pack(fill=tk.X, pady=0)
 
         # 3. Растр и тонер
         c = self._section(p, "3. РАСТР И ТОНЕР")
@@ -438,8 +455,17 @@ class XeroxZineStudioApp:
         self.vars["palette"].trace_add("write", lambda *a: self._update_swatches())
         self.vars["invert"].trace_add("write", lambda *a: self._update_swatches())
 
-        # 5. Текст
-        c = self._section(p, "5. МАНИФЕСТЫ И ТИПОГРАФИКА")
+        # 5. Износ листа
+        c = self._section(p, "5. ИЗНОС ЛИСТА И ШТАМП")
+        self._slider(c, "fold", "Сгиб листа", 0, 100)
+        self._check(c, "holes", "Дырки от дырокола")
+        self._slider(c, "stains", "Пятна (кофе, жир)", 0, 100)
+        self._slider(c, "dust", "Пыль и волоски", 0, 100)
+        self._entry(c, "stamp", "Штамп (пусто = нет)")
+        self._slider(c, "stamp_rot", "Поворот штампа (°)", -45, 45)
+
+        # 6. Текст
+        c = self._section(p, "6. МАНИФЕСТЫ И ТИПОГРАФИКА")
         self._label(c, "Верхняя надпись")
         self.txt_top = self._text_box(c)
         self._label(c, "Нижняя надпись")
@@ -823,26 +849,60 @@ class XeroxZineStudioApp:
         return saved
 
     def apply_surprise(self):
+        L = {k: v.get() for k, v in self.locks.items()}
         self._loading = True
         try:
-            q = random.choice(manifestos.all_items())
-            self._set_text(self.txt_top, q["top"])
-            self._set_text(self.txt_bot, q["bottom"])
             v = self.vars
-            v["palette"].set(random.choice(list(config.RISO_PALETTES)))
-            v["layout"].set(random.choice(list(config.LAYOUTS.values())))
-            v["rows"].set(random.randint(4, 8))
-            v["dot_size"].set(random.randint(5, 12))
+            if not L["text"]:
+                q = random.choice(manifestos.all_items())
+                self._set_text(self.txt_top, q["top"])
+                self._set_text(self.txt_bot, q["bottom"])
+                v["tstyle"].set(random.choice(list(config.TEXT_STYLES.values())))
+            if not L["palette"]:
+                v["palette"].set(random.choice(list(config.RISO_PALETTES)))
+            if not L["layout"]:
+                v["layout"].set(random.choice(list(config.LAYOUTS.values())))
+                v["rows"].set(random.randint(4, 8))
+            if not L["raster"]:
+                v["dither"].set(random.choice(list(config.DITHERS.values())))
+                v["dot_size"].set(random.randint(5, 12))
+                v["angle"].set(random.randint(0, 90))
+            if not L["font"]:
+                v["font"].set(random.choice(list(config.FONT_FILES)))
+            if not L["wear"]:
+                v["fold"].set(random.randint(30, 90) if random.random() < 0.25 else 0)
+                v["stains"].set(random.randint(20, 80) if random.random() < 0.3 else 0)
+                v["dust"].set(random.randint(15, 70) if random.random() < 0.4 else 0)
+                v["holes"].set(1 if random.random() < 0.15 else 0)
             v["tilt"].set(round(random.uniform(0.0, 2.5), 1))
             v["loss"].set(random.randint(10, 60))
-            v["tstyle"].set(random.choice(list(config.TEXT_STYLES.values())))
-            v["font"].set(random.choice(list(config.FONT_FILES)))
             self.seed = random.randint(1, 10 ** 6)
         finally:
             self._loading = False
         self._update_swatches()
         self.schedule_render()
         self.toast.show("🎲 Сгенерирован новый стиль")
+
+    MUTATE_RANGES = {"dot_size": (3, 22), "angle": (0, 90), "contrast": (1.0, 4.5), "noise": (0, 100), "streaks": (0, 100), "misreg": (0, 12),
+                     "loss": (0, 100), "paper": (0, 100), "copier_edge": (0, 100), "tilt": (0.0, 5.0), "fold": (0, 100), "stains": (0, 100),
+                     "dust": (0, 100), "overprint": (0, 100), "tape": (0, 100)}
+
+    def mutate_look(self):
+        """Слегка сдвигает числовые параметры вида (около 9% диапазона в обе стороны)."""
+        self._loading = True
+        try:
+            for key, (lo, hi) in self.MUTATE_RANGES.items():
+                var = self.vars.get(key)
+                if var is None:
+                    continue
+                val = min(hi, max(lo, float(var.get()) + random.uniform(-0.09, 0.09) * (hi - lo)))
+                var.set(round(val, 1) if isinstance(config.DEFAULT_STATE[key], float) else int(round(val)))
+            self.seed = random.randint(1, 10 ** 6)
+        finally:
+            self._loading = False
+        self.preset_var.set(PRESET_HINT)
+        self.schedule_render()
+        self.toast.show("🧬 Вид слегка изменён")
 
     # ------------------------------------------------------------------ страницы
     def _insert_page(self, idx, state, thumb=None):

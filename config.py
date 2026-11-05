@@ -6,7 +6,7 @@ import os
 import sys
 
 APP_NAME = "Xerox Zine Studio"
-APP_VERSION = "1.2.0"
+APP_VERSION = "1.3.0"
 
 
 def resource_path(name):
@@ -20,6 +20,7 @@ CANVAS_FORMATS = {
     "1:1 Квадрат / Обложка (1200×1200)": (1200, 1200),
     "9:16 Stories / Обои (1080×1920)": (1080, 1920),
     "3:4 Принт (1200×1600)": (1200, 1600),
+    "4:5 Instagram (1080×1350)": (1080, 1350),
 }
 
 RISO_PALETTES = {
@@ -122,6 +123,11 @@ DITHERS = {
     "Полутон (точки)": "halftone",
     "Зерно Флойда–Стейнберга": "floyd",
     "Трафарет (порог)": "stencil",
+    "Линии (штриховка)": "lines",
+    "Кросс-штрих": "cross",
+    "Стипль (случайные точки)": "stipple",
+    "Мезотинт (шум)": "mezzo",
+    "Байер (упорядоченный)": "bayer",
 }
 FIT_MODES = {
     "Вписать целиком": "contain",
@@ -188,6 +194,12 @@ DEFAULT_STATE = {
     "overprint": 0,
     "ink2": (255, 60, 140),
     "tape": 0,
+    "fold": 0,
+    "holes": 0,
+    "stains": 0,
+    "dust": 0,
+    "stamp": "",
+    "stamp_rot": -12,
     "crop": [0.0, 0.0, 1.0, 1.0],
     "seed": 42,
     "img": None,

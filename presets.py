@@ -13,7 +13,7 @@ import config
 
 STYLE_KEYS = (
     "layout", "rows", "tilt", "fit_mode", "bright", "edge_x", "edge_y", "loss",
-    "dither", "dot_size", "angle", "contrast", "noise", "streaks", "misreg", "copier_edge", "paper", "overprint", "ink2", "tape",
+    "dither", "dot_size", "angle", "contrast", "noise", "streaks", "misreg", "copier_edge", "paper", "overprint", "ink2", "tape", "fold", "holes", "stains", "dust",
     "palette", "invert", "custom_colors",
     "font", "font_size", "tstyle", "text_align", "txt_x", "txt_y1", "txt_y2", "text_rot",
 )
@@ -97,6 +97,27 @@ BUILTIN = {
         "layout": "center_hero", "rows": 5, "palette": "Nightvision (Muted Green / Phosphor)", "dither": "halftone",
         "dot_size": 6, "contrast": 2.6, "noise": 45, "streaks": 50, "misreg": 3, "loss": 40, "copier_edge": 30,
         "font": "Consolas Bold", "font_size": 32, "tstyle": "dymo_tape",
+    },
+    "Линейная гравюра": {
+        "layout": "center_hero", "rows": 4, "palette": "Vintage Newsprint (Cream / Charcoal)", "dither": "cross",
+        "dot_size": 6, "angle": 30, "contrast": 2.2, "noise": 12, "streaks": 10, "misreg": 1, "loss": 15, "paper": 45, "copier_edge": 10,
+        "font": "Arial Black", "font_size": 36, "tstyle": "white_box",
+    },
+    "Мезотинт": {
+        "layout": "full_page", "palette": "Classic B&W (Xerox)", "dither": "mezzo", "fit_mode": "cover",
+        "dot_size": 8, "contrast": 2.0, "noise": 10, "streaks": 0, "misreg": 0, "loss": 10, "paper": 30, "copier_edge": 20,
+        "font": "Impact", "font_size": 44, "tstyle": "outline",
+    },
+    "Грязный офис": {
+        "layout": "staggered", "rows": 4, "palette": "Classic B&W (Xerox)", "dither": "halftone",
+        "dot_size": 7, "contrast": 2.4, "noise": 40, "streaks": 40, "misreg": 2, "loss": 45, "copier_edge": 50, "paper": 60,
+        "fold": 70, "holes": 1, "stains": 55, "dust": 60, "tilt": 1.2,
+        "font": "Consolas Bold", "font_size": 30, "tstyle": "white_box",
+    },
+    "Байер 8-бит": {
+        "layout": "contact_sheet", "rows": 5, "palette": "Nightvision (Muted Green / Phosphor)", "dither": "bayer",
+        "dot_size": 9, "contrast": 2.0, "noise": 5, "streaks": 20, "misreg": 0, "loss": 20, "copier_edge": 15,
+        "font": "Consolas Bold", "font_size": 30, "tstyle": "dymo_tape",
     },
 }
 

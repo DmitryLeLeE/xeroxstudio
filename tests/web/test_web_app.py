@@ -219,3 +219,76 @@ def test_python_and_js_halftone_plates_match(page_factory):
         same = (np.array(js, dtype=bool).reshape(h, w) == py).mean()
         assert same > 0.995, f"dot={dot} angle={angle}: only {same:.4f} of pixels match"
     assert pg.errors == []
+
+
+def test_pattern_dithers_match_between_python_and_js(page_factory):
+    import numpy as np
+    from PIL import Image
+    from engine import ZineGraphicEngine
+
+    h, w = 120, 150
+    yy, xx = np.mgrid[0:h, 0:w]
+    gray = ((xx / w * 255) * 0.7 + (yy / h * 255) * 0.3).clip(0, 255).astype(np.uint8)
+    pg = page_factory()
+    wait_ready(pg)
+    for kind in ("lines", "cross", "stipple", "mezzo", "bayer"):
+        for dot, angle in [(7, 45), (10, 20)]:
+            js = pg.evaluate(
+                """async ([g, w, h, dot, angle, kind]) => {
+                  const E = await import('/app/js/engine.js');
+                  return Array.from(E.patternBits(Uint8Array.from(g), w, h, dot, angle, kind));
+                }""",
+                [gray.flatten().tolist(), w, h, dot, angle, kind],
+            )
+            py = ZineGraphicEngine.apply_pattern_dither(Image.fromarray(gray), kind, dot_size=dot, angle=angle)
+            same = (np.array(js, dtype=bool).reshape(h, w) == py).mean()
+            assert same > 0.995, f"{kind} dot={dot} angle={angle}: {same:.4f}"
+    assert pg.errors == []
+
+
+def test_wear_remix_locks_and_mutate_run_clean(page_factory):
+    pg = page_factory()
+    wait_ready(pg)
+    pg.evaluate("""() => { const s = document.querySelector('#c_dither'); s.value = 'cross'; s.dispatchEvent(new Event('change')); }""")
+    for k, v in (("fold", 80), ("stains", 70), ("dust", 60)):
+        pg.evaluate("([k, v]) => { const el = document.querySelector('#c_' + k); el.value = v; el.dispatchEvent(new Event('input')); }", [k, v])
+    pg.fill("#c_stamp", "Copy of a copy")
+    pg.check("#c_holes")
+    pg.wait_for_timeout(800)
+    # заблокировать растр, нажать Remix: растр не должен измениться
+    pg.evaluate("[...document.querySelectorAll('.locks .chip')].find(b => /Raster|Растр/.test(b.textContent)).click()")
+    pg.click("#btnRemix")
+    pg.wait_for_timeout(600)
+    assert pg.evaluate("document.querySelector('#c_dither').value") == "cross"
+    pg.evaluate("[...document.querySelectorAll('button')].find(b => /Mutate|Мутировать/.test(b.textContent)).click()")
+    pg.wait_for_timeout(600)
+    assert pg.errors == []
+
+
+def _png_files(tmp_path, n):
+    from PIL import Image
+    paths = []
+    for i in range(n):
+        p = tmp_path / f"p{i}.png"
+        Image.new("RGB", (160, 200), (40 + i * 30, 90, 160)).save(p)
+        paths.append(str(p))
+    return paths
+
+
+def test_booklet_pdf_and_palette_from_photo(page_factory, tmp_path):
+    pg = page_factory()
+    wait_ready(pg)
+    pg.set_input_files("#fileImg", _png_files(tmp_path, 3))
+    pg.wait_for_timeout(1500)
+    pg.evaluate("[...document.querySelectorAll('button')].find(b => /Palette from photo|Палитра из фото/.test(b.textContent)).click()")
+    pg.wait_for_timeout(600)
+    assert pg.evaluate("document.querySelector('#c_palette').value") != "Classic B&W (Xerox)"
+    pg.evaluate("window.showSaveFilePicker = undefined")
+    pg.click("#btnFile")
+    with pg.expect_download(timeout=60000) as dl:
+        pg.evaluate("[...document.querySelectorAll('#menuFile button')].find(b => /booklet, A4/i.test(b.textContent)).click()")
+    path = dl.value.path()
+    data = open(path, "rb").read()
+    # 3 страницы дополняются до 4 = один лист = 2 стороны = 2 страницы PDF
+    assert data.startswith(b"%PDF") and data.count(b"/Type /Page\n") + data.count(b"/Type /Page ") + data.count(b"/Type /Page>") >= 2
+    assert pg.errors == []

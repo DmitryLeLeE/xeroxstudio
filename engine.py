@@ -100,6 +100,51 @@ class ZineGraphicEngine:
         return font
 
     # ------------------------------------------------------------------ примитивы
+
+    @staticmethod
+    def _hash01(cx, cy):
+        """Целочисленный хеш ячейки -> [0, 1). Тот же алгоритм в web/app/js/engine.js (должен совпадать)."""
+        h = cx.astype(np.uint32) * np.uint32(374761393) + cy.astype(np.uint32) * np.uint32(668265263)
+        h = (h ^ (h >> np.uint32(13))) * np.uint32(1274126177)
+        h = h ^ (h >> np.uint32(16))
+        return (h & np.uint32(0xFFFF)).astype(np.float32) / 65536.0
+
+    _BAYER8 = np.array([
+        [0, 32, 8, 40, 2, 34, 10, 42], [48, 16, 56, 24, 50, 18, 58, 26],
+        [12, 44, 4, 36, 14, 46, 6, 38], [60, 28, 52, 20, 62, 30, 54, 22],
+        [3, 35, 11, 43, 1, 33, 9, 41], [51, 19, 59, 27, 49, 17, 57, 25],
+        [15, 47, 7, 39, 13, 45, 5, 37], [63, 31, 55, 23, 61, 29, 53, 21]], dtype=np.float32)
+
+    @classmethod
+    def apply_pattern_dither(cls, gray_pil, kind, dot_size=7, angle=45):
+        """Линейные и шумовые растры: lines, cross, stipple, mezzo, bayer. bool: True = бумага, False = краска."""
+        g = np.asarray(gray_pil, dtype=np.uint8).astype(np.float32) / 255.0
+        h, w = g.shape
+        ds = float(max(2.0, dot_size))
+        ys, xs = np.mgrid[0:h, 0:w].astype(np.float32)
+        dark = 1.0 - g
+        if kind in ("lines", "cross"):
+            rad = math.radians(angle)
+            c, sn = math.cos(rad), math.sin(rad)
+            yr = xs * sn + ys * c
+            d1 = np.abs(yr - np.round(yr / ds) * ds)
+            ink = d1 < dark * ds * 0.5
+            if kind == "cross":
+                xr = xs * c - ys * sn
+                d2 = np.abs(xr - np.round(xr / ds) * ds)
+                ink |= d2 < np.maximum(0.0, dark - 0.5) * ds
+            return ~ink
+        if kind == "bayer":
+            cell = max(1, int(round(ds / 3.0)))
+            bx = (xs.astype(np.int32) // cell) % 8
+            by = (ys.astype(np.int32) // cell) % 8
+            thr = (cls._BAYER8[by, bx] + 0.5) / 64.0
+            return ~(dark > thr)
+        cell = max(1, int(round(ds / 2.0))) if kind == "stipple" else max(1, int(round(ds / 5.0)))
+        cx = (xs.astype(np.int32) // cell)
+        cy = (ys.astype(np.int32) // cell)
+        return ~(dark > cls._hash01(cx, cy))
+
     @staticmethod
     def apply_halftone_dots(gray_pil, dot_size=7, angle=45):
         """Амплитудный растр. Возвращает bool-массив: True = бумага, False = краска.
@@ -262,6 +307,92 @@ class ZineGraphicEngine:
         out = canvas.convert("RGBA")
         out.alpha_composite(layer)
         return out.convert("RGB")
+
+    def add_wear(self, img, st, seed, s=1.0):
+        """Износ листа: пятна, пыль и волоски, сгиб, дырки от дырокола, штамп. img - RGB Image."""
+        stains, dust, fold = float(st.get("stains", 0)), float(st.get("dust", 0)), float(st.get("fold", 0))
+        holes, stamp = int(st.get("holes", 0)), str(st.get("stamp", "") or "").replace("\n", " ").strip()
+        if not (stains > 0 or dust > 0 or fold > 0 or holes or stamp):
+            return img
+        w, h = img.size
+        rng = np.random.default_rng(int(seed))
+        base = img.convert("RGBA")
+        m = min(w, h)
+
+        if stains > 0:
+            layer = Image.new("RGBA", (w, h), (0, 0, 0, 0))
+            d = ImageDraw.Draw(layer)
+            for _ in range(1 + int(stains / 25)):
+                cx, cy = rng.uniform(0.1, 0.9) * w, rng.uniform(0.1, 0.9) * h
+                r = rng.uniform(0.04, 0.1) * m * (0.6 + stains / 100)
+                d.ellipse([cx - r, cy - r * 0.9, cx + r, cy + r * 0.9], fill=(150, 105, 55, int(28 + stains * 0.3)),
+                          outline=(105, 65, 28, int(70 + stains * 0.8)), width=max(2, int(3 * s)))
+            base = Image.alpha_composite(base, layer.filter(ImageFilter.GaussianBlur(max(1.0, 2 * s))))
+
+        if dust > 0:
+            layer = Image.new("RGBA", (w, h), (0, 0, 0, 0))
+            d = ImageDraw.Draw(layer)
+            for _ in range(int(dust * w * h / 60000.0)):
+                x, y, r = rng.uniform(0, w), rng.uniform(0, h), rng.uniform(0.6, 2.2) * s
+                d.ellipse([x - r, y - r, x + r, y + r], fill=(20, 20, 20, 200))
+            for _ in range(int(dust / 20)):
+                x, y = rng.uniform(0, w), rng.uniform(0, h)
+                pts = [(x, y)]
+                for _ in range(5):
+                    x += rng.normal(0, 14 * s); y += rng.normal(0, 14 * s)
+                    pts.append((x, y))
+                d.line(pts, fill=(30, 30, 30, 170), width=max(1, int(s)))
+            base = Image.alpha_composite(base, layer)
+
+        if fold > 0:
+            a = np.zeros((h, w), dtype=np.float32)
+            for pos, k, horizontal in ((h / 2.0, 1.0, True), (w / 2.0, 0.6, False)):
+                if not horizontal and fold < 50:
+                    continue
+                n = h if horizontal else w
+                dist = np.abs(np.arange(n, dtype=np.float32) - pos) / max(2.0, n * 0.025)
+                band = np.exp(-dist * dist) * (fold / 100.0) * 70 * k
+                a = np.maximum(a, band[:, None] if horizontal else band[None, :])
+            layer = np.zeros((h, w, 4), dtype=np.uint8)
+            layer[..., 3] = a.astype(np.uint8)
+            base = Image.alpha_composite(base, Image.fromarray(layer, "RGBA"))
+            hi = Image.new("RGBA", (w, h), (0, 0, 0, 0))
+            ImageDraw.Draw(hi).line([(0, h // 2 + max(2, int(2 * s))), (w, h // 2 + max(2, int(2 * s)))],
+                                    fill=(255, 255, 255, int(40 + fold * 1.2)), width=max(1, int(s)))
+            base = Image.alpha_composite(base, hi)
+
+        if holes:
+            layer = Image.new("RGBA", (w, h), (0, 0, 0, 0))
+            d = ImageDraw.Draw(layer)
+            r = 0.014 * w
+            for fy in (0.2, 0.5, 0.8):
+                cx, cy = 0.05 * w, fy * h
+                d.ellipse([cx - r - 2 * s, cy - r - 2 * s, cx + r + 2 * s, cy + r + 2 * s], fill=(0, 0, 0, 40))
+                d.ellipse([cx - r, cy - r, cx + r, cy + r], fill=(26, 26, 26, 255))
+            base = Image.alpha_composite(base, layer)
+
+        if stamp:
+            size = max(14, int(0.06 * w))
+            font = self.get_font(st.get("font", "Arial Black"), size)
+            tmp = ImageDraw.Draw(Image.new("L", (1, 1)))
+            tb = tmp.textbbox((0, 0), stamp.upper(), font=font)
+            pad = int(0.02 * w)
+            sw, sh = tb[2] - tb[0] + 2 * pad, tb[3] - tb[1] + 2 * pad
+            st_img = Image.new("RGBA", (sw, sh), (0, 0, 0, 0))
+            d = ImageDraw.Draw(st_img)
+            col = (190, 30, 30, 255)
+            d.rectangle([0, 0, sw - 1, sh - 1], outline=col, width=max(3, int(4 * s)))
+            d.text((pad - tb[0], pad - tb[1]), stamp.upper(), fill=col, font=font)
+            alpha = np.asarray(st_img.split()[3], dtype=np.float32) * (rng.random((sh, sw)) > 0.2) * 0.85
+            st_img.putalpha(Image.fromarray(alpha.astype(np.uint8)))
+            st_img = st_img.rotate(float(st.get("stamp_rot", -12)), expand=True, resample=Image.BICUBIC)
+            px = int(min(max(0, 0.66 * w - st_img.width / 2), max(0, w - st_img.width)))
+            py = int(min(max(0, 0.8 * h - st_img.height / 2), max(0, h - st_img.height)))
+            layer = Image.new("RGBA", (w, h), (0, 0, 0, 0))
+            layer.paste(st_img, (px, py), st_img)
+            base = Image.alpha_composite(base, layer)
+
+        return base.convert("RGB")
 
     @staticmethod
     def add_paper(out, amount, seed, s=1.0):
@@ -560,6 +691,8 @@ class ZineGraphicEngine:
 
         if st["dither"] == "halftone":
             bits = self.apply_halftone_dots(gray, dot_size=st["dot_size"] * s, angle=st["angle"])
+        elif st["dither"] in ("lines", "cross", "stipple", "mezzo", "bayer"):
+            bits = self.apply_pattern_dither(gray, st["dither"], dot_size=st["dot_size"] * s, angle=st["angle"])
         elif st["dither"] == "stencil":
             bits = np.asarray(gray.convert("1", dither=Image.Dither.NONE))
         else:
@@ -605,4 +738,4 @@ class ZineGraphicEngine:
             out[region] = (out[region].astype(np.float32) * ink2 / 255.0).astype(np.uint8)
 
         out = self.add_paper(out, float(st["paper"]), seed + 21, s)
-        return Image.fromarray(out), Image.fromarray(bits)
+        return self.add_wear(Image.fromarray(out), st, seed + 51, s), Image.fromarray(bits)

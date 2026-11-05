@@ -15,9 +15,9 @@ English · [Русский](README.ru.md)
 
 </div>
 
-A zine is not a product, it is a gesture. This tool makes the gesture cheap: drop in a photo, pick a mood,
-print the sheet, fold it, cut along the red line, give it to someone. It exists in two forms that share one
-engine design, one preset library and one project format:
+I saw real people's photocopied and riso work on Instagram and wanted to make that at home, without any equipment.
+So this is a tool that turns a photo into a copied, crooked, slightly dirty page. Print it, fold it, cut along the red
+line, give it to someone. It comes in two versions with the same looks and the same project file:
 
 | | Web | Windows |
 |---|---|---|
@@ -30,17 +30,19 @@ engine design, one preset library and one project format:
 
 ## What it does
 
-- **Real halftone.** Amplitude screen with angle and dot size, Floyd–Steinberg grain, hard 1-bit stencil, toner noise, scanner streaks, copier edge shadow, ink misregistration.
+- **Real halftone.** Amplitude screen with angle and dot size, Floyd–Steinberg grain, hard 1-bit stencil, lines, cross-hatch, stipple, mezzotint, Bayer, toner noise, scanner streaks, copier edge shadow, ink misregistration.
 - **Riso overprint.** A second ink layer on another screen angle, shifted and multiplied over the first. Nine paper / ink pairs plus your own colours.
 - **Paper and tape.** Fibre and blotch texture, edge vignette, torn tape strips that get photocopied along with the page.
 - **Generation loss.** 13 layouts (staggered, columns, diagonal cascade, overlapping pile, mosaic, diptych, triptych, ribbon, contact sheet, hero + copies, full page…); every next copy is blurrier and harsher.
+- **Sheet wear.** Fold crease, punch holes, stains, dust and a stamp with your own text. Remix has locks, Mutate nudges a look.
+- **Booklet.** Saddle-stitch PDF for any page count (A4 / Letter) and a printer calibration sheet (browser).
 - **Ink separations.** Export per-ink 1-bit plates with registration crosses (ZIP) to print on a real risograph.
 - **Fold guide.** Illustrated how to fold the 8-page mini-zine, printable from the app.
 - **Manifestos.** 54 built-in English manifestos in eight categories, search, your own texts, three backings (box, Dymo tape, outline), draggable caption.
 - **Faces.** Optional black bar over the eyes and sticker cut-outs (Haar cascade; runs in-browser too).
 - **Print-ready.** PNG up to 3×, book PDF, A4 PDF with margins, **8-page mini-zine** with fold and cut lines, 1-bit PNG for stencil printing.
 - **Projects.** `.zine` files (a zip with `manifest.json` and PNGs) open in both versions. Autosave, undo / redo.
-- **16 presets.** Classic Xerox, Newsprint, Acid Riot, Punk Flyer, Cyanotype, 35 mm Contact Sheet, Night Vision, Riso Overprint, Tape Collage, Diagonal Punk, Photo Pile, Newsprint Mosaic, Cyanotype Triptych, Full-page Poster, Film-test Ribbon, Riso Diptych — or save your own.
+- **20 presets.** Classic Xerox, Newsprint, Acid Riot, Punk Flyer, Cyanotype, 35 mm Contact Sheet, Night Vision, Riso Overprint, Tape Collage, Diagonal Punk, Photo Pile, Newsprint Mosaic, Cyanotype Triptych, Full-page Poster, Film-test Ribbon, Riso Diptych, Line Engraving, Mezzotint, Dirty Office, Bayer 8-bit, or save your own.
 - **Share a look.** One link carries a style and caption (no photo), so anyone can try it on their own picture.
 - **Before / after.** Drag a divider across the sheet to compare with the original photo (browser version).
 
