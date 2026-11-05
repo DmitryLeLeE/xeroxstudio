@@ -305,3 +305,20 @@ html[data-theme="paper"] body, html[data-theme="paper"] .btn { font-family: "Rub
 .locks .chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 4px; }
 .chip { font: inherit; font-size: 12px; padding: 4px 9px; border: 1.5px solid currentColor; border-radius: 999px; background: transparent; color: inherit; cursor: pointer; }
 .chip[aria-pressed="true"] { background: var(--fg); color: var(--panel); }
+
+/* --- layers */
+.layer-sel { position: absolute; left: 0; top: 0; border: 2px dashed #e0301e; pointer-events: none; z-index: 6; transform-origin: center; box-sizing: border-box; }
+.sticker-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(84px, 1fr)); gap: 10px; }
+.sticker-grid button { border: 1.5px solid #888; border-radius: 8px; background: #fff; padding: 6px; cursor: pointer; }
+.sticker-grid button:hover, .sticker-grid button:focus-visible { border-color: #e0301e; }
+.sticker-grid canvas { width: 100%; height: auto; display: block; }
+.layers-box { display: flex; flex-direction: column; gap: 6px; }
+.layers-list { display: flex; flex-direction: column; gap: 4px; }
+.layers-list button { text-align: left; font: inherit; font-size: 13px; padding: 5px 8px; border: 1.5px solid #888; border-radius: 6px; background: transparent; color: inherit; cursor: pointer; }
+.layers-list button[aria-pressed="true"] { border-color: #e0301e; background: #e0301e22; }
+.layer-ed { display: flex; flex-direction: column; gap: 6px; border-top: 1px dashed #888; padding-top: 6px; }
+.layer-ed .row { flex-wrap: wrap; }
+
+.hist-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 3px; max-height: 50vh; overflow: auto; }
+.hist-list button { width: 100%; text-align: left; font: inherit; font-size: 13px; padding: 5px 8px; border: 1.5px solid #888; border-radius: 6px; background: transparent; color: inherit; cursor: pointer; }
+.hist-list button[aria-current="true"] { border-color: #e0301e; background: #e0301e22; font-weight: 700; }

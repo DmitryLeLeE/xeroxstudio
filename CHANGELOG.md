@@ -1,5 +1,15 @@
 # Changelog
 
+## 1.4.0
+- **Free layers** (both versions): any number of text blocks and stickers on a page, each with its own position, size, rotation, colour and order. In the browser you drag them on the sheet; the desktop app has a layer list with sliders. 16 vector stickers (star, burst, arrow, smiley, eye, bolt, heart, scissors, cross, spiral, scribble ring, barcode, flower, bubble, target, asterisk).
+- **Three and four inks** (both versions): a third ink for midtones and a fourth for highlights, each with its own screen angle and misregistration. Ink separations export all plates.
+- **History panel** (browser, Ctrl+H): every step with a short description; click to jump back.
+- **Folder of photos** (browser, also desktop booklet and calibration): add a whole folder, each photo becomes a page.
+- **Story video** (browser): a 9:16 clip of the sheet coming out of the copier, with the copier sound if it is on.
+- **Five bundled fonts:** Rubik Mono One, Press Start 2P, Marck Script (with Cyrillic), Special Elite and Permanent Marker (Latin only).
+- **Desktop:** saddle-stitch booklet (A4 / Letter) and printer calibration sheet, Remix locks, new wear effects.
+- Not done yet: rendering in a Web Worker.
+
 ## 1.3.0
 - **Five new screens** (both versions): lines, cross-hatch, stipple, mezzotint, Bayer. Python and JS give the same plate (tested).
 - **Sheet wear** (both versions): fold crease, punch holes, coffee and grease stains, dust and hairs, and a rubber stamp with your own text.

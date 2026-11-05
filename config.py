@@ -6,7 +6,7 @@ import os
 import sys
 
 APP_NAME = "Xerox Zine Studio"
-APP_VERSION = "1.3.0"
+APP_VERSION = "1.4.0"
 
 
 def resource_path(name):
@@ -148,6 +148,12 @@ FONT_FILES = {
     "Courier New Bold": "courbd.ttf",
     "Consolas Bold": "consolab.ttf",
     "Times New Roman Bold": "timesbd.ttf",
+    # свободные шрифты лежат в assets/fonts (Rubik Mono, Press Start и Marck Script с кириллицей; Special Elite и Permanent Marker только латиница)
+    "Rubik Mono One": resource_path("assets/fonts/RubikMonoOne-Regular.ttf"),
+    "Press Start 2P": resource_path("assets/fonts/PressStart2P-Regular.ttf"),
+    "Marck Script": resource_path("assets/fonts/MarckScript-Regular.ttf"),
+    "Special Elite": resource_path("assets/fonts/SpecialElite-Regular.ttf"),
+    "Permanent Marker": resource_path("assets/fonts/PermanentMarker-Regular.ttf"),
 }
 FONT_FALLBACKS = [
     "arialbd.ttf",
@@ -193,6 +199,10 @@ DEFAULT_STATE = {
     "paper": 0,
     "overprint": 0,
     "ink2": (255, 60, 140),
+    "overprint3": 0,
+    "ink3": (0, 120, 190),
+    "overprint4": 0,
+    "ink4": (255, 200, 0),
     "tape": 0,
     "fold": 0,
     "holes": 0,
@@ -200,6 +210,7 @@ DEFAULT_STATE = {
     "dust": 0,
     "stamp": "",
     "stamp_rot": -12,
+    "layers": [],
     "crop": [0.0, 0.0, 1.0, 1.0],
     "seed": 42,
     "img": None,

@@ -86,6 +86,7 @@
       <button class="btn primary sm" id="btnSavePng"><span data-ru="💾 PNG" data-en="💾 PNG"></span></button>
     </div>
     <div class="viewport" id="viewport" tabindex="0" aria-label="Предпросмотр страницы">
+      <div class="layer-sel" id="layerSel" hidden></div>
       <canvas id="preview" role="img" aria-label="Zine page preview"></canvas>
       <div class="scanbar" id="scanbar" aria-hidden="true"></div>
       <div class="busy" id="busy" hidden><i></i><span id="busyTxt"></span></div>
@@ -115,6 +116,7 @@
 
 <input type="file" id="fileImg" aria-label="Add photos" accept="image/*" multiple hidden>
 <input type="file" id="fileCam" accept="image/*" capture="environment" aria-label="Take a photo" hidden>
+<input type="file" id="fileDir" aria-label="Add a folder of photos" webkitdirectory multiple hidden>
 <input type="file" id="fileProj" aria-label="Open project" accept=".zine,.zip,application/zip" hidden>
 <div class="dropveil" id="dropveil" hidden><div data-ru="Отпустите, чтобы открыть" data-en="Drop to open"></div></div>
 
@@ -156,6 +158,16 @@
     <button class="btn" id="wCam" data-ru="📷 Снять на камеру" data-en="📷 Take a photo"></button>
     <button class="btn" id="wSample" data-ru="Сначала поиграю с примером" data-en="Play with the sample first"></button>
   </div>
+</dialog>
+
+<dialog id="dlgHistory" class="dlg">
+  <form method="dialog" class="dlg-head"><h3 data-ru="История действий" data-en="History"></h3><button class="btn icon" aria-label="Close">✕</button></form>
+  <div class="dlg-body"><p class="muted small" data-ru="Нажми на шаг, чтобы вернуться к нему. Последний шаг внизу." data-en="Click a step to jump back to it. The latest step is at the bottom."></p><ol class="hist-list" id="histList"></ol></div>
+</dialog>
+
+<dialog id="dlgStickers" class="dlg">
+  <form method="dialog" class="dlg-head"><h3 data-ru="Стикеры" data-en="Stickers"></h3><button class="btn icon" aria-label="Close">✕</button></form>
+  <div class="dlg-body"><div class="sticker-grid" id="stickerGrid"></div></div>
 </dialog>
 
 <dialog id="dlgFold" class="dlg">

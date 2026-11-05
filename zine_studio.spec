@@ -10,6 +10,7 @@ VERSION_FILE = "version_info.txt" if os.path.exists("version_info.txt") else Non
 datas = [
     ("icon.ico", "."), ("icon.png", "."),
     ("assets/haarcascade_frontalface_default.xml", "."),
+    ("assets/fonts", "assets/fonts"),
     ("THIRD_PARTY_NOTICES.md", "."),
 ]
 binaries = []

@@ -34,6 +34,7 @@ line, give it to someone. It comes in two versions with the same looks and the s
 - **Riso overprint.** A second ink layer on another screen angle, shifted and multiplied over the first. Nine paper / ink pairs plus your own colours.
 - **Paper and tape.** Fibre and blotch texture, edge vignette, torn tape strips that get photocopied along with the page.
 - **Generation loss.** 13 layouts (staggered, columns, diagonal cascade, overlapping pile, mosaic, diptych, triptych, ribbon, contact sheet, hero + copies, full page…); every next copy is blurrier and harsher.
+- **Layers.** Any number of texts and 16 vector stickers per page, draggable in the browser. Third and fourth ink for 3–4 colour prints.
 - **Sheet wear.** Fold crease, punch holes, stains, dust and a stamp with your own text. Remix has locks, Mutate nudges a look.
 - **Booklet.** Saddle-stitch PDF for any page count (A4 / Letter) and a printer calibration sheet (browser).
 - **Ink separations.** Export per-ink 1-bit plates with registration crosses (ZIP) to print on a real risograph.

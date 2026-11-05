@@ -167,6 +167,54 @@ function addWear(canvas, st, seed, s) {
   }
 }
 
+
+const rgbCss = (c) => `rgb(${Math.round(c[0])},${Math.round(c[1])},${Math.round(c[2])})`;
+/** Рисует один стикер в квадрат size x size с центром в (0,0). Режимы: f/s - цвет слоя, p/k - цвет бумаги. */
+export function drawSticker(c, name, size, color, paper) {
+  const spec = CFG.STICKERS[name]; if (!spec) return;
+  const k = size / 100; c.save(); c.translate(-size / 2, -size / 2); c.scale(k, k);
+  c.lineJoin = "round"; c.lineCap = "round";
+  for (const pr of spec.prims) {
+    const m = pr.m || "f", col = m === "f" || m === "s" ? color : paper;
+    c.fillStyle = c.strokeStyle = col; c.lineWidth = 6;
+    if (pr.t === "poly") {
+      c.beginPath(); pr.p.forEach(([x, y], i) => (i ? c.lineTo(x, y) : c.moveTo(x, y))); c.closePath();
+      if (m === "f" || m === "p") c.fill(); else c.stroke();
+    } else if (pr.t === "circle") {
+      c.beginPath(); c.arc(pr.c[0], pr.c[1], pr.r, 0, Math.PI * 2);
+      if (m === "f" || m === "p") c.fill(); else c.stroke();
+    } else if (pr.t === "line") {
+      c.strokeStyle = color; c.lineWidth = pr.w || 6; c.beginPath(); pr.p.forEach(([x, y], i) => (i ? c.lineTo(x, y) : c.moveTo(x, y))); c.stroke();
+    } else if (pr.t === "text") {
+      c.fillStyle = paper; c.font = `900 ${pr.h}px "Arial Black", Rubik, sans-serif`; c.textAlign = "center"; c.textBaseline = "middle"; c.fillText(pr.s, pr.c[0], pr.c[1]);
+    }
+  }
+  c.restore();
+}
+/** Свободные слои поверх листа (аналог draw_layers в engine.py). */
+function drawLayers(canvas, st, paper, ink) {
+  const layers = st.layers; if (!Array.isArray(layers) || !layers.length) return;
+  const w = canvas.width, c = ctx2d(canvas), h = canvas.height;
+  const cols = { ink: rgbCss(ink), paper: rgbCss(paper), ink2: rgbCss(st.ink2 || [255, 60, 140]), ink3: rgbCss(st.ink3 || [0, 120, 190]), ink4: rgbCss(st.ink4 || [255, 200, 0]) };
+  for (const ly of layers) {
+    const color = cols[ly.color] || cols.ink, size = Math.max(0.02, Number(ly.size) || 0.2);
+    c.save(); c.translate((Number(ly.x) || 0.5) * w, (Number(ly.y) || 0.5) * h); c.rotate(((Number(ly.rot) || 0) * Math.PI) / 180);
+    if (ly.type === "sticker") drawSticker(c, ly.sticker, size * w, color, cols.paper);
+    else {
+      const text = String(ly.text || "").trim(); if (!text) { c.restore(); continue; }
+      const fpx = Math.max(8, Math.round(size * w * 0.5)), lines = text.split("\n"), pad = fpx * 0.3, lh = fpx * 1.15;
+      c.font = fontSpec(ly.font || "Arial Black", fpx); c.textBaseline = "top"; c.textAlign = "left";
+      const tw = Math.max(...lines.map((l) => c.measureText(l).width)), th = lh * lines.length, bw = tw + 2 * pad, bh = th + 2 * pad;
+      const style = ly.style || "box";
+      if (style === "box") { c.fillStyle = cols.paper; c.fillRect(-bw / 2, -bh / 2, bw, bh); c.fillStyle = color; }
+      else if (style === "tape") { c.fillStyle = color; c.fillRect(-bw / 2, -bh / 2, bw, bh); c.fillStyle = cols.paper; }
+      else { c.fillStyle = color; c.strokeStyle = cols.paper; c.lineWidth = Math.max(2, fpx * 0.16); c.lineJoin = "round"; }
+      lines.forEach((l, i) => { const y = -bh / 2 + pad + i * lh; if (style === "plain") c.strokeText(l, -bw / 2 + pad, y); c.fillText(l, -bw / 2 + pad, y); });
+    }
+    c.restore();
+  }
+}
+
 function stencilBits(gray, w, h) {
   const out = new Uint8Array(w * h);
   for (let i = 0; i < out.length; i++) out[i] = gray[i] >= 128 ? 1 : 0;
@@ -814,9 +862,34 @@ export async function renderPage(source, state, opts = {}) {
       }
     }
   }
+  // --- третья и четвёртая краска: свои тона, углы и сдвиги (те же формулы, что в engine.py)
+  const extraPlates = {};
+  {
+    const m = Number(st.misreg);
+    const defs = [
+      ["ink3", Number(st.overprint3), 1.15, 60, [Math.round((2 + m) * s), Math.round((1 + m / 3) * s)], (g) => 1 - Math.abs(g / 255 - 0.5) * 2],
+      ["ink4", Number(st.overprint4), 1.5, 15, [-Math.round((1 + m * 0.5) * s), -Math.round((3 + m) * s)], (g) => Math.max(0, g / 255 - 0.35) / 0.65],
+    ];
+    for (const [name, amount, dotK, angK, [dx, dy], tone] of defs) {
+      if (!(amount > 0)) continue;
+      const k = Math.min(1, amount / 100) * 0.9, lt = new Uint8Array(n);
+      for (let i = 0; i < n; i++) lt[i] = 255 - 255 * Math.min(1, Math.max(0, tone(gray[i]))) * k;
+      const bx = halftoneBits(lt, cw, ch, st.dot_size * s * dotK, (Number(st.angle) + angK) % 90);
+      extraPlates[name] = { bits: bx, rgb: st[name] };
+      const [r3, g3, b3] = st[name];
+      for (let y = 0; y < ch; y++) {
+        const sy = y - dy; if (sy < 0 || sy >= ch) continue;
+        for (let x = 0; x < cw; x++) {
+          const sx = x - dx; if (sx < 0 || sx >= cw) continue;
+          if (bx[sy * cw + sx] === 0) { const p = (y * cw + x) * 4; o[p] = (o[p] * r3) / 255; o[p + 1] = (o[p + 1] * g3) / 255; o[p + 2] = (o[p + 2] * b3) / 255; }
+        }
+      }
+    }
+  }
   addPaper(o, cw, ch, Number(st.paper), seed + 21, s);
   const result = makeCanvas(cw, ch);
   ctx2d(result).putImageData(out, 0, 0);
   addWear(result, st, seed + 51, s);
-  return { canvas: result, bits, plate2, inks: { paper, ink, ink2: plate2 ? st.ink2 : null }, width: cw, height: ch };
+  drawLayers(result, st, paper, ink);
+  return { canvas: result, bits, plate2, extraPlates, inks: { paper, ink, ink2: plate2 ? st.ink2 : null }, width: cw, height: ch };
 }

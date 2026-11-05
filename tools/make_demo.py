@@ -25,8 +25,13 @@ with sync_playwright() as p:
     pg.goto(url); pg.wait_for_timeout(1200)
     pg.set_input_files("#fileImg", photo); pg.wait_for_timeout(1800)
     names = pg.evaluate("[...document.querySelectorAll('#presetRow select option')].map(o => o.value).filter(Boolean)")
-    for n in names[:8]:
+    for n in names[8:16]:
         pg.select_option("#presetRow select", n); pg.wait_for_timeout(1300)
+    pg.evaluate("[...document.querySelectorAll('#layersBox button')].find(b => /Sticker/.test(b.textContent)).click()")
+    pg.click("#stickerGrid button >> nth=1"); pg.wait_for_timeout(1200)
+    pg.evaluate("[...document.querySelectorAll('#layersBox button')].find(b => /Text/.test(b.textContent)).click()"); pg.wait_for_timeout(1000)
+    for _ in range(3):
+        pg.evaluate("[...document.querySelectorAll('button')].find(b => /Mutate/.test(b.textContent)).click()"); pg.wait_for_timeout(1000)
     pg.click("#btnCompare"); pg.wait_for_timeout(1200)
     pg.mouse.click(500, 350); pg.wait_for_timeout(900)
     pg.click("#btnCompare"); pg.wait_for_timeout(600)

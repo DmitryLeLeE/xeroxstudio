@@ -20,6 +20,7 @@ from PIL import Image, ImageDraw, ImageOps, ImageTk
 import appdata
 import config
 import copier_sound
+import imposition
 import manifestos
 import pdf_writer
 import presets
@@ -164,6 +165,8 @@ class XeroxZineStudioApp:
         self.seed = config.DEFAULT_STATE["seed"]
         self.custom_colors = config.DEFAULT_STATE["custom_colors"]
         self.ink2 = tuple(config.DEFAULT_STATE["ink2"])
+        self.extra_inks = {"ink3": tuple(config.DEFAULT_STATE["ink3"]), "ink4": tuple(config.DEFAULT_STATE["ink4"])}
+        self.layers = []
 
         self.vars = {}
         self._loading = True  # Tk-виджеты пишут в переменные при создании: рендерить рано
@@ -304,6 +307,9 @@ class XeroxZineStudioApp:
         f.add_command(label="Экспорт книги в PDF...", command=self.export_multipage_pdf)
         f.add_command(label="Экспорт PDF для печати (A4, поля 10 мм)...", command=self.export_pdf_a4)
         f.add_command(label="Экспорт 8-page мини-зина (A4)...", command=self.export_mini_zine)
+        f.add_command(label="Экспорт буклета на скрепку, A4 (PDF)...", command=lambda: self.export_booklet("a4"))
+        f.add_command(label="Экспорт буклета на скрепку, Letter (PDF)...", command=lambda: self.export_booklet("letter"))
+        f.add_command(label="Лист калибровки принтера (PNG)...", command=self.export_calibration)
         self.sound_on = tk.BooleanVar(value=bool(self.settings.get("copier_sound", False)))
         self.sound_on.trace_add("write", lambda *a: self.settings.set("copier_sound", self.sound_on.get()))
         f.add_checkbutton(label="Звук копира при экспорте", variable=self.sound_on)
@@ -439,6 +445,15 @@ class XeroxZineStudioApp:
         self.sw_ink2 = tk.Label(row2, width=6, bg="#%02x%02x%02x" % self.ink2, relief="flat", highlightthickness=1, highlightbackground=LINE)
         self.sw_ink2.pack(side=tk.LEFT, ipady=6)
         make_button(row2, "Цвет второй краски…", self._pick_ink2).pack(side=tk.LEFT, padx=6)
+        self.sw_extra = {}
+        for key, over, label in (("ink3", "overprint3", "Третья краска (полутона)"), ("ink4", "overprint4", "Четвёртая краска (света)")):
+            self._slider(c, over, label, 0, 100)
+            rowx = tk.Frame(c, bg=PANEL2)
+            rowx.pack(fill=tk.X, pady=(0, 2))
+            sw = tk.Label(rowx, width=6, bg="#%02x%02x%02x" % self.extra_inks[key], relief="flat", highlightthickness=1, highlightbackground=LINE)
+            sw.pack(side=tk.LEFT, ipady=6)
+            self.sw_extra[key] = sw
+            make_button(rowx, f"Цвет: {label.split(' (')[0].lower()}…", lambda k=key: self._pick_extra_ink(k)).pack(side=tk.LEFT, padx=6)
 
         # 4. Палитра
         c = self._section(p, "4. ПАЛИТРА (RISOGRAPH)")
@@ -464,8 +479,35 @@ class XeroxZineStudioApp:
         self._entry(c, "stamp", "Штамп (пусто = нет)")
         self._slider(c, "stamp_rot", "Поворот штампа (°)", -45, 45)
 
-        # 6. Текст
-        c = self._section(p, "6. МАНИФЕСТЫ И ТИПОГРАФИКА")
+        # 6a. Слои
+        c = self._section(p, "6. СЛОИ: СТИКЕРЫ И НАДПИСИ")
+        self._layer_loading = False
+        self.layer_list = tk.Listbox(c, height=5, bg=FIELD, fg=FG, selectbackground=ACCENT, activestyle="none", relief="flat",
+                                     highlightthickness=1, highlightbackground=LINE, exportselection=False, font=FONT)
+        self.layer_list.pack(fill=tk.X, pady=(0, 3))
+        self.layer_list.bind("<<ListboxSelect>>", lambda e: self._load_layer_controls())
+        rowl = tk.Frame(c, bg=PANEL2)
+        rowl.pack(fill=tk.X)
+        make_button(rowl, "＋ Надпись", self._add_text_layer).pack(side=tk.LEFT, padx=(0, 3))
+        make_button(rowl, "＋ Стикер…", self._add_sticker_layer).pack(side=tk.LEFT, padx=3)
+        make_button(rowl, "Копия", lambda: self._layer_action("copy")).pack(side=tk.LEFT, padx=3)
+        make_button(rowl, "Удалить", lambda: self._layer_action("delete")).pack(side=tk.LEFT, padx=3)
+        self.ly_vars = {"x": tk.DoubleVar(value=50), "y": tk.DoubleVar(value=50), "size": tk.DoubleVar(value=20), "rot": tk.DoubleVar(value=0)}
+        for key, text, lo, hi in (("x", "Позиция X (%)", 0, 100), ("y", "Позиция Y (%)", 0, 100), ("size", "Размер (% ширины)", 4, 100), ("rot", "Поворот (°)", -180, 180)):
+            self.ly_vars[key].trace_add("write", lambda *a, k=key: self._layer_var_changed(k))
+            LabeledSlider(c, text, self.ly_vars[key], lo, hi, res=1, default=self.ly_vars[key].get()).pack(fill=tk.X, pady=1)
+        self.ly_text = tk.StringVar()
+        self.ly_text.trace_add("write", lambda *a: self._layer_var_changed("text"))
+        self._label(c, "Текст слоя (для надписей)")
+        tk.Entry(c, textvariable=self.ly_text, bg=FIELD, fg=FG, insertbackground=ACCENT, font=("Consolas", 9), relief="flat",
+                 highlightthickness=1, highlightbackground=LINE, highlightcolor=ACCENT).pack(fill=tk.X, ipady=3)
+        self.ly_color = tk.StringVar(value="ink")
+        self.ly_color.trace_add("write", lambda *a: self._layer_var_changed("color"))
+        self._label(c, "Цвет слоя")
+        ttk.Combobox(c, textvariable=self.ly_color, values=["ink", "paper", "ink2", "ink3", "ink4"], state="readonly", font=FONT).pack(fill=tk.X, pady=(0, 3))
+
+        # 7. Текст
+        c = self._section(p, "7. МАНИФЕСТЫ И ТИПОГРАФИКА")
         self._label(c, "Верхняя надпись")
         self.txt_top = self._text_box(c)
         self._label(c, "Нижняя надпись")
@@ -549,6 +591,9 @@ class XeroxZineStudioApp:
             txt_bottom=self.txt_bot.get("1.0", tk.END).strip(),
             custom_colors=[list(c) for c in self.custom_colors],
             ink2=list(self.ink2),
+            ink3=list(self.extra_inks["ink3"]),
+            ink4=list(self.extra_inks["ink4"]),
+            layers=copy.deepcopy(self.layers),
             crop=list(self.crop),
             seed=self.seed,
             img=self.cur_img_key,
@@ -579,6 +624,12 @@ class XeroxZineStudioApp:
                 self.ink2 = tuple(int(v) for v in s.get("ink2", config.DEFAULT_STATE["ink2"]))[:3]
             except (TypeError, ValueError):
                 self.ink2 = tuple(config.DEFAULT_STATE["ink2"])
+            for key in ("ink3", "ink4"):
+                try:
+                    self.extra_inks[key] = tuple(int(v) for v in s.get(key, config.DEFAULT_STATE[key]))[:3]
+                except (TypeError, ValueError):
+                    self.extra_inks[key] = tuple(config.DEFAULT_STATE[key])
+            self.layers = copy.deepcopy(s.get("layers") or [])
             self.crop = list(s.get("crop", [0.0, 0.0, 1.0, 1.0]))
             self.seed = int(s.get("seed", config.DEFAULT_STATE["seed"]))
             key = s.get("img")
@@ -587,6 +638,9 @@ class XeroxZineStudioApp:
             self._loading = False
         self._update_swatches()
         self.sw_ink2.config(bg="#%02x%02x%02x" % tuple(self.ink2))
+        for key, sw in self.sw_extra.items():
+            sw.config(bg="#%02x%02x%02x" % tuple(self.extra_inks[key]))
+        self._refresh_layers_ui()
         self._sync_source_preview()
         self.schedule_render(dirty=False)
 
@@ -622,6 +676,122 @@ class XeroxZineStudioApp:
             return
         self.ink2 = tuple(int(v) for v in rgb)
         self.sw_ink2.config(bg="#%02x%02x%02x" % self.ink2)
+        self.schedule_render()
+
+    # ------------------------------------------------------------------ слои
+    def _refresh_layers_ui(self, select=None):
+        lb = getattr(self, "layer_list", None)
+        if lb is None:
+            return
+        import stickers
+        lb.delete(0, tk.END)
+        for i, ly in enumerate(self.layers):
+            if ly.get("type") == "sticker":
+                name = stickers.STICKERS.get(ly.get("sticker"), ("?",))[0]
+                lb.insert(tk.END, f"{i + 1}. ✦ {name}")
+            else:
+                lb.insert(tk.END, f"{i + 1}. Aa «{str(ly.get('text', '')).splitlines()[0][:22] if ly.get('text') else 'пусто'}»")
+        if self.layers:
+            idx = len(self.layers) - 1 if select is None else max(0, min(select, len(self.layers) - 1))
+            lb.selection_clear(0, tk.END)
+            lb.selection_set(idx)
+        self._load_layer_controls()
+
+    def _sel_layer(self):
+        sel = self.layer_list.curselection()
+        if sel and sel[0] < len(self.layers):
+            return self.layers[sel[0]]
+        return None
+
+    def _load_layer_controls(self):
+        ly = self._sel_layer()
+        self._layer_loading = True
+        try:
+            if ly:
+                self.ly_vars["x"].set(round(float(ly.get("x", 0.5)) * 100))
+                self.ly_vars["y"].set(round(float(ly.get("y", 0.5)) * 100))
+                self.ly_vars["size"].set(round(float(ly.get("size", 0.2)) * 100))
+                self.ly_vars["rot"].set(round(float(ly.get("rot", 0))))
+                self.ly_text.set(ly.get("text", ""))
+                self.ly_color.set(ly.get("color", "ink"))
+        finally:
+            self._layer_loading = False
+
+    def _layer_var_changed(self, key):
+        if self._layer_loading:
+            return
+        ly = self._sel_layer()
+        if not ly:
+            return
+        if key in ("x", "y", "size"):
+            ly[key] = float(self.ly_vars[key].get()) / 100.0
+        elif key == "rot":
+            ly["rot"] = float(self.ly_vars["rot"].get())
+        elif key == "text":
+            ly["text"] = self.ly_text.get()
+        elif key == "color":
+            ly["color"] = self.ly_color.get()
+        self.preset_var.set(PRESET_HINT)
+        self.schedule_render()
+
+    def _new_layer(self, **kw):
+        ly = {"type": "text", "text": "", "sticker": "star", "x": 0.5, "y": 0.5, "size": 0.2, "rot": 0, "color": "ink", "style": "box", "font": "Arial Black"}
+        ly.update(kw)
+        self.layers.append(ly)
+        self._refresh_layers_ui()
+        self.schedule_render()
+
+    def _add_text_layer(self):
+        text = simpledialog.askstring("Новая надпись", "Текст:", parent=self.root)
+        if text:
+            self._new_layer(type="text", text=text)
+
+    def _add_sticker_layer(self):
+        import stickers
+        names = list(stickers.STICKERS)
+        dlg = tk.Toplevel(self.root)
+        dlg.title("Стикеры")
+        dlg.transient(self.root)
+        dlg.configure(bg=PANEL)
+        lb = tk.Listbox(dlg, height=min(16, len(names)), bg=FIELD, fg=FG, selectbackground=ACCENT, font=FONT, relief="flat", exportselection=False)
+        for n in names:
+            lb.insert(tk.END, stickers.STICKERS[n][0])
+        lb.pack(padx=10, pady=10)
+        lb.selection_set(0)
+
+        def ok(_e=None):
+            sel = lb.curselection()
+            dlg.destroy()
+            if sel:
+                self._new_layer(type="sticker", sticker=names[sel[0]], size=0.22)
+
+        lb.bind("<Double-Button-1>", ok)
+        make_button(dlg, "Добавить", ok, kind="primary").pack(pady=(0, 10))
+        dlg.grab_set()
+
+    def _layer_action(self, what):
+        sel = self.layer_list.curselection()
+        if not sel:
+            return
+        i = sel[0]
+        if what == "delete":
+            del self.layers[i]
+            self._refresh_layers_ui()
+        elif what == "copy":
+            c = copy.deepcopy(self.layers[i])
+            c["x"] = min(0.95, c.get("x", 0.5) + 0.05)
+            c["y"] = min(0.95, c.get("y", 0.5) + 0.05)
+            self.layers.append(c)
+            self._refresh_layers_ui()
+        self.preset_var.set(PRESET_HINT)
+        self.schedule_render()
+
+    def _pick_extra_ink(self, key):
+        rgb, _hex = colorchooser.askcolor(color="#%02x%02x%02x" % tuple(self.extra_inks[key]), title="Цвет краски", parent=self.root)
+        if not rgb:
+            return
+        self.extra_inks[key] = tuple(int(v) for v in rgb)
+        self.sw_extra[key].config(bg="#%02x%02x%02x" % self.extra_inks[key])
         self.schedule_render()
 
     def _pick_color(self, which):
@@ -1084,6 +1254,7 @@ class XeroxZineStudioApp:
             hx = lambda c: "#%02X%02X%02X" % tuple(int(v) for v in c)
             lines = ["XEROX ZINE STUDIO - INK SEPARATIONS / RAZDELENIE KRASOK", "",
                      f"ink1: ink {hx(ink)}", f"ink2: ink {hx(ink2)}" if ink2 else "ink2: none (overprint is 0)",
+                     *[f"{n}: ink {hx(rgb)}" for n, (_p, rgb) in getattr(self.engine, "last_extra", {}).items()],
                      f"paper: {hx(paper)}", "",
                      "Black = ink, white = nothing. Print ink1, let it dry, then lay the SAME sheet",
                      "into the machine again aligned by the corner crosses and print ink2.",
@@ -1137,6 +1308,51 @@ class XeroxZineStudioApp:
             return pdf_writer.write_pdf(path, sheets(), dpi=300.0)
 
         self._run_job("PDF для печати", work, lambda n: self.toast.show(f"✓ PDF A4 ({n} стр.) готов к печати"))
+
+    def export_booklet(self, paper):
+        label = "Letter" if paper == "letter" else "A4"
+        path = self._ask_save("export", defaultextension=".pdf", filetypes=[("PDF", "*.pdf")], initialfile=f"zine_booklet_{label}.pdf")
+        if not path:
+            return
+        items = self._pages_for_export()
+
+        def work(progress):
+            pw_, ph_ = (3300, 2550) if paper == "letter" else (3508, 2480)  # альбомный лист, 300 DPI
+            margin, half = 70, pw_ // 2
+            sides = imposition.booklet_sides(len(items))
+
+            def gen():
+                for si, side in enumerate(sides):
+                    progress(f"Сторона листа {si + 1} из {len(sides)}…", si / (len(sides) + 1))
+                    sheet = Image.new("RGB", (pw_, ph_), (255, 255, 255))
+                    for h, idx in enumerate(side):
+                        if idx >= len(items):
+                            continue
+                        st, img = items[idx]
+                        bw, bh = config.CANVAS_FORMATS.get(st.get("format"), (1000, 1500))
+                        k = min((half - 2 * margin) / bw, (ph_ - 2 * margin) / bh)
+                        size = (int(bw * k), int(bh * k))
+                        page = self.engine.render_zine_page(img, st, out_size=size)[0]
+                        sheet.paste(page, (h * half + (half - size[0]) // 2, (ph_ - size[1]) // 2))
+                    dr = ImageDraw.Draw(sheet)
+                    for y in range(0, ph_, 26):
+                        dr.line([(half, y), (half, y + 14)], fill=(150, 150, 150), width=2)
+                    yield sheet
+
+            return pdf_writer.write_pdf(path, gen(), dpi=300.0)
+
+        self._run_job(f"Буклет {label}", work, lambda n: self.toast.show(f"✓ Буклет готов ({n} стор.). Печатай двусторонне, переворот по короткой стороне, сложи пополам"))
+
+    def export_calibration(self):
+        path = self._ask_save("export", defaultextension=".png", filetypes=[("PNG", "*.png")], initialfile="printer_calibration_A4.png")
+        if not path:
+            return
+
+        def work(progress):
+            progress("Лист калибровки…", 0.4)
+            imposition.calibration_sheet(self.engine).save(path, dpi=(300, 300))
+
+        self._run_job("Лист калибровки", work, lambda _r: self.toast.show("✓ Лист калибровки сохранён"))
 
     def export_all_png(self):
         items = self._pages_for_export()

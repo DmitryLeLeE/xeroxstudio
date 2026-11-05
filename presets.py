@@ -13,7 +13,7 @@ import config
 
 STYLE_KEYS = (
     "layout", "rows", "tilt", "fit_mode", "bright", "edge_x", "edge_y", "loss",
-    "dither", "dot_size", "angle", "contrast", "noise", "streaks", "misreg", "copier_edge", "paper", "overprint", "ink2", "tape", "fold", "holes", "stains", "dust",
+    "dither", "dot_size", "angle", "contrast", "noise", "streaks", "misreg", "copier_edge", "paper", "overprint", "ink2", "overprint3", "ink3", "overprint4", "ink4", "tape", "fold", "holes", "stains", "dust",
     "palette", "invert", "custom_colors",
     "font", "font_size", "tstyle", "text_align", "txt_x", "txt_y1", "txt_y2", "text_rot",
 )

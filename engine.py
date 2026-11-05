@@ -42,6 +42,8 @@ class ZineGraphicEngine:
         plates = [("ink1", self.add_registration_marks(bits))]
         if self.last_plate2 is not None:
             plates.append(("ink2", self.add_registration_marks(self.last_plate2)))
+        for name, (plate, _rgb) in getattr(self, "last_extra", {}).items():
+            plates.append((name, self.add_registration_marks(plate)))
         return plates, self.last_inks
 
     def __init__(self):
@@ -394,6 +396,97 @@ class ZineGraphicEngine:
 
         return base.convert("RGB")
 
+    def _sticker_image(self, name, px, color, paper):
+        """RGBA-картинка стикера px x px (рисуется в 2x и уменьшается для сглаживания)."""
+        import stickers
+        spec = stickers.STICKERS.get(name)
+        D = max(8, int(px)) * 2
+        img = Image.new("RGBA", (D, D), (0, 0, 0, 0))
+        if spec is None:
+            return img.resize((D // 2, D // 2))
+        d = ImageDraw.Draw(img)
+        k = D / 100.0
+        col, pap = tuple(color) + (255,), tuple(paper) + (255,)
+        for pr in spec[2]:
+            t, m = pr["t"], pr.get("m", "f")
+            fill = col if m in ("f", "s") else pap
+            if t == "poly":
+                pts = [(x * k, y * k) for x, y in pr["p"]]
+                if m in ("f", "p"):
+                    d.polygon(pts, fill=fill)
+                else:
+                    d.line(pts + [pts[0]], fill=fill, width=max(2, int(6 * k)), joint="curve")
+            elif t == "circle":
+                cx, cy = pr["c"][0] * k, pr["c"][1] * k
+                r = pr["r"] * k
+                if m in ("f", "p"):
+                    d.ellipse([cx - r, cy - r, cx + r, cy + r], fill=fill)
+                else:
+                    d.ellipse([cx - r, cy - r, cx + r, cy + r], outline=fill, width=max(2, int(6 * k)))
+            elif t == "line":
+                pts = [(x * k, y * k) for x, y in pr["p"]]
+                w = max(2, int(pr.get("w", 6) * k))
+                d.line(pts, fill=col, width=w, joint="curve")
+                for x, y in (pts[0], pts[-1]):
+                    d.ellipse([x - w / 2, y - w / 2, x + w / 2, y + w / 2], fill=col)
+            elif t == "text":
+                f = self.get_font("Arial Black", int(pr["h"] * k))
+                try:
+                    d.text((pr["c"][0] * k, pr["c"][1] * k), pr["s"], fill=pap, font=f, anchor="mm")
+                except Exception:
+                    d.text((pr["c"][0] * k - 20, pr["c"][1] * k - 10), pr["s"], fill=pap, font=f)
+        return img.resize((D // 2, D // 2), Image.LANCZOS)
+
+    def draw_layers(self, img, st, paper_rgb, ink_rgb, s=1.0):
+        """Свободные слои: стикеры и надписи поверх готового листа. Координаты - доли листа."""
+        layers = st.get("layers") or []
+        if not layers:
+            return img
+        w, h = img.size
+        base = img.convert("RGBA")
+        cols = {"ink": tuple(ink_rgb), "paper": tuple(paper_rgb), "ink2": tuple(st.get("ink2", (255, 60, 140))),
+                "ink3": tuple(st.get("ink3", (0, 120, 190))), "ink4": tuple(st.get("ink4", (255, 200, 0)))}
+        for ly in layers:
+            try:
+                color = cols.get(ly.get("color", "ink"), cols["ink"])
+                size = max(0.02, float(ly.get("size", 0.2)))
+                if ly.get("type") == "sticker":
+                    loc = self._sticker_image(ly.get("sticker", "star"), size * w, color, paper_rgb)
+                else:
+                    text = str(ly.get("text", "")).strip()
+                    if not text:
+                        continue
+                    fpx = max(8, int(size * w * 0.5))
+                    font = self.get_font(ly.get("font", "Arial Black"), fpx)
+                    probe = ImageDraw.Draw(Image.new("L", (1, 1)))
+                    tb = probe.multiline_textbbox((0, 0), text, font=font, spacing=int(fpx * 0.15))
+                    pad = int(fpx * 0.3)
+                    tw, th = tb[2] - tb[0], tb[3] - tb[1]
+                    loc = Image.new("RGBA", (tw + 2 * pad, th + 2 * pad), (0, 0, 0, 0))
+                    d = ImageDraw.Draw(loc)
+                    style = ly.get("style", "box")
+                    if style == "box":
+                        d.rectangle([0, 0, loc.width, loc.height], fill=tuple(paper_rgb) + (255,))
+                        fill, stroke = color + (255,), None
+                    elif style == "tape":
+                        d.rectangle([0, 0, loc.width, loc.height], fill=color + (255,))
+                        fill, stroke = tuple(paper_rgb) + (255,), None
+                    else:
+                        fill, stroke = color + (255,), tuple(paper_rgb) + (255,)
+                    d.multiline_text((pad - tb[0], pad - tb[1]), text, font=font, fill=fill, spacing=int(fpx * 0.15),
+                                     stroke_width=max(2, int(fpx * 0.08)) if stroke else 0, stroke_fill=stroke)
+                rot = float(ly.get("rot", 0))
+                if rot:
+                    loc = loc.rotate(-rot, expand=True, resample=Image.BICUBIC)
+                px = int(float(ly.get("x", 0.5)) * w - loc.width / 2)
+                py = int(float(ly.get("y", 0.5)) * h - loc.height / 2)
+                layer = Image.new("RGBA", (w, h), (0, 0, 0, 0))
+                layer.paste(loc, (px, py), loc)
+                base = Image.alpha_composite(base, layer)
+            except Exception:
+                continue
+        return base.convert("RGB")
+
     @staticmethod
     def add_paper(out, amount, seed, s=1.0):
         """Фактура бумаги: волокна, пятна и лёгкое потемнение к краям. out - uint8 (h, w, 3)."""
@@ -737,5 +830,32 @@ class ZineGraphicEngine:
             region = shifted
             out[region] = (out[region].astype(np.float32) * ink2 / 255.0).astype(np.uint8)
 
+        # --- третья и четвёртая краска: свои тона, углы и сдвиги
+        self.last_extra = {}
+        g32 = np.asarray(gray, dtype=np.float32)
+        m = float(st["misreg"])
+        extra = (
+            ("ink3", float(st.get("overprint3", 0)), 1.15, 60, (round((2 + m) * s), round((1 + m / 3) * s)),
+             lambda g: 1.0 - np.abs(g / 255.0 - 0.5) * 2.0),
+            ("ink4", float(st.get("overprint4", 0)), 1.5, 15, (-round((1 + m * 0.5) * s), -round((3 + m) * s)),
+             lambda g: np.maximum(0.0, g / 255.0 - 0.35) / 0.65),
+        )
+        for name, amount, dot_k, ang_k, (dx, dy), tone in extra:
+            if amount <= 0:
+                continue
+            k = min(1.0, amount / 100.0) * 0.9
+            t = tone(g32)
+            lighter = Image.fromarray((255.0 - 255.0 * np.clip(t, 0, 1) * k).astype(np.uint8))
+            bits_x = self.apply_halftone_dots(lighter, dot_size=st["dot_size"] * s * dot_k, angle=(float(st["angle"]) + ang_k) % 90)
+            self.last_extra[name] = (Image.fromarray(bits_x), tuple(st[name]))
+            plate = ~bits_x
+            shifted = np.zeros_like(plate)
+            ys0, ys1 = max(0, dy), min(ch, ch + dy)
+            xs0, xs1 = max(0, dx), min(cw, cw + dx)
+            shifted[ys0:ys1, xs0:xs1] = plate[ys0 - dy:ys1 - dy, xs0 - dx:xs1 - dx]
+            out[shifted] = (out[shifted].astype(np.float32) * np.array(st[name], dtype=np.float32) / 255.0).astype(np.uint8)
+
         out = self.add_paper(out, float(st["paper"]), seed + 21, s)
-        return self.add_wear(Image.fromarray(out), st, seed + 51, s), Image.fromarray(bits)
+        final = self.add_wear(Image.fromarray(out), st, seed + 51, s)
+        final = self.draw_layers(final, st, paper_rgb, ink_rgb, s)
+        return final, Image.fromarray(bits)

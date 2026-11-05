@@ -156,6 +156,10 @@ const SECTIONS = () => [
     { k: "paper", t: "range", label: T("Фактура бумаги", "Paper texture"), min: 0, max: 100, step: 1 },
     { k: "overprint", t: "range", label: T("Второй цвет (оверпринт)", "Second ink (overprint)"), min: 0, max: 100, step: 1 },
     { k: "ink2", t: "color2", label: T("Цвет второй краски", "Second ink colour") },
+    { k: "overprint3", t: "range", label: T("Третья краска (полутона)", "Third ink (midtones)"), min: 0, max: 100, step: 1 },
+    { k: "ink3", t: "color2", label: T("Цвет третьей краски", "Third ink colour") },
+    { k: "overprint4", t: "range", label: T("Четвёртая краска (света)", "Fourth ink (highlights)"), min: 0, max: 100, step: 1 },
+    { k: "ink4", t: "color2", label: T("Цвет четвёртой краски", "Fourth ink colour") },
   ] },
   { tab: "style", title: T("4. ПАЛИТРА (RISOGRAPH)", "4. PALETTE (RISOGRAPH)"), items: [
     { k: "palette", t: "select", label: T("Бумага / краска", "Paper / ink"),
@@ -172,7 +176,8 @@ const SECTIONS = () => [
     { k: "stamp", t: "text", label: T("Штамп (пусто = нет)", "Stamp (empty = none)") },
     { k: "stamp_rot", t: "range", label: T("Поворот штампа (°)", "Stamp rotation (°)"), min: -45, max: 45, step: 1 },
   ] },
-  { tab: "text", title: T("6. МАНИФЕСТЫ И ТИПОГРАФИКА", "6. MANIFESTOS & TYPOGRAPHY"), items: [
+  { tab: "style", title: T("6. СЛОИ: СТИКЕРЫ И НАДПИСИ", "6. LAYERS: STICKERS & TEXTS"), items: [{ t: "layers" }] },
+  { tab: "text", title: T("7. МАНИФЕСТЫ И ТИПОГРАФИКА", "7. MANIFESTOS & TYPOGRAPHY"), items: [
     { k: "txt_top", t: "text", label: T("Верхняя надпись", "Top caption") },
     { k: "txt_bottom", t: "text", label: T("Нижняя надпись", "Bottom caption") },
     { t: "button", kind: "primary", label: T("📚 Библиотека манифестов…", "📚 Manifesto library…"), act: () => openManifest() },
@@ -292,6 +297,8 @@ function buildControl(it) {
       b.className = "btn grow"; b.textContent = text; b.addEventListener("click", fn);
       wrap.append(b);
     }
+  } else if (it.t === "layers") {
+    wrap.innerHTML = '<div class="layers-box" id="layersBox"></div>';
   } else if (it.t === "locks") {
     wrap.className = "ctl locks";
     wrap.innerHTML = `<div class="ctl-h"><span>${T("🔒 Не менять при Remix", "🔒 Keep when remixing")}</span></div><div class="chips"></div>`;
@@ -350,6 +357,7 @@ function syncUI() {
     else { c.el.value = v ?? ""; if (c.out) c.out.textContent = Number(v).toFixed(c.dec); }
   }
   updateSwatches();
+  refreshLayersUI();
 }
 
 // ---------------------------------------------------------------- пресеты
@@ -613,6 +621,7 @@ function applyView() {
   preview.style.transform = `translate(${V.tx}px, ${V.ty}px)`;
   preview.classList.toggle("px", V.zoom * (window.devicePixelRatio || 1) > 2.2);
   $("#zoomLbl").textContent = `${Math.round(V.zoom * 100)}%`;
+  updateLayerSel();
 }
 function fitView() {
   const [bw, bh] = baseSize(), r = vp.getBoundingClientRect();
@@ -650,6 +659,8 @@ vp.addEventListener("pointermove", (e) => {
     const r = vp.getBoundingClientRect();
     zoomAt(nd / (prevD || 1), (e.clientX + other.x) / 2 - r.left, (e.clientY + other.y) / 2 - r.top);
     V.tx += dx / 2; V.ty += dy / 2; applyView();
+  } else if (ptrs.size === 1 && layerDrag) {
+    gesture.moved = 99;
   } else if (ptrs.size === 1) {
     gesture.moved = Math.max(gesture.moved, Math.hypot(e.clientX - gesture.x0, e.clientY - gesture.y0));
     V.tx += dx; V.ty += dy; V.fitted = false; applyView();
@@ -692,6 +703,144 @@ function relocateText(cx, cy) {
   else st.txt_y2 = clamp(Math.round(y), 30, 95);
   syncUI(); commit(); requestRender();
 }
+
+// ---------------------------------------------------------------- свободные слои
+var LY = { sel: -1 }; // var: updateLayerSel может вызваться из applyView до этой строки
+const layersOf = () => (page().layers = Array.isArray(page().layers) ? page().layers : []);
+const layerBox = (ly) => {
+  // размеры в долях ширины листа (как в движке)
+  if (ly.type === "sticker") return [ly.size, ly.size];
+  const lines = String(ly.text || " ").split("\n"), fpx = ly.size * 0.5, n = Math.max(...lines.map((l) => l.length), 1);
+  return [n * fpx * 0.6 + 0.6 * fpx, 1.15 * fpx * lines.length + 0.6 * fpx];
+};
+function updateLayerSel() {
+  if (!LY || !page()) return;
+  const el = $("#layerSel"), ly = layersOf()[LY.sel];
+  if (!ly) { el.hidden = true; return; }
+  const [bw, bh] = baseSize(), pw = bw * V.zoom, ph = bh * V.zoom, [w, h] = layerBox(ly);
+  el.hidden = false;
+  el.style.width = `${w * pw}px`; el.style.height = `${h * pw}px`;
+  el.style.transform = `translate(${V.tx + ly.x * pw - (w * pw) / 2}px, ${V.ty + ly.y * ph - (h * pw) / 2}px) rotate(${ly.rot || 0}deg)`;
+}
+function hitLayer(clientX, clientY) {
+  const r = preview.getBoundingClientRect(), L = layersOf();
+  if (!L.length) return -1;
+  const X = (clientX - r.left) / r.width, Y = (clientY - r.top) / r.width, ratio = r.height / r.width;
+  for (let i = L.length - 1; i >= 0; i--) {
+    const ly = L[i], [w, h] = layerBox(ly), a = (-(ly.rot || 0) * Math.PI) / 180;
+    const dx = X - ly.x, dy = Y - ly.y * ratio, rx = dx * Math.cos(a) - dy * Math.sin(a), ry = dx * Math.sin(a) + dy * Math.cos(a);
+    if (Math.abs(rx) <= w / 2 && Math.abs(ry) <= h / 2) return i;
+  }
+  return -1;
+}
+function addLayer(proto) {
+  flushCommit();
+  const L = layersOf();
+  L.push({ type: "text", text: "", sticker: "star", x: 0.5, y: 0.5, size: 0.2, rot: 0, color: "ink", style: "box", font: "Arial Black", ...proto });
+  LY.sel = L.length - 1;
+  commit(); requestRender(); refreshLayersUI();
+}
+function layerName(ly, i) {
+  const base = ly.type === "sticker" ? `${lbl("", "")}${(CFG.STICKERS[ly.sticker] || {})[LANG === "ru" ? "ru" : "en"] || ly.sticker}` : `“${String(ly.text || "").split("\n")[0].slice(0, 22) || T("пусто", "empty")}”`;
+  return `${i + 1}. ${ly.type === "sticker" ? "✦" : "Aa"} ${base}`;
+}
+function refreshLayersUI() {
+  const box = $("#layersBox"); if (!box) return;
+  const L = layersOf();
+  if (LY.sel >= L.length) LY.sel = L.length - 1;
+  box.textContent = "";
+  const row = document.createElement("div"); row.className = "row gap";
+  for (const [text, fn] of [[T("＋ Надпись", "＋ Text"), () => addLayer({ type: "text", text: T("НОВАЯ НАДПИСЬ", "NEW TEXT") })], [T("＋ Стикер…", "＋ Sticker…"), openStickers]]) {
+    const b = document.createElement("button"); b.className = "btn grow"; b.textContent = text; b.addEventListener("click", fn); row.append(b);
+  }
+  box.append(row);
+  const list = document.createElement("div"); list.className = "layers-list";
+  L.forEach((ly, i) => {
+    const b = document.createElement("button"); b.type = "button"; b.textContent = layerName(ly, i); b.setAttribute("aria-pressed", String(i === LY.sel));
+    b.addEventListener("click", () => { LY.sel = i; refreshLayersUI(); });
+    list.append(b);
+  });
+  if (!L.length) { const p = document.createElement("p"); p.className = "muted small"; p.textContent = T("Слоёв нет. Добавь надпись или стикер, потом таскай их по листу.", "No layers yet. Add a text or a sticker, then drag it around the sheet."); box.append(p); }
+  box.append(list);
+  const ly = L[LY.sel];
+  if (ly) {
+    const ed = document.createElement("div"); ed.className = "layer-ed";
+    const upd = (fn) => { fn(); touchLayers(); };
+    const mkRange = (label, min, max, step, get, set) => {
+      const w = document.createElement("div"); w.className = "ctl"; const id = `ly_${Math.random().toString(36).slice(2, 7)}`;
+      w.innerHTML = `<div class="ctl-h"><label for="${id}">${label}</label><output></output></div>`;
+      const inp = document.createElement("input"); inp.type = "range"; inp.id = id; inp.min = min; inp.max = max; inp.step = step; inp.value = get();
+      const out = $("output", w); out.textContent = Number(inp.value).toFixed(decimals(step));
+      inp.addEventListener("input", () => { set(Number(inp.value)); out.textContent = Number(inp.value).toFixed(decimals(step)); resetPresetLabel(); requestRender({ draft: true }); updateLayerSel(); });
+      inp.addEventListener("change", () => { commit(); requestRender(); });
+      w.append(inp); return w;
+    };
+    const mkSelect = (label, opts, get, set) => {
+      const w = document.createElement("div"); w.className = "ctl"; const id = `ly_${Math.random().toString(36).slice(2, 7)}`;
+      w.innerHTML = `<div class="ctl-h"><label for="${id}">${label}</label></div>`;
+      const sel = document.createElement("select"); sel.className = "sel"; sel.id = id;
+      for (const [v, t] of opts) sel.append(new Option(t, v));
+      sel.value = get(); sel.addEventListener("change", () => upd(() => set(sel.value)));
+      w.append(sel); return w;
+    };
+    if (ly.type === "text") {
+      const w = document.createElement("div"); w.className = "ctl";
+      w.innerHTML = `<div class="ctl-h"><label>${T("Текст", "Text")}</label></div>`;
+      const ta = document.createElement("textarea"); ta.rows = 2; ta.spellcheck = false; ta.value = ly.text || "";
+      ta.addEventListener("input", () => { ly.text = ta.value; resetPresetLabel(); requestRender({ draft: true }); updateLayerSel(); commitSoon(); });
+      ta.addEventListener("blur", () => { flushCommit(); refreshLayersUI(); });
+      w.append(ta); ed.append(w);
+      ed.append(mkSelect(T("Подложка", "Backing"), [["box", T("Плашка", "Box")], ["tape", T("Лента", "Tape")], ["plain", T("Без подложки", "Plain")]], () => ly.style || "box", (v) => (ly.style = v)));
+      ed.append(mkSelect(T("Шрифт", "Font"), Object.keys(CFG.FONTS).map((k) => [k, k]), () => ly.font || "Arial Black", (v) => (ly.font = v)));
+    }
+    ed.append(mkRange(T("Размер", "Size"), 0.04, 1, 0.01, () => ly.size, (v) => (ly.size = v)));
+    ed.append(mkRange(T("Поворот (°)", "Rotation (°)"), -180, 180, 1, () => ly.rot || 0, (v) => (ly.rot = v)));
+    ed.append(mkSelect(T("Цвет", "Colour"), [["ink", T("Краска", "Ink")], ["paper", T("Бумага", "Paper")], ["ink2", T("Вторая краска", "Second ink")], ["ink3", T("Третья краска", "Third ink")], ["ink4", T("Четвёртая краска", "Fourth ink")]], () => ly.color || "ink", (v) => (ly.color = v)));
+    const br = document.createElement("div"); br.className = "row gap";
+    for (const [text, fn] of [
+      [T("⧉ Копия", "⧉ Copy"), () => { const c = clone(ly); c.x = Math.min(0.95, c.x + 0.05); c.y = Math.min(0.95, c.y + 0.05); L.push(c); LY.sel = L.length - 1; }],
+      [T("↑ Вперёд", "↑ Front"), () => { L.push(L.splice(LY.sel, 1)[0]); LY.sel = L.length - 1; }],
+      [T("↓ Назад", "↓ Back"), () => { L.unshift(L.splice(LY.sel, 1)[0]); LY.sel = 0; }],
+      [T("🗑 Удалить", "🗑 Delete"), () => { L.splice(LY.sel, 1); LY.sel = L.length - 1; }],
+    ]) { const b = document.createElement("button"); b.className = "btn grow"; b.textContent = text; b.addEventListener("click", () => { flushCommit(); fn(); touchLayers(); }); br.append(b); }
+    ed.append(br); box.append(ed);
+  }
+  updateLayerSel();
+}
+function touchLayers() { resetPresetLabel(); commit(); requestRender(); refreshLayersUI(); }
+function openStickers() {
+  const grid = $("#stickerGrid");
+  if (!grid.children.length) {
+    for (const name of Object.keys(CFG.STICKERS)) {
+      const b = document.createElement("button"); b.type = "button"; b.setAttribute("aria-label", CFG.STICKERS[name].en);
+      const cv = document.createElement("canvas"); cv.width = cv.height = 96; b.append(cv);
+      const c = cv.getContext("2d"); c.translate(48, 48); E.drawSticker(c, name, 84, "#111", "#fff");
+      b.addEventListener("click", () => { $("#dlgStickers").close(); addLayer({ type: "sticker", sticker: name, size: 0.22 }); });
+      grid.append(b);
+    }
+  }
+  $("#dlgStickers").showModal();
+}
+// перетаскивание слоёв по листу
+let layerDrag = null;
+vp.addEventListener("pointerdown", (e) => {
+  if (e.shiftKey || textMode || ptrs.size > 1 || e.button > 0) return;
+  const i = hitLayer(e.clientX, e.clientY);
+  if (i < 0) { if (LY.sel >= 0 && ptrs.size === 1 && !gesture?.pinch) { /* клик мимо: снять выделение при отпускании без движения */ } return; }
+  flushCommit();
+  const ly = layersOf()[i], r = preview.getBoundingClientRect();
+  LY.sel = i; layerDrag = { i, ox: ly.x - (e.clientX - r.left) / r.width, oy: ly.y - (e.clientY - r.top) / r.height, moved: false };
+  refreshLayersUI();
+}, true);
+vp.addEventListener("pointermove", (e) => {
+  if (!layerDrag) return;
+  const r = preview.getBoundingClientRect(), ly = layersOf()[layerDrag.i]; if (!ly) return;
+  ly.x = clamp((e.clientX - r.left) / r.width + layerDrag.ox, 0, 1); ly.y = clamp((e.clientY - r.top) / r.height + layerDrag.oy, 0, 1);
+  layerDrag.moved = true; resetPresetLabel(); requestRender({ draft: true }); updateLayerSel();
+}, true);
+const endLayerDrag = () => { if (layerDrag) { if (layerDrag.moved) { commit(); requestRender(); } layerDrag = null; } };
+vp.addEventListener("pointerup", endLayerDrag, true);
+vp.addEventListener("pointercancel", endLayerDrag, true);
 
 // ---------------------------------------------------------------- фото страницы и кадрирование
 const srcCv = $("#srcCanvas");
@@ -1153,7 +1302,7 @@ async function job(title, fn, okMsg) {
 
 // ---------------------------------------------------------------- звук копира и «ритуал печати»
 const SOUND = { on: !!ls.get("zine.sound", false), ctx: null };
-function copierSound() {
+function copierSound(extraDest) {
   if (!SOUND.on) return;
   try {
     const AC = window.AudioContext || window.webkitAudioContext; if (!AC) return;
@@ -1169,6 +1318,7 @@ function copierSound() {
     const o = ctx.createOscillator(), og = ctx.createGain(); o.type = "square"; o.frequency.value = 90;
     og.gain.setValueAtTime(0.25, t0); og.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.09);
     src.connect(bp).connect(g).connect(ctx.destination); o.connect(og).connect(ctx.destination);
+    if (extraDest) { g.connect(extraDest); og.connect(extraDest); }
     src.start(t0); o.start(t0); o.stop(t0 + 0.1);
   } catch { /* звук необязателен */ }
 }
@@ -1307,6 +1457,94 @@ function paletteFromPhoto() {
   toast(T("🎨 Палитра взята из фото", "🎨 Palette taken from the photo"), "ok", 1400);
 }
 
+// ---------------------------------------------------------------- история действий, папка с фото, видео для сторис
+function stepLabel(prevStr, curStr) {
+  if (!prevStr) return T("Начало", "Start");
+  const a = JSON.parse(prevStr), b = JSON.parse(curStr);
+  if (a.pages.length !== b.pages.length) return b.pages.length > a.pages.length ? T("Страница добавлена", "Page added") : T("Страница удалена", "Page removed");
+  const names = {};
+  for (const sec of SECTIONS()) for (const it of sec.items) if (it.k) names[it.k] = it.label;
+  const keys = new Set();
+  b.pages.forEach((pg, i) => { const q = a.pages[i] || {}; for (const k of Object.keys(pg)) if (JSON.stringify(pg[k]) !== JSON.stringify(q[k])) keys.add(k); });
+  keys.delete("seed");
+  if (!keys.size) return a.cur !== b.cur ? T("Другая страница", "Page switched") : T("Новые края и пыль", "New edges & dust");
+  const list = [...keys].map((k) => (k === "layers" ? T("слои", "layers") : k === "img" || k === "crop" ? T("фото", "photo") : names[k] || k));
+  return list.slice(0, 3).join(", ") + (list.length > 3 ? ` +${list.length - 3}` : "");
+}
+function openHistory() {
+  flushCommit();
+  const ol = $("#histList"); ol.textContent = "";
+  H.stack.forEach((str, i) => {
+    const li = document.createElement("li"), b = document.createElement("button");
+    b.type = "button"; b.textContent = `${i + 1}. ${stepLabel(H.stack[i - 1], str)}`;
+    if (i === H.idx) b.setAttribute("aria-current", "true");
+    b.addEventListener("click", () => { H.idx = i; restoreSnap(H.stack[i]); $("#dlgHistory").close(); });
+    li.append(b); ol.append(li);
+  });
+  $("#dlgHistory").showModal();
+  const cur = ol.querySelector('[aria-current="true"]'); if (cur) cur.scrollIntoView({ block: "center" });
+}
+$("#fileDir").addEventListener("change", (e) => {
+  const f = [...e.target.files].filter(isImageFile).sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true }));
+  e.target.value = "";
+  if (!f.length) { toast(T("В папке нет картинок", "No images in that folder"), "err"); return; }
+  addPhotos(f);
+});
+
+async function exportStoryVideo() {
+  flushCommit();
+  if (typeof MediaRecorder === "undefined" || !HTMLCanvasElement.prototype.captureStream) { toast(T("Браузер не умеет записывать видео с холста", "This browser cannot record canvas video"), "err"); return; }
+  const mime = ["video/mp4;codecs=avc1", "video/webm;codecs=vp9", "video/webm;codecs=vp8", "video/webm"].find((m) => MediaRecorder.isTypeSupported(m));
+  if (!mime) { toast(T("Нет поддерживаемого формата видео", "No supported video format"), "err"); return; }
+  const ext = mime.startsWith("video/mp4") ? ".mp4" : ".webm";
+  const sink = await askSave(`${S.name || "zine"}_story${ext}`, { mime: mime.split(";")[0], ext, desc: "Video" });
+  if (!sink) return;
+  await job(T("Видео для сторис", "Story video"), async (progress) => {
+    await progress(T("Рендеринг страницы…", "Rendering the page…"), 0.1);
+    const page0 = (await render(S.cur, { scale: 1 })).canvas;
+    const W = 1080, H2 = 1920, cv = document.createElement("canvas"); cv.width = W; cv.height = H2;
+    const c = cv.getContext("2d"), DUR = 5200;
+    const stream = cv.captureStream(30);
+    let dest = null;
+    if (SOUND.on) { try { const AC = window.AudioContext || window.webkitAudioContext; const ctx = SOUND.ctx || (SOUND.ctx = new AC()); dest = ctx.createMediaStreamDestination(); dest.stream.getAudioTracks().forEach((t) => stream.addTrack(t)); } catch { dest = null; } }
+    const rec = new MediaRecorder(stream, { mimeType: mime, videoBitsPerSecond: 5_000_000 }), chunks = [];
+    rec.ondataavailable = (e) => e.data.size && chunks.push(e.data);
+    const done = new Promise((res) => (rec.onstop = res));
+    const pw = 760, ph = Math.round((pw * page0.height) / page0.width), slotY = 560, ease = (t) => 1 - Math.pow(1 - t, 3);
+    const t0 = performance.now(); rec.start(200); copierSound(dest);
+    await progress(T("Запись видео…", "Recording…"), 0.3);
+    await new Promise((resolve) => {
+      const frame = () => {
+        const t = performance.now() - t0, k = Math.min(1, t / DUR);
+        c.fillStyle = "#e9e4d8"; c.fillRect(0, 0, W, H2);
+        c.fillStyle = "rgba(0,0,0,.05)"; for (let y = 0; y < H2; y += 6) c.fillRect(0, y, W, 1);
+        // копир
+        const shake = k < 0.7 ? Math.sin(t / 22) * 2 : 0;
+        c.save(); c.translate(shake, 0);
+        c.fillStyle = "#c9c9c9"; c.strokeStyle = "#1a1a1a"; c.lineWidth = 10;
+        c.beginPath(); c.roundRect(90, 330, 900, 280, 28); c.fill(); c.stroke();
+        c.fillStyle = "#1a1a1a"; c.fillRect(160, slotY - 30, 760, 22);
+        const lamp = (t % 900) / 900; c.fillStyle = `rgba(255,240,150,${k < 0.75 ? 0.35 + 0.5 * Math.abs(Math.sin(lamp * Math.PI)) : 0.1})`; c.fillRect(160, 380, 760, 40 + 60 * lamp);
+        c.restore();
+        // лист выезжает
+        const out = ease(Math.min(1, Math.max(0, (t - 500) / 3200))), y = slotY - 14 - ph + out * (ph * 0.78);
+        c.save(); c.beginPath(); c.rect(0, slotY - 8, W, H2); c.clip();
+        c.shadowColor = "rgba(0,0,0,.35)"; c.shadowBlur = 24; c.shadowOffsetY = 12;
+        c.drawImage(page0, (W - pw) / 2, y, pw, ph);
+        c.restore();
+        c.fillStyle = "#1a1a1a"; c.font = "bold 54px Rubik, sans-serif"; c.textAlign = "center";
+        c.fillText(S.name || "zine", W / 2, 1780 - (1 - ease(Math.min(1, Math.max(0, (t - 3000) / 1000)))) * 40);
+        c.font = "32px Rubik, sans-serif"; c.fillStyle = "#555"; c.fillText("made on Xerox Zine Studio", W / 2, 1840);
+        if (t < DUR) requestAnimationFrame(frame); else resolve();
+      };
+      frame();
+    });
+    rec.stop(); await done;
+    await progress(T("Сохранение…", "Saving…"), 0.9);
+    await sink.write(new Blob(chunks, { type: mime.split(";")[0] }));
+  }, T("✓ Видео для сторис сохранено", "✓ Story video saved"));
+}
+
 async function exportPng() {
   flushCommit();
   const sink = await askSave(`${pageName(S.cur)}.png`, { mime: "image/png", ext: ".png", desc: "PNG" });
@@ -1385,10 +1623,14 @@ async function exportSeparations() {
     const hx = (c) => rgbHex(c).toUpperCase();
     entries.push({ name: `${base}_ink1.png`, data: await IO.encodePng1(regMarks(Uint8Array.from(r.bits), r.width, r.height), r.width, r.height, 300) });
     if (r.plate2) entries.push({ name: `${base}_ink2.png`, data: await IO.encodePng1(regMarks(Uint8Array.from(r.plate2), r.width, r.height), r.width, r.height, 300) });
+    for (const [nm, ex] of Object.entries(r.extraPlates || {})) {
+      entries.push({ name: `${base}_${nm}.png`, data: await IO.encodePng1(regMarks(Uint8Array.from(ex.bits), r.width, r.height), r.width, r.height, 300) });
+    }
     const L = [
       "XEROX ZINE STUDIO - INK SEPARATIONS / RAZDELENIE KRASOK", "",
       `ink1: ${base}_ink1.png  -> ink ${hx(r.inks.ink)}`,
       r.plate2 ? `ink2: ${base}_ink2.png  -> ink ${hx(r.inks.ink2)}` : "ink2: none (overprint is 0)",
+      ...Object.entries(r.extraPlates || {}).map(([nm, ex]) => `${nm}: ${base}_${nm}.png  -> ink ${hx(ex.rgb)}`),
       `paper: ${hx(r.inks.paper)}`, "",
       "Black = ink, white = nothing. Print ink1, let it dry, then lay the SAME sheet",
       "into the machine again aligned by the corner crosses and print ink2.",
@@ -1479,6 +1721,7 @@ function menuItems() {
   return [
     [T("Новый проект", "New project"), newProject],
     [T("Загрузить фото…", "Add photos…"), () => $("#fileImg").click(), "Ctrl+O"],
+    [T("Добавить папку с фото (каждое = страница)…", "Add a folder of photos (one page each)…"), () => $("#fileDir").click()],
     [T("Открыть проект (.zine)…", "Open project (.zine)…"), openProjectDialog, "Ctrl+Shift+O"],
     [T("Сохранить проект (.zine)", "Save project (.zine)"), () => saveProject(false), "Ctrl+Shift+S"],
     [T("Сохранить проект как…", "Save project as…"), () => saveProject(true)],
@@ -1496,9 +1739,11 @@ function menuItems() {
     [T("Буклет на скрепку, A4 (любое число страниц)", "Saddle-stitch booklet, A4 (any page count)"), () => exportBooklet("a4")],
     [T("Буклет на скрепку, Letter", "Saddle-stitch booklet, Letter"), () => exportBooklet("letter")],
     [T("Лист калибровки принтера (A4)", "Printer calibration sheet (A4)"), exportCalibration],
+    [T("Видео для сторис (печать листа, 9:16)", "Story video (sheet printing, 9:16)"), exportStoryVideo],
     [T("Как сложить мини-зин (схема)", "How to fold the mini-zine (guide)"), showFoldGuide],
     [SOUND.on ? T("Звук копира: выключить", "Copier sound: turn off") : T("Звук копира: включить", "Copier sound: turn on"), toggleSound],
     "hr", T("СТРАНИЦЫ И ТЕКСТ", "PAGES & TEXT"),
+    [T("История действий…", "History…"), openHistory, "Ctrl+H"],
     [T("Применить стиль страницы ко всем", "Apply this page's style to all pages"), applyStyleToAll],
     [T("Библиотека манифестов…", "Manifesto library…"), openManifest, "Ctrl+M"],
     "hr",
@@ -1576,6 +1821,7 @@ document.addEventListener("keydown", (e) => {
   if (e.key === "F1") { e.preventDefault(); showHelp(); return; }
   if (document.querySelector("dialog[open]:not(#dlgManifest)")) return;
   if (mod && key === "s") { e.preventDefault(); e.shiftKey ? saveProject(false) : exportPng(); return; }
+  if (mod && key === "h") { e.preventDefault(); openHistory(); return; }
   if (mod && key === "o") { e.preventDefault(); e.shiftKey ? openProjectDialog() : $("#fileImg").click(); return; }
   if (mod && key === "m") { e.preventDefault(); openManifest(); return; }
   if (typing) return;

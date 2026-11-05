@@ -184,7 +184,7 @@ def test_fold_guide_sound_toggle_and_separations_menu(page_factory):
     pg.click("#btnFile")
     labels = pg.evaluate("[...document.querySelectorAll('#menuFile button')].map(b => b.textContent)")
     assert any("separations" in l or "разделение" in l.lower() for l in labels)
-    pg.evaluate("[...document.querySelectorAll('#menuFile button')].find(b => /fold|сложить/i.test(b.textContent)).click()")
+    pg.evaluate("[...document.querySelectorAll('#menuFile button')].find(b => /How to fold|Как сложить/.test(b.textContent)).click()")
     pg.wait_for_selector("#dlgFold[open]")
     assert pg.evaluate("document.querySelectorAll('#foldBody .fold-steps li').length") == 5
     assert pg.evaluate("document.querySelectorAll('#foldBody svg').length") == 5
@@ -291,4 +291,56 @@ def test_booklet_pdf_and_palette_from_photo(page_factory, tmp_path):
     data = open(path, "rb").read()
     # 3 страницы дополняются до 4 = один лист = 2 стороны = 2 страницы PDF
     assert data.startswith(b"%PDF") and data.count(b"/Type /Page\n") + data.count(b"/Type /Page ") + data.count(b"/Type /Page>") >= 2
+    assert pg.errors == []
+
+
+def test_layers_add_drag_and_render(page_factory):
+    pg = page_factory()
+    wait_ready(pg)
+    pg.evaluate("[...document.querySelectorAll('#layersBox button')].find(b => /Text|Надпись/.test(b.textContent)).click()")
+    assert pg.evaluate("document.querySelectorAll('.layers-list button').length") == 1
+    pg.evaluate("[...document.querySelectorAll('#layersBox button')].find(b => /Sticker|Стикер/.test(b.textContent)).click()")
+    pg.wait_for_selector("#dlgStickers[open]")
+    assert pg.evaluate("document.querySelectorAll('#stickerGrid button').length") >= 12
+    pg.click("#stickerGrid button >> nth=0")
+    assert pg.evaluate("document.querySelectorAll('.layers-list button').length") == 2
+    # перетащить выбранный слой
+    box = pg.evaluate("(() => { const r = document.querySelector('#layerSel').getBoundingClientRect(); return [r.x + r.width / 2, r.y + r.height / 2]; })()")
+    pg.mouse.move(box[0], box[1]); pg.mouse.down(); pg.mouse.move(box[0] + 60, box[1] + 40, steps=5); pg.mouse.up()
+    pg.wait_for_timeout(500)
+    moved = pg.evaluate("(() => { const r = document.querySelector('#layerSel').getBoundingClientRect(); return [r.x + r.width / 2, r.y + r.height / 2]; })()")
+    assert abs(moved[0] - (box[0] + 60)) < 6 and abs(moved[1] - (box[1] + 40)) < 6
+    # удалить
+    pg.evaluate("[...document.querySelectorAll('.layer-ed button')].find(b => /Delete|Удалить/.test(b.textContent)).click()")
+    assert pg.evaluate("document.querySelectorAll('.layers-list button').length") == 1
+    assert pg.errors == []
+
+
+def test_history_panel_folder_and_story_video(page_factory, tmp_path):
+    pg = page_factory()
+    wait_ready(pg)
+    pg.evaluate("""() => { const el = document.querySelector('#c_dust'); el.value = 40; el.dispatchEvent(new Event('input')); el.dispatchEvent(new Event('change')); }""")
+    pg.wait_for_timeout(300)
+    pg.evaluate("document.querySelector('#btnRemix').click()")
+    pg.wait_for_timeout(300)
+    pg.keyboard.press("Control+h")
+    pg.wait_for_selector("#dlgHistory[open]")
+    n = pg.evaluate("document.querySelectorAll('#histList button').length")
+    assert n >= 3
+    pg.click("#histList li:first-child button")
+    assert pg.evaluate("document.querySelector('#dlgHistory').open") is False
+    # папка с фото
+    d = tmp_path / "folder"; d.mkdir()
+    for p in _png_files(d, 3):
+        pass
+    pg.set_input_files("#fileDir", str(d))
+    pg.wait_for_timeout(1500)
+    assert pg.evaluate("document.querySelectorAll('#thumbs .th').length") == 3
+    # видео для сторис (реальное время ~5 c)
+    pg.evaluate("window.showSaveFilePicker = undefined")
+    pg.click("#btnFile")
+    with pg.expect_download(timeout=40000) as dl:
+        pg.evaluate("[...document.querySelectorAll('#menuFile button')].find(b => /Story video/i.test(b.textContent)).click()")
+    data = open(dl.value.path(), "rb").read()
+    assert len(data) > 5000 and (data[:4] == b"\x1aE\xdf\xa3" or data[4:8] == b"ftyp")
     assert pg.errors == []
