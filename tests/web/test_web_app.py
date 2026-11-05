@@ -27,6 +27,10 @@ def test_theme_toggle_persists(page_factory):
     pg.reload()
     wait_ready(pg)
     assert pg.evaluate("document.documentElement.dataset.theme") == "dark"
+    pg.click("#btnTheme")
+    assert pg.evaluate("document.documentElement.dataset.theme") == "robot"
+    pg.click("#btnTheme")
+    assert pg.evaluate("document.documentElement.dataset.theme") == "usa"
 
 
 def test_all_builtin_presets_render(page_factory):

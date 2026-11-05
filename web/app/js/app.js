@@ -2320,10 +2320,10 @@ $("#wCam").addEventListener("click", () => { closeWelcome(); $("#fileCam").click
 $("#wSample").addEventListener("click", closeWelcome);
 if (!TOUCH) $("#wCam").hidden = true;
 $("#btnTheme").addEventListener("click", () => {
-  const order = ["usa", "paper", "dark"], cur = document.documentElement.dataset.theme, next = order[(order.indexOf(cur) + 1) % order.length];
+  const order = ["usa", "paper", "dark", "robot"], cur = document.documentElement.dataset.theme, next = order[(order.indexOf(cur) + 1) % order.length];
   document.documentElement.dataset.theme = next; ls.set("zine.theme", next);
-  document.querySelector('meta[name="theme-color"]').setAttribute("content", next === "paper" ? "#f1ece0" : next === "usa" ? "#081040" : "#121212");
-  toast(T({ usa: "Тема: Америка × терминал", paper: "Тема: бумага", dark: "Тема: тёмная" }[next], { usa: "Theme: Americana × terminal", paper: "Theme: paper", dark: "Theme: dark" }[next]), "ok", 1200);
+  document.querySelector('meta[name="theme-color"]').setAttribute("content", next === "paper" ? "#f1ece0" : next === "usa" ? "#081040" : next === "robot" ? "#050605" : "#121212");
+  toast(T({ usa: "Тема: Америка × терминал", paper: "Тема: бумага", dark: "Тема: тёмная", robot: "Тема: fsociety (терминал)" }[next], { usa: "Theme: Americana × terminal", paper: "Theme: paper", dark: "Theme: dark", robot: "Theme: fsociety (terminal)" }[next]), "ok", 1200);
 });
 $("#fileProj").addEventListener("change", (e) => { const f = e.target.files[0]; e.target.value = ""; if (f) openProjectFile(f); });
 

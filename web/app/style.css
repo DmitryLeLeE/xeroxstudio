@@ -550,3 +550,33 @@ html[data-theme="usa"] .ghost { border-color: #ffd21fcc; } html[data-theme="usa"
 html[data-theme="usa"] .guide { background: #ffd21f; }
 html[data-theme="usa"] .hud-scale .small, html[data-theme="usa"] .hud .muted, html[data-theme="usa"] .hud-zoom, html[data-theme="usa"] #zoomLbl { color: #dfe6ff; }
 html[data-theme="usa"] .ghost { border-color: #e8222dcc; } html[data-theme="usa"] .ghost::after { background: #e8222d; color: #fff; }
+
+/* ---------- тема «fsociety»: чёрный терминал, моноширинный шрифт, зелёный и красный */
+html[data-theme="robot"] {
+  --bg: #050605; --panel: #0a0d0a; --panel2: #0f140f; --field: #0b100b; --line: #1d3a1d;
+  --fg: #c9f7c9; --muted: #5e8a5e; --accent: #00ff6a; --accent2: #5dffa0; --pink: #ff1f3d; --danger: #ff1f3d;
+  --view: #020302; --r: 0px; color-scheme: dark;
+}
+html[data-theme="robot"] body { font-family: "JetBrains Mono", ui-monospace, Consolas, monospace; font-size: 13px; background-image: repeating-linear-gradient(0deg, #00ff6a08 0 1px, transparent 1px 3px); }
+html[data-theme="robot"] .top { background: #000; border-bottom: 1px solid #00ff6a; box-shadow: 0 0 14px #00ff6a44; }
+html[data-theme="robot"] .brand { color: #00ff6a; text-transform: lowercase; letter-spacing: .06em; text-shadow: 0 0 8px #00ff6a88; }
+html[data-theme="robot"] .brand span::before { content: "root@zine:~$ "; color: #5e8a5e; text-transform: none; }
+html[data-theme="robot"] .brand span::after { content: "_"; animation: robotblink 1s steps(1) infinite; }
+@keyframes robotblink { 50% { opacity: 0; } }
+html[data-theme="robot"] .btn { background: #000; color: var(--fg); border: 1px solid #1d5a1d; box-shadow: none; font-weight: 600; }
+html[data-theme="robot"] .btn:hover { border-color: #00ff6a; color: #00ff6a; background: #031003; box-shadow: 0 0 8px #00ff6a55; }
+html[data-theme="robot"] .btn.primary, html[data-theme="robot"] .btn.toggle[aria-pressed="true"] { background: #00ff6a; color: #000; border-color: #00ff6a; }
+html[data-theme="robot"] .btn.pink { background: #000; color: #ff1f3d; border-color: #ff1f3d; }
+html[data-theme="robot"] .btn.pink:hover { background: #ff1f3d; color: #000; box-shadow: 0 0 10px #ff1f3d88; }
+html[data-theme="robot"] input, html[data-theme="robot"] select, html[data-theme="robot"] textarea { background: #000; color: #c9f7c9; border: 1px solid #1d5a1d; border-radius: 0; font-family: inherit; }
+html[data-theme="robot"] input:focus, html[data-theme="robot"] select:focus, html[data-theme="robot"] textarea:focus { border-color: #00ff6a; outline: none; box-shadow: 0 0 6px #00ff6a66; }
+html[data-theme="robot"] .cap, html[data-theme="robot"] h2, html[data-theme="robot"] h3 { color: #00ff6a; text-transform: lowercase; }
+html[data-theme="robot"] .cap::before, html[data-theme="robot"] h3::before { content: "# "; color: #5e8a5e; }
+html[data-theme="robot"] #preview { box-shadow: 0 0 0 1px #00ff6a, 0 0 28px #00ff6a44; }
+html[data-theme="robot"] .col-view { background-image: radial-gradient(#00ff6a1a 1px, transparent 1.4px); background-size: 20px 20px; }
+html[data-theme="robot"] .drawer, html[data-theme="robot"] .strip, html[data-theme="robot"] dialog { border: 1px solid #00ff6a66; box-shadow: 0 0 16px #00ff6a22; border-radius: 0; }
+html[data-theme="robot"] .rail button { border-color: #1d5a1d; box-shadow: none; background: #000; }
+html[data-theme="robot"] .rail button:first-child, html[data-theme="robot"] .rail button[aria-pressed="true"] { background: #00ff6a; color: #000; }
+html[data-theme="robot"] .th { border-color: #1d5a1d; box-shadow: none; }
+html[data-theme="robot"] .ghost { border-color: #ff1f3dcc; } html[data-theme="robot"] .ghost::after { background: #ff1f3d; color: #000; }
+html[data-theme="robot"] ::selection { background: #00ff6a; color: #000; }
