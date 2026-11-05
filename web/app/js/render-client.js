@@ -85,12 +85,13 @@ async function shipSource(slot, source) {
   const c = source.canvas;
   let id = srcIds.get(c);
   if (!id) { id = nextId++; srcIds.set(c, id); }
-  const sig = c.width + "x" + c.height;
-  if (slot.sent.get(id) !== sig) {
-    slot.sent.set(id, sig);
-    const bitmap = await createImageBitmap(c);
-    slot.w.postMessage({ type: "src", id, bitmap }, [bitmap]);
-  }
+  const sig = c.width + "x" + c.height, have = slot.sent.get(id);
+  if (!have || have.sig !== sig) {
+    // кладём обещание сразу: параллельные запросы с тем же источником ждут одну и ту же отправку
+    const p = createImageBitmap(c).then((bitmap) => slot.w.postMessage({ type: "src", id, bitmap }, [bitmap]));
+    slot.sent.set(id, { sig, p });
+    await p;
+  } else await have.p;
   return id;
 }
 
