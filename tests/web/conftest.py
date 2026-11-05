@@ -70,3 +70,14 @@ def wait_ready(pg, timeout=20000):
             return
         pg.wait_for_timeout(100)
     raise AssertionError("приложение не стало готовым: " + "; ".join(pg.errors))
+
+
+def wait_until(pg, expr, timeout=10000):
+    """Опрос выражения через evaluate (wait_for_function не годится при строгом CSP)."""
+    import time
+    end = time.time() + timeout / 1000
+    while time.time() < end:
+        if pg.evaluate(f"() => !!({expr})"):
+            return
+        pg.wait_for_timeout(100)
+    raise AssertionError(f"не дождались: {expr}")

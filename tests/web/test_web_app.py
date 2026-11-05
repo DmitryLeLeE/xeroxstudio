@@ -2,7 +2,7 @@ import json
 
 import pytest
 
-from conftest import WEB, wait_ready
+from conftest import WEB, wait_ready, wait_until
 
 
 
@@ -48,18 +48,18 @@ def test_all_builtin_presets_render(page_factory):
     assert dark > 100
 
 
-def test_manifesto_library_has_119_and_write_your_own(page_factory):
+def test_manifesto_library_english_only_in_en_and_write_your_own(page_factory):
     pg = page_factory(width=1440, height=860)
     wait_ready(pg)
     pg.keyboard.press("Control+m")
     pg.wait_for_selector("dialog[open]")
-    assert pg.inner_text("#mCount").startswith("119 of 119")
+    assert pg.inner_text("#mCount").startswith("70 of 70")
     pg.click("#mWrite")
     pg.fill("#mNewTop", "make noise\nnot content")
     pg.fill("#mNewBottom", "print it yourself")
     pg.click("#mNewSave")
     pg.wait_for_timeout(300)
-    assert pg.inner_text("#mCount").startswith("1 of 120")
+    assert pg.inner_text("#mCount").startswith("1 of 71")
     assert "PRINT IT YOURSELF" in pg.inner_text("#mPrev")
     # кнопка закрытия не перекрыта другими элементами
     covered = pg.evaluate("""() => { const e = document.querySelector('dialog[open] .dlg-head button'); const r = e.getBoundingClientRect();
@@ -462,7 +462,6 @@ def test_style_gallery_applies_preset(page_factory):
     wait_ready(pg)
     pg.click("#presetRow .btn[title*='allery'], #presetRow button:has-text('✨')")
     pg.wait_for_selector("#dlgGallery[open]")
-    pg.wait_for_function("document.querySelectorAll('#galGrid .gal-tile').length >= 10") if False else None
     assert pg.evaluate("document.querySelectorAll('#galGrid .gal-tile').length") >= 10
     before = pg.evaluate("window.__zine.page().palette")
     pg.click("#galGrid .gal-tile >> nth=2")
@@ -564,7 +563,7 @@ def test_photo_object_handles_snap_and_layer_rows(page_factory, tmp_path):
     with pg.expect_file_chooser() as fc:
         pg.click("#btnAddPhoto")
     fc.value.set_files(str(WEB / "img" / "sample.jpg"))
-    pg.wait_for_function("window.__zine.page().layers.length === 1")
+    wait_until(pg, "window.__zine.page().layers.length === 1")
     assert pg.evaluate("window.__zine.page().layers[0].type") == "bitmap"
     # масштаб за угловую ручку
     s0 = pg.evaluate("window.__zine.page().layers[0].size")
@@ -599,7 +598,7 @@ def test_free_layout_templates_text_warp_and_mechanics(page_factory):
     # шаблон собирает свободный лист: раскладка free, слои с фото и надписями
     pg.click("#rail button[data-fly=s5]")
     pg.select_option("#layersBox select >> nth=0", "Афиша")
-    pg.wait_for_function("window.__zine.page().layers.length >= 3")
+    wait_until(pg, "window.__zine.page().layers.length >= 3")
     assert pg.evaluate("window.__zine.page().layout") == "free"
     kinds = pg.evaluate("window.__zine.page().layers.map(l => l.type)")
     assert "bitmap" in kinds and "text" in kinds and "sticker" in kinds
@@ -623,7 +622,7 @@ def test_choosing_free_layout_puts_photo_on_sheet(page_factory):
     wait_ready(pg)
     assert pg.evaluate("window.__zine.page().layers.length") == 0
     pg.evaluate("""(() => { const s = document.querySelector('#c_layout'); s.value = 'free'; s.dispatchEvent(new Event('change')); })()""")
-    pg.wait_for_function("window.__zine.page().layers.length === 1")
+    wait_until(pg, "window.__zine.page().layers.length === 1")
     assert pg.evaluate("window.__zine.page().layers[0].type") == "bitmap"
     assert pg.errors == []
 
@@ -633,7 +632,7 @@ def test_layers_mode_splits_sheet_and_everything_moves(page_factory):
     wait_ready(pg)
     assert pg.evaluate("window.__zine.page().layers.length") == 0
     pg.click("#btnLayersMode")
-    pg.wait_for_function("window.__zine.page().layers.length >= 3")
+    wait_until(pg, "window.__zine.page().layers.length >= 3")
     page = pg.evaluate("({layout: window.__zine.page().layout, top: window.__zine.page().txt_top, kinds: window.__zine.page().layers.map(l => l.type)})")
     assert page["layout"] == "free" and page["top"] == ""
     assert "bitmap" in page["kinds"] and "text" in page["kinds"]  # кадры и подписи стали слоями
@@ -660,7 +659,7 @@ def test_shadow_align_and_new_layer_library(page_factory):
     assert pg.evaluate("Object.keys(window.__zine.CFG ? window.__zine.CFG.STICKERS : {}).length") >= 0
     pg.click("#rail button[data-fly=s5]")
     pg.select_option("#layersBox select >> nth=0", "Route 66")
-    pg.wait_for_function("window.__zine.page().layers.length >= 3")
+    wait_until(pg, "window.__zine.page().layers.length >= 3")
     pg.evaluate("document.querySelector('.layers-list .lname').click()")  # верхний слой
     pg.wait_for_selector(".align-row button")
     pg.evaluate("document.querySelectorAll('.align-row button')[0].click()")  # к левому краю
@@ -673,4 +672,35 @@ def test_shadow_align_and_new_layer_library(page_factory):
     # новые шаблоны есть в списке
     opts = pg.evaluate("[...document.querySelectorAll('#layersBox select')][0].options.length")
     assert opts >= 16
+    assert pg.errors == []
+
+
+def test_manifesto_library_ru_has_all_and_en_has_no_cyrillic(page_factory):
+    pg = page_factory(width=1440, height=860, lang="ru")
+    wait_ready(pg)
+    pg.keyboard.press("Control+m")
+    pg.wait_for_selector("dialog[open]")
+    assert pg.inner_text("#mCount").startswith("119 из 119") or pg.inner_text("#mCount").startswith("119 of 119")
+    pg2 = page_factory(width=1440, height=860, lang="en")
+    wait_ready(pg2)
+    for _ in range(12):
+        pg2.click("#btnRemix")
+        pg2.wait_for_timeout(120)
+        txt = pg2.evaluate("(() => { const s = document.querySelector('#c_txt_top'); if (!s) throw new Error('no caption field'); return s.value; })()")
+        assert not any("а" <= ch.lower() <= "я" or ch in "ёЁ" for ch in txt), txt
+
+
+def test_layers_mode_keeps_cropped_photo(page_factory, tmp_path):
+    from PIL import Image
+    img = tmp_path / "p.png"
+    Image.effect_noise((600, 400), 90).convert("RGB").save(img)
+    pg = page_factory(width=1440, height=860, lang="ru")
+    wait_ready(pg)
+    pg.set_input_files("#fileImg", str(img))
+    pg.wait_for_timeout(800)
+    pg.evaluate("document.querySelector('#btnLayersMode').click()")
+    pg.wait_for_timeout(1800)
+    n = pg.evaluate("document.querySelectorAll('.lname').length")
+    ink = pg.evaluate("(() => { const c = document.querySelector('#preview'); const d = c.getContext('2d').getImageData(0, 0, c.width, c.height).data; let n = 0; for (let i = 0; i < d.length; i += 16) if (d[i] < 110) n++; return n; })()")
+    assert n >= 2 and ink > 3000, (n, ink)
     assert pg.errors == []

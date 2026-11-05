@@ -990,10 +990,15 @@ class XeroxZineStudioApp:
         out = []
         if src is not None and v["layout"] != "free":
             pa = src.shape[1] / src.shape[0]
-            for bx, by, bw, bh in self.engine._layout_boxes(v["layout"], cw, ch, int(v["rows"]), int(v["edge_y"] * 0.4), 1.0):
+            boxes = self.engine._layout_boxes(v["layout"], cw, ch, int(v["rows"]), int(v["edge_y"] * 0.4), 1.0)
+            cov = min(0.9, sum(b[2] * b[3] for b in boxes) / float(cw * ch))
+            mask_w = min(720, max(src.shape[0], src.shape[1]))
+            for bx, by, bw, bh in boxes:
+                size = max(0.1, min(bw, bh * pa) / cw)
                 out.append({"type": "bitmap", "img": self.cur_img_key, "x": (bx + bw / 2) / cw, "y": (by + bh / 2) / ch,
-                            "size": max(0.1, min(bw, bh * pa) / cw), "rot": 0, "color": "ink", "opacity": 1.0,
-                            "backing": True, "torn": True, "dot": 5, "contrast": 1.6, "cutout": False})
+                            "size": size, "rot": 0, "color": "ink", "opacity": 1.0, "backing": True, "torn": True,
+                            "dot": min(14, max(2, round(float(v["dot_size"]) * mask_w / (size * cw)))),
+                            "contrast": min(3.0, max(0.8, float(v["contrast"]))), "cov": round(cov, 3), "cutout": False})
         style = {"white_box": "box", "dymo_tape": "tape", "outline": "plain"}.get(v["tstyle"], "box")
         for text, ypct in ((top, v["txt_y1"]), (bot, v["txt_y2"])):
             if not text:

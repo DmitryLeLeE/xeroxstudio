@@ -66,6 +66,9 @@ function normalizePage(p) {
   return st;
 }
 
+// Английский интерфейс предлагает только английские фразы; русский — все.
+const hasCyr = (m) => /[А-Яа-яЁё]/.test(`${m.top} ${m.bottom}`);
+const quotePool = () => (LANG === "en" ? CFG.MANIFESTOS.filter((m) => !hasCyr(m)) : CFG.MANIFESTOS);
 function firstQuote() { return CFG.MANIFESTOS[0]; }
 function freshPage(extra = {}) {
   const q = firstQuote();
@@ -914,11 +917,23 @@ function explodeToLayers({ quiet = false } = {}) {
   const st = page(); if (!pageIsLoose()) return false;
   flushCommit();
   const [cw, ch] = CFG.CANVAS_FORMATS[st.format] || [1000, 1500], src = srcFor(st), L = [];
+  // кадрирование страницы переносим в само фото слоя: иначе на слоях окажется весь кадр, а не то, что видно на листе
+  let imgKey = st.img;
+  const cr = (st.crop || [0, 0, 1, 1]).map(Number);
+  if (src && (cr[0] > 0 || cr[1] > 0 || cr[2] < 1 || cr[3] < 1)) {
+    const W = src.canvas.width, H = src.canvas.height, x1 = Math.round(cr[0] * W), y1 = Math.round(cr[1] * H), x2 = Math.round(cr[2] * W), y2 = Math.round(cr[3] * H);
+    if (x2 - x1 >= 8 && y2 - y1 >= 8) {
+      const c = document.createElement("canvas"); c.width = x2 - x1; c.height = y2 - y1;
+      c.getContext("2d").drawImage(src.canvas, x1, y1, x2 - x1, y2 - y1, 0, 0, c.width, c.height);
+      imgKey = newKey(); S.images.set(imgKey, { canvas: c });
+    }
+  }
+  const pa0 = imgKey !== st.img ? S.images.get(imgKey).canvas : src && src.canvas;
   if (src && st.layout !== "free") {
-    const pa = src.canvas.width / src.canvas.height, ext = Math.floor(st.edge_y * 0.4);
-    for (const [bx, by, bw, bh] of E.layoutBoxes(st.layout, cw, ch, st.rows, ext)) {
-      const size = Math.max(0.1, Math.min(bw, bh * pa) / cw), maskW = Math.min(720, Math.max(src.canvas.width, src.canvas.height));
-      L.push(photoLayer(st.img, { x: (bx + bw / 2) / cw, y: (by + bh / 2) / ch, size, rot: 0, dot: clamp(Math.round((st.dot_size * maskW) / (size * cw)), 2, 14) }));
+    const pa = pa0.width / pa0.height, ext = Math.floor(st.edge_y * 0.4), boxes = E.layoutBoxes(st.layout, cw, ch, st.rows, ext), cov = clamp(boxes.reduce((t, b) => t + b[2] * b[3], 0) / (cw * ch), 0, 0.9);
+    for (const [bx, by, bw, bh] of boxes) {
+      const size = Math.max(0.1, Math.min(bw, bh * pa) / cw), maskW = Math.min(720, Math.max(pa0.width, pa0.height));
+      L.push(photoLayer(imgKey, { x: (bx + bw / 2) / cw, y: (by + bh / 2) / ch, size, rot: 0, cov, contrast: clamp(Number(st.contrast) || 1.6, 0.8, 3), dot: clamp(Math.round((st.dot_size * maskW) / (size * cw)), 2, 14) }));
     }
   } else if (src && st.layout === "free") { /* фото уже слои */ }
   const styleOf = { white_box: "box", dymo_tape: "tape", outline: "plain" }[st.tstyle] || "box";
@@ -1224,10 +1239,10 @@ RC.setMaskLookup((() => {
   return (key) => {
     const img = S.images.get(key); if (!img) return null;
     let ly = null; for (const p of S.pages) { ly = (p.layers || []).find((l) => l && l.type === "bitmap" && l.img === key); if (ly) break; }
-    const dot = ly ? ly.dot || 5 : 5, contrast = ly ? ly.contrast || 1.6 : 1.6, cutout = !!(ly && ly.cutout), bright = ly ? ly.bright || 1 : 1, sig = `${dot}|${contrast}|${cutout}|${bright}`;
+    const dot = ly ? ly.dot || 5 : 5, contrast = ly ? ly.contrast || 1.6 : 1.6, cutout = !!(ly && ly.cutout), bright = ly ? ly.bright || 1 : 1, cov = ly ? ly.cov || 0 : 0, sig = `${dot}|${contrast}|${cutout}|${bright}|${cov}`;
     const hit = cache.get(key);
     if (hit && hit.sig === sig && hit.src === img.canvas) return hit.canvas;
-    const canvas = E.makePhotoMask(img.canvas, { dot, contrast, cutout, bright });
+    const canvas = E.makePhotoMask(img.canvas, { dot, contrast, cutout, bright, cov });
     cache.set(key, { sig, src: img.canvas, canvas });
     return canvas;
   };
@@ -1376,7 +1391,7 @@ function gotoPage(i) {
 }
 function addPage() {
   flushCommit();
-  const q = pick(CFG.MANIFESTOS), st = clone(page());
+  const q = pick(quotePool()), st = clone(page());
   Object.assign(st, { img: null, crop: [0, 0, 1, 1], seed: newSeed(), txt_top: q.top, txt_bottom: q.bottom });
   S.pages.splice(S.cur + 1, 0, st); S.cur++;
   commit(); afterPageSwitch();
@@ -1404,7 +1419,7 @@ function deletePage() {
 
 // ---------------------------------------------------------------- манифесты
 const userManifests = () => ls.get("zine.manifestos", []);
-const allManifests = () => [...CFG.MANIFESTOS.map((m) => ({ ...m })), ...userManifests().map((m) => ({ lang: "user", cat: "Мои", top: m.top, bottom: m.bottom }))];
+const allManifests = () => [...quotePool().map((m) => ({ ...m })), ...userManifests().map((m) => ({ lang: "user", cat: "Мои", top: m.top, bottom: m.bottom }))];
 const M = { items: [], shown: [], sel: -1 };
 const mDlg = $("#dlgManifest");
 
@@ -1462,7 +1477,7 @@ function spreadManifests() {
   toast(T(`Манифесты розданы по страницам: ${S.pages.length}`, `Manifestos spread across ${S.pages.length} page(s)`));
 }
 function randomQuote() {
-  flushCommit(); setQuote(page(), pick(CFG.MANIFESTOS.concat(userManifests().map((m) => ({ ...m }))))); syncUI(); commit(); requestRender();
+  flushCommit(); setQuote(page(), pick(quotePool().concat(userManifests().map((m) => ({ ...m }))))); syncUI(); commit(); requestRender();
 }
 function saveMyManifesto() {
   const st = page(), top = (st.txt_top || "").trim(), bottom = (st.txt_bottom || "").trim();
@@ -1508,7 +1523,7 @@ const LOCKS = ls.get("zine.locks", {}) || {};
 // Случайный набор настроек (с учётом замков). Цитату пишет прямо в переданное состояние.
 function remixPatch(st) {
   const L = LOCKS, patch = { seed: newSeed(), tilt: +(Math.random() * 2.5).toFixed(1), loss: rnd(10, 60) };
-  if (!L.text) { setQuote(st, pick(CFG.MANIFESTOS)); patch.tstyle = pick(CFG.TEXT_STYLES)[1]; }
+  if (!L.text) { setQuote(st, pick(quotePool())); patch.tstyle = pick(CFG.TEXT_STYLES)[1]; }
   if (!L.palette) patch.palette = pick(Object.keys(CFG.RISO_PALETTES));
   if (!L.layout) { patch.layout = pick(CFG.LAYOUTS)[1]; patch.rows = rnd(4, 8); }
   if (!L.raster) { patch.dither = pick(CFG.DITHERS)[1]; patch.dot_size = rnd(5, 12); patch.angle = rnd(0, 90); }
@@ -2154,7 +2169,7 @@ async function exportMiniZine() {
   const sink = await askSave(`${S.name || "zine"}_mini_zine_A4.png`, { mime: "image/png", ext: ".png", desc: "PNG A4" });
   if (!sink) return;
   const items = S.pages.slice(0, 8).map((p) => clone(p));
-  while (items.length < 8) { const st = clone(items[items.length - 1]), q = pick(CFG.MANIFESTOS); Object.assign(st, { txt_top: q.top, txt_bottom: q.bottom, seed: newSeed() }); items.push(st); }
+  while (items.length < 8) { const st = clone(items[items.length - 1]), q = pick(quotePool()); Object.assign(st, { txt_top: q.top, txt_bottom: q.bottom, seed: newSeed() }); items.push(st); }
   await job(T("Мини-зин A4", "Mini-zine A4"), async (progress) => {
     const SW = 3508, SH = 2480, cw = Math.floor(SW / 4), rh = Math.floor(SH / 2);
     const sheet = E.makeCanvas(SW, SH), c = sheet.getContext("2d");

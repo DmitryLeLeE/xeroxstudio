@@ -357,7 +357,7 @@ function brightGamma(d, b) {
 }
 
 /** Превращает фото в маску краски для фото-объекта: полутон + (по желанию) вырезка фона. alpha 255 = краска. */
-export function makePhotoMask(canvas, { maxSide = 720, dot = 5, contrast = 1.6, cutout = false, bright = 1 } = {}) {
+export function makePhotoMask(canvas, { maxSide = 720, dot = 5, contrast = 1.6, cutout = false, bright = 1, cov = 0 } = {}) {
   const k = Math.min(1, maxSide / Math.max(canvas.width, canvas.height)), w = Math.max(8, Math.round(canvas.width * k)), h = Math.max(8, Math.round(canvas.height * k));
   let src = makeCanvas(w, h); ctx2d(src).drawImage(canvas, 0, 0, w, h);
   let keep = null;
@@ -368,7 +368,7 @@ export function makePhotoMask(canvas, { maxSide = 720, dot = 5, contrast = 1.6, 
   }
   const id = ctx2d(src).getImageData(0, 0, w, h);
   autoLevels(id.data, w * h); if (bright !== 1) brightGamma(id.data, bright);
-  contrastRGB(id.data, contrast);
+  contrastRGB(id.data, contrast, cov);
   const gray = grayOf(id.data, w * h), bits = halftoneBits(gray, w, h, dot, 45);
   const out = new ImageData(w, h), o = out.data;
   for (let i = 0, p = 0; i < bits.length; i++, p += 4) { o[p + 3] = bits[i] === 0 && (!keep || keep[i]) ? 255 : 0; }
@@ -483,11 +483,13 @@ function grayOf(data, n) {
 }
 
 /** Как PIL ImageEnhance.Contrast: опорная точка - среднее серого. */
-function contrastRGB(data, factor) {
+function contrastRGB(data, factor, cov = 0) {
   let sum = 0;
   const n = data.length / 4;
   for (let p = 0; p < data.length; p += 4) sum += (data[p] * 299 + data[p + 1] * 587 + data[p + 2] * 114) / 1000;
-  const mean = Math.floor(sum / n + 0.5);
+  let mean = Math.floor(sum / n + 0.5);
+  // cov: доля листа, занятая этим фото; контраст на листе считается от среднего всего листа, где много светлой бумаги
+  if (cov > 0) mean = Math.round((1 - cov) * 235 + cov * mean);
   for (let p = 0; p < data.length; p += 4) {
     data[p] = mean + (data[p] - mean) * factor;
     data[p + 1] = mean + (data[p + 1] - mean) * factor;

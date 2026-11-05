@@ -671,14 +671,14 @@ class ZineGraphicEngine:
             out = np.round(255.0 * np.power(out.round() / 255.0, 1.0 / bright))
         return out.astype(np.uint8)
 
-    def photo_mask(self, key, dot=5, contrast=1.6, cutout=False, max_side=720, bright=1.0):
+    def photo_mask(self, key, dot=5, contrast=1.6, cutout=False, max_side=720, bright=1.0, cov=0.0):
         """Фото-объект -> маска краски (L, 255 = краска): контраст, растр и (по желанию) вырезка фона. Кэшируется."""
         imgs = getattr(self, "layer_images", None) or {}
         src = imgs.get(key)
         if src is None:
             return None
         cache = self.__dict__.setdefault("_mask_cache", {})
-        sig = (key, int(dot), round(float(contrast), 2), bool(cutout), round(float(bright), 2), id(src))
+        sig = (key, int(dot), round(float(contrast), 2), bool(cutout), round(float(bright), 2), round(float(cov), 2), id(src))
         if sig in cache:
             return cache[sig]
         arr = np.asarray(src)
@@ -692,6 +692,8 @@ class ZineGraphicEngine:
             keep = np.asarray(self.create_sticker_cutout(Image.fromarray(rgb)))[..., 3] > 0
         rgb = self._auto_levels(rgb, bright)
         pivot = float(np.floor((rgb[..., 0] * 0.299 + rgb[..., 1] * 0.587 + rgb[..., 2] * 0.114).mean() + 0.5))
+        if cov > 0:
+            pivot = float(round((1 - cov) * 235 + cov * pivot))
         f = np.clip((rgb.astype(np.float32) - pivot) * float(contrast) + pivot, 0, 255)
         gray = (0.299 * f[..., 0] + 0.587 * f[..., 1] + 0.114 * f[..., 2]).astype(np.uint8)
         bits = self.apply_halftone_dots(Image.fromarray(gray), dot_size=float(dot), angle=45)
@@ -705,7 +707,7 @@ class ZineGraphicEngine:
         return mask
 
     def _bitmap_layer(self, ly, wpx, color, paper, li):
-        mask = self.photo_mask(ly.get("img"), ly.get("dot", 5) or 5, ly.get("contrast", 1.6) or 1.6, ly.get("cutout", False), bright=float(ly.get("bright", 1.0) or 1.0))
+        mask = self.photo_mask(ly.get("img"), ly.get("dot", 5) or 5, ly.get("contrast", 1.6) or 1.6, ly.get("cutout", False), bright=float(ly.get("bright", 1.0) or 1.0), cov=float(ly.get("cov", 0.0) or 0.0))
         if mask is None:
             return None
         wpx = max(8, int(wpx))
