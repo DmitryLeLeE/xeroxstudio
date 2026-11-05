@@ -4,16 +4,21 @@ p - заливка цветом бумаги (для «вырезов»), k - к
 import math
 
 
+def _r(x):
+    """Двойное округление: одинаковый результат на любой платформе (sin/cos различаются в последних битах)."""
+    return round(round(x, 6), 1)
+
+
 def _poly(p, m="f"):
-    return {"t": "poly", "p": [[round(x, 1), round(y, 1)] for x, y in p], "m": m}
+    return {"t": "poly", "p": [[_r(x), _r(y)] for x, y in p], "m": m}
 
 
 def _circle(cx, cy, r, m="f"):
-    return {"t": "circle", "c": [cx, cy], "r": r, "m": m}
+    return {"t": "circle", "c": [_r(cx), _r(cy)], "r": _r(r), "m": m}
 
 
 def _line(p, w=6):
-    return {"t": "line", "p": [[round(x, 1), round(y, 1)] for x, y in p], "w": w}
+    return {"t": "line", "p": [[_r(x), _r(y)] for x, y in p], "w": w}
 
 
 def _text(s, cx, cy, h):
