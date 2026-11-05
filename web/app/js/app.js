@@ -824,6 +824,7 @@ for (const [cls, label] of [["nw", "Scale"], ["ne", "Scale"], ["se", "Scale"], [
 function updateLayerSel() {
   if (!LY || !page()) return;
   const el = layerSel, ly = layersOf()[LY.sel];
+  updateGhosts();
   $("#layerBar").hidden = !ly;
   if (ly) $("#lbEdit").hidden = ly.type !== "text";
   if (!ly) { el.hidden = true; return; }
@@ -868,6 +869,77 @@ function ensureFreeStart() {
   layersOf().push(photoLayer(st.img)); LY.sel = 0; refreshLayersUI();
   toast(T("Свободный лист: фото лежит слоем. Добавляй надписи, стикеры и другие фото, расставляй как хочешь.", "Free sheet: the photo is now a layer. Add texts, stickers and more photos and arrange them."), "ok", 5000);
 }
+// Разобрать лист на слои: каждый кадр, каждая подпись и штамп становятся отдельными объектами
+function pageIsLoose() { const st = page(); return st.layout !== "free" || !!(st.txt_top || st.txt_bottom || st.stamp); }
+function explodeToLayers({ quiet = false } = {}) {
+  const st = page(); if (!pageIsLoose()) return false;
+  flushCommit();
+  const [cw, ch] = CFG.CANVAS_FORMATS[st.format] || [1000, 1500], src = srcFor(st), L = [];
+  if (src && st.layout !== "free") {
+    const pa = src.canvas.width / src.canvas.height, ext = Math.floor(st.edge_y * 0.4);
+    for (const [bx, by, bw, bh] of E.layoutBoxes(st.layout, cw, ch, st.rows, ext)) {
+      L.push(photoLayer(st.img, { x: (bx + bw / 2) / cw, y: (by + bh / 2) / ch, size: Math.max(0.1, Math.min(bw, bh * pa) / cw), rot: 0 }));
+    }
+  } else if (src && st.layout === "free") { /* фото уже слои */ }
+  const styleOf = { white_box: "box", dymo_tape: "tape", outline: "plain" }[st.tstyle] || "box";
+  const caption = (text, yPct, i) => {
+    if (!String(text || "").trim()) return;
+    const ly = { type: "text", text: String(text), sticker: "star", color: "ink", style: styleOf, font: st.font, opacity: 1, rot: -Number(st.text_rot || 0), size: Math.min(0.9, (2 * st.font_size) / cw), warp: "none", warp_k: 0.5, sx: 1 };
+    const [w, h] = layerBox(ly), al = st.text_align;
+    const left = al === "center" ? 0.5 - w / 2 : al === "right" ? 0.93 - w : st.txt_x / 100;
+    ly.x = clamp(left + w / 2, w / 2, 1 - w / 2); ly.y = clamp(yPct / 100 + (h * cw) / ch / 2, 0.03, 0.97);
+    L.push(ly);
+  };
+  caption(st.txt_top, st.txt_y1); caption(st.txt_bottom, st.txt_y2);
+  if (st.stamp) L.push({ type: "text", text: String(st.stamp).toUpperCase(), sticker: "star", color: "ink2", style: "plain", font: st.font, opacity: 1, size: 0.16, x: 0.66, y: 0.8, rot: -Number(st.stamp_rot || 0), warp: "none", warp_k: 0.5, sx: 1 });
+  st.layers = [...L, ...layersOf()];
+  st.layout = "free"; st.txt_top = ""; st.txt_bottom = ""; st.stamp = ""; st.tape = 0; LY.sel = -1;
+  syncUI(); commit(); requestRender(); refreshLayersUI();
+  if (!quiet) toast(T("Лист разобран на слои: кадры, подписи и штамп теперь двигаются по отдельности. Ctrl+Z вернёт как было.", "The sheet is now layers: frames, captions and the stamp move on their own. Ctrl+Z restores it."), "ok", 5500);
+  return true;
+}
+var LMODE = false;
+function updateGhosts() {
+  const box = $("#layerGhosts"); if (!box) return;
+  box.textContent = "";
+  if (!LMODE || !page()) return;
+  const [bw, bh] = baseSize(), pw = bw * V.zoom, ph = bh * V.zoom;
+  layersOf().forEach((ly, i) => {
+    if (i === LY.sel) return;
+    const [w, h] = layerBox(ly), d = document.createElement("i");
+    d.className = "ghost" + (ly.hidden ? " off" : "") + (ly.locked ? " lock" : ""); d.dataset.n = String(i + 1);
+    d.style.width = `${w * pw}px`; d.style.height = `${h * pw}px`;
+    d.style.transform = `translate(${V.tx + ly.x * pw - (w * pw) / 2}px, ${V.ty + ly.y * ph - (h * pw) / 2}px) rotate(${ly.rot || 0}deg)`;
+    box.append(d);
+  });
+}
+function setLayersMode(on) {
+  LMODE = !!on;
+  $("#btnLayersMode").setAttribute("aria-pressed", String(LMODE));
+  document.body.classList.toggle("layers-mode", LMODE);
+  if (LMODE) {
+    const did = explodeToLayers({ quiet: true });
+    if (MODE === "icons") setFly("s5"); else { const det = $("#layersBox").closest("details"); if (det) det.open = true; }
+    toast(did ? T("Режим слоёв: лист разобран, тащи любой объект. Ctrl+Z вернёт как было.", "Layers mode: the sheet is split up, drag any object. Ctrl+Z restores it.") : T("Режим слоёв: тащи любой объект, ручки меняют размер и поворот.", "Layers mode: drag any object, handles scale and rotate."), "ok", 5000);
+  }
+  updateGhosts();
+}
+function selectNextLayer(dir) {
+  const L = layersOf(); if (!L.length) return;
+  let i = LY.sel;
+  for (let n = 0; n < L.length; n++) { i = (i + dir + L.length) % L.length; if (!L[i].hidden) break; }
+  LY.sel = i; refreshLayersUI();
+}
+function duplicateLayer() {
+  const L = layersOf(), ly = L[LY.sel]; if (!ly) return;
+  flushCommit();
+  const c = clone(ly); if (c.img) { const e = S.images.get(c.img); if (e) { c.img = newKey(); S.images.set(c.img, { canvas: e.canvas }); } }
+  c.x = Math.min(0.95, c.x + 0.05); c.y = Math.min(0.95, c.y + 0.05); L.push(c); LY.sel = L.length - 1; touchLayers();
+}
+function moveLayer(dir) {
+  const L = layersOf(), i = LY.sel, j = i + dir; if (!L[i] || j < 0 || j >= L.length) return;
+  flushCommit(); [L[i], L[j]] = [L[j], L[i]]; LY.sel = j; touchLayers();
+}
 function applyTemplate(name) {
   const tpl = CFG.LAYER_TEMPLATES[name], st = page(); if (!tpl) return;
   flushCommit();
@@ -899,15 +971,30 @@ function refreshLayersUI() {
   for (const n of Object.keys(CFG.LAYER_TEMPLATES)) tsel.append(new Option(n, n));
   tsel.addEventListener("change", () => { const n = tsel.value; tsel.value = ""; if (n) applyTemplate(n); });
   tpl.append(tsel); box.append(tpl);
+  if (pageIsLoose()) {
+    const eb = document.createElement("button"); eb.type = "button"; eb.className = "btn primary wide"; eb.textContent = T("⤢ Разобрать лист на слои", "⤢ Split the sheet into layers");
+    eb.title = T("Каждый кадр, подпись и штамп станут отдельными объектами. Ctrl+Z вернёт как было.", "Every frame, caption and stamp becomes its own object. Ctrl+Z restores it.");
+    eb.addEventListener("click", () => explodeToLayers()); box.append(eb);
+  }
   const list = document.createElement("ul"); list.className = "layers-list"; list.setAttribute("aria-label", T("Слои (сверху вниз)", "Layers (top to bottom)"));
   for (let i = L.length - 1; i >= 0; i--) {
     const ly = L[i], li = document.createElement("li"); li.className = "lrow"; if (i === LY.sel) li.classList.add("sel"); if (ly.hidden) li.classList.add("off");
+    li.draggable = true; li.dataset.i = String(i);
+    li.addEventListener("dragstart", (e) => { e.dataTransfer.setData("text/x-layer", String(i)); e.dataTransfer.effectAllowed = "move"; li.classList.add("drag"); });
+    li.addEventListener("dragend", () => li.classList.remove("drag"));
+    li.addEventListener("dragover", (e) => { if ([...e.dataTransfer.types].includes("text/x-layer")) { e.preventDefault(); li.classList.add("over"); } });
+    li.addEventListener("dragleave", () => li.classList.remove("over"));
+    li.addEventListener("drop", (e) => {
+      e.preventDefault(); li.classList.remove("over");
+      const from = Number(e.dataTransfer.getData("text/x-layer")); if (!Number.isInteger(from) || from === i || !L[from]) return;
+      flushCommit(); const [m] = L.splice(from, 1); L.splice(i, 0, m); LY.sel = i; touchLayers();
+    });
     const mk = (cls, txt, title, fn, pressed) => {
       const b = document.createElement("button"); b.type = "button"; b.className = cls; b.textContent = txt; b.title = title; b.setAttribute("aria-label", title);
       if (pressed != null) b.setAttribute("aria-pressed", String(pressed));
       b.addEventListener("click", (e) => { e.stopPropagation(); flushCommit(); fn(); }); return b;
     };
-    const name = document.createElement("button"); name.type = "button"; name.className = "lname"; name.textContent = layerName(ly); name.setAttribute("aria-pressed", String(i === LY.sel));
+    const name = document.createElement("button"); name.type = "button"; name.className = "lname"; name.textContent = `${i + 1}. ${layerName(ly)}`; name.setAttribute("aria-pressed", String(i === LY.sel));
     name.addEventListener("click", () => { LY.sel = i; refreshLayersUI(); });
     li.append(
       mk("lbtn", ly.hidden ? "○" : "●", ly.hidden ? T("Показать слой", "Show layer") : T("Скрыть слой", "Hide layer"), () => { ly.hidden = !ly.hidden; touchLayers(); }, !ly.hidden),
@@ -2117,7 +2204,15 @@ function showHelp() {
     ${k("[ и ]", T("предыдущая / следующая страница", "previous / next page"))}
     ${k("0 / 1", T("вписать вид / масштаб 100%", "fit view / 100% zoom"))}
     ${k("Ctrl+V", T("вставить фото из буфера обмена", "paste a photo from the clipboard"))}
+    ${k("L", T("режим слоёв: лист разбирается на объекты, любой можно двигать", "layers mode: the sheet splits into objects you can drag"))}
+    ${k(", и .", T("предыдущий / следующий слой", "previous / next layer"))}
+    ${k("Ctrl+D", T("дублировать слой", "duplicate the layer"))}
+    ${k("Ctrl+↑ / Ctrl+↓", T("слой выше / ниже", "layer up / down"))}
+    ${k("Стрелки, Shift+стрелки", T("сдвинуть слой точно / на большой шаг", "nudge the layer / big step"))}
+    ${k("Delete, Esc", T("убрать слой, снять выделение", "delete the layer, deselect"))}
   </table>
+  <h4>${T("СЛОИ", "LAYERS")}</h4>
+  <p>${T("Кнопка «Слои» над листом (или клавиша L) разбирает лист на объекты: каждый кадр, подпись и штамп можно двигать, крутить и менять размер за ручки. Alt при перетаскивании отключает прилипание к центру и краям. Строки в списке слоёв тоже перетаскиваются.", "The “Layers” button over the sheet (or the L key) splits the sheet into objects: every frame, caption and the stamp can be dragged, rotated and resized by handles. Alt while dragging turns off snapping to the centre and edges. Rows in the layer list can be dragged too.")}</p>
   <h4>${T("В ПРЕДПРОСМОТРЕ", "IN THE PREVIEW")}</h4>
   <p>${T("Мышь — двигать, колесо — зум, двойной клик — вписать / 100%, Shift+клик — поставить подпись (ближайшую: верхнюю или нижнюю). На телефоне: один палец — двигать, два — зум, кнопка «✎ Подпись» — режим размещения подписи.", "Drag to pan, wheel to zoom, double-click toggles fit / 100%, Shift+click places the nearest caption. On a phone: one finger pans, two fingers zoom, the “✎ Caption” button turns on caption placement.")}</p>
   <h4>${T("ФОТО И ПОЛЗУНКИ", "PHOTO & SLIDERS")}</h4>
@@ -2152,7 +2247,11 @@ document.addEventListener("keydown", (e) => {
   if (e.altKey && key === "r") { e.preventDefault(); remix(); return; }
   if (e.altKey && key === "n") { e.preventDefault(); addPage(); return; }
   if (e.altKey && key === "d") { e.preventDefault(); duplicatePage(); return; }
+  if (mod && !e.altKey && !e.shiftKey && key === "d" && layersOf()[LY.sel]) { e.preventDefault(); duplicateLayer(); return; }
+  if (mod && !e.altKey && layersOf()[LY.sel] && /^Arrow(Up|Down)$/.test(e.key)) { e.preventDefault(); moveLayer(e.key === "ArrowUp" ? 1 : -1); return; }
   if (mod || e.altKey) return;
+  if (key === "l") { setLayersMode(!LMODE); return; }
+  if (key === "," || key === ".") { selectNextLayer(key === "." ? 1 : -1); return; }
   const Ls = layersOf(), sel = Ls[LY.sel];
   if (sel && /^(Delete|Backspace)$/.test(e.key)) { e.preventDefault(); flushCommit(); Ls.splice(LY.sel, 1); LY.sel = Ls.length - 1; touchLayers(); return; }
   if (sel && e.key === "Escape") { LY.sel = -1; refreshLayersUI(); return; }
@@ -2230,6 +2329,7 @@ $("#btnAdd").addEventListener("click", (e) => {
 });
 $("#menuAdd").addEventListener("keydown", (e) => { if (e.key === "Escape") { closeAdd(); $("#btnAdd").focus(); } });
 document.addEventListener("click", (e) => { if (!e.target.closest(".menu-wrap")) closeAdd(); });
+$("#btnLayersMode").addEventListener("click", () => setLayersMode(!LMODE));
 $("#btnAddText").addEventListener("click", () => { closeAdd(); addLayer({ type: "text", text: T("НОВАЯ НАДПИСЬ", "NEW TEXT") }); });
 $("#btnAddSticker").addEventListener("click", () => { closeAdd(); openStickers(); });
 for (const ev of ["pointerdown", "dblclick", "wheel"]) $("#layerBar").addEventListener(ev, (e) => e.stopPropagation()); // чтобы лист под панелью не начал двигаться

@@ -56,6 +56,7 @@
         <button type="button" data-act="front" data-ru-title="Наверх" data-en-title="Bring to front">↑</button>
         <button type="button" data-act="del" data-ru-title="Удалить (Delete)" data-en-title="Delete (Delete key)">🗑</button>
       </div>
+      <div class="ghosts" id="layerGhosts" aria-hidden="true"></div>
       <div class="layer-sel" id="layerSel" hidden></div>
       <input type="file" id="fileObj" accept="image/*" multiple hidden>
       <canvas id="preview" role="img" aria-label="Zine page preview"></canvas>
@@ -75,6 +76,7 @@
           <button type="button" class="toggle" id="btnTextMode" aria-pressed="false" data-ru-title="Тап/клик по листу ставит подпись (на ПК — Shift+клик)" data-en-title="Tap/click on the sheet places the caption (desktop: Shift+click)"><span data-ru="✎ Подпись: режим размещения" data-en="✎ Caption: placing mode"></span></button>
         </div>
       </div>
+      <button class="btn sm toggle" id="btnLayersMode" aria-pressed="false" data-ru="<b class='ico'>◫</b><span class='lbl'>Слои</span>" data-en="<b class='ico'>◫</b><span class='lbl'>Layers</span>" data-ru-title="Режим слоёв (L): лист разбирается на объекты, любой можно двигать" data-en-title="Layers mode (L): the sheet splits into objects you can drag"></button>
       <button class="btn sm toggle" id="btnCompare" aria-pressed="false" data-ru="<b class='ico'>⇔</b><span class='lbl'>До/после</span>" data-en="<b class='ico'>⇔</b><span class='lbl'>Before/after</span>" data-ru-title="Сравнить с исходным фото: тяните разделитель по листу" data-en-title="Compare with the original photo: drag the divider across the sheet"></button>
       <button class="btn sm" id="btnFit" data-ru="<b class='ico'>⛶</b><span class='lbl'>Вписать</span>" data-en="<b class='ico'>⛶</b><span class='lbl'>Fit</span>" data-ru-title="Вписать лист в экран" data-en-title="Fit the sheet to the screen"></button>
       <div class="hud-zoom hide-xs">

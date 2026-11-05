@@ -566,6 +566,7 @@ class XeroxZineStudioApp:
         make_button(rowl, "＋ Надпись", self._add_text_layer).pack(side=tk.LEFT, padx=(0, 3))
         make_button(rowl, "＋ Стикер…", self._add_sticker_layer).pack(side=tk.LEFT, padx=3)
         make_button(rowl, "＋ Фото…", self._add_photo_layer).pack(side=tk.LEFT, padx=3)
+        make_button(c, "⤢ Разобрать лист на слои", self._explode_to_layers, kind="primary").pack(fill=tk.X, pady=(3, 0))
         rowl2 = tk.Frame(c, bg=PANEL2)
         rowl2.pack(fill=tk.X, pady=(3, 0))
         for text, what in (("Копия", "copy"), ("Удалить", "delete"), ("👁 Скрыть", "hide"), ("⇋ Отразить", "flip"), ("↑", "up"), ("↓", "down")):
@@ -967,6 +968,49 @@ class XeroxZineStudioApp:
         lb.bind("<Double-Button-1>", ok)
         make_button(dlg, "Добавить", ok, kind="primary").pack(pady=(0, 10))
         dlg.grab_set()
+
+    def _explode_to_layers(self):
+        """Режим слоёв: каждый кадр, подпись и штамп становятся отдельными объектами, которые можно двигать."""
+        v = {k: var.get() for k, var in self.vars.items()}
+        top, bot = self.txt_top.get("1.0", tk.END).strip(), self.txt_bot.get("1.0", tk.END).strip()
+        stamp = str(v.get("stamp", "") or "").strip()
+        if v["layout"] == "free" and not (top or bot or stamp):
+            messagebox.showinfo("Слои", "Лист уже собран слоями: тащи любой объект мышью.", parent=self.root)
+            return
+        cw, ch = config.CANVAS_FORMATS.get(v["format"], (1000, 1500))
+        src = self.images.get(self.cur_img_key)
+        out = []
+        if src is not None and v["layout"] != "free":
+            pa = src.shape[1] / src.shape[0]
+            for bx, by, bw, bh in self.engine._layout_boxes(v["layout"], cw, ch, int(v["rows"]), int(v["edge_y"] * 0.4), 1.0):
+                out.append({"type": "bitmap", "img": self.cur_img_key, "x": (bx + bw / 2) / cw, "y": (by + bh / 2) / ch,
+                            "size": max(0.1, min(bw, bh * pa) / cw), "rot": 0, "color": "ink", "opacity": 1.0,
+                            "backing": True, "torn": True, "dot": 5, "contrast": 1.6, "cutout": False})
+        style = {"white_box": "box", "dymo_tape": "tape", "outline": "plain"}.get(v["tstyle"], "box")
+        for text, ypct in ((top, v["txt_y1"]), (bot, v["txt_y2"])):
+            if not text:
+                continue
+            ly = {"type": "text", "text": text, "sticker": "star", "color": "ink", "style": style, "font": v["font"], "opacity": 1.0,
+                  "rot": -float(v["text_rot"]), "size": min(0.9, 2 * float(v["font_size"]) / cw), "warp": "none", "warp_k": 0.5, "sx": 1.0, "x": 0.5, "y": 0.5}
+            _cx, _cy, w, h = self._layer_box(ly, cw, ch)
+            al = v["text_align"]
+            left = 0.5 - w / 2 if al == "center" else 0.93 - w if al == "right" else float(v["txt_x"]) / 100
+            ly["x"] = min(max(left + w / 2, w / 2), 1 - w / 2)
+            ly["y"] = min(max(float(ypct) / 100 + h / 2, 0.03), 0.97)
+            out.append(ly)
+        if stamp:
+            out.append({"type": "text", "text": stamp.upper(), "sticker": "star", "color": "ink2", "style": "plain", "font": v["font"], "opacity": 1.0,
+                        "size": 0.16, "x": 0.66, "y": 0.8, "rot": -float(v["stamp_rot"]), "warp": "none", "warp_k": 0.5, "sx": 1.0})
+        self.layers = out + self.layers
+        self.vars["layout"].set("free")
+        self.vars["tape"].set(0)
+        self.vars["stamp"].set("")
+        self.txt_top.delete("1.0", tk.END)
+        self.txt_bot.delete("1.0", tk.END)
+        self._refresh_layers_ui()
+        self.preset_var.set(PRESET_HINT)
+        self.schedule_render()
+        self._mark_dirty(immediate=True)
 
     def _ensure_free_start(self):
         """Свободный лист без слоёв пуст: кладём на него фото страницы, чтобы было что двигать."""

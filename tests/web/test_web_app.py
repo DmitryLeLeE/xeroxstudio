@@ -562,6 +562,8 @@ def test_photo_object_handles_snap_and_layer_rows(page_factory, tmp_path):
     assert pg.evaluate("window.__zine.page().layers[0].type") == "bitmap"
     # масштаб за угловую ручку
     s0 = pg.evaluate("window.__zine.page().layers[0].size")
+    pg.wait_for_selector(".lh-se", state="visible")
+    pg.wait_for_timeout(300)
     h = pg.locator(".lh-se").bounding_box()
     pg.mouse.move(h["x"] + 7, h["y"] + 7); pg.mouse.down(); pg.mouse.move(h["x"] + 50, h["y"] + 50, steps=4); pg.mouse.up()
     assert pg.evaluate("window.__zine.page().layers[0].size") > s0
@@ -617,4 +619,30 @@ def test_choosing_free_layout_puts_photo_on_sheet(page_factory):
     pg.evaluate("""(() => { const s = document.querySelector('#c_layout'); s.value = 'free'; s.dispatchEvent(new Event('change')); })()""")
     pg.wait_for_function("window.__zine.page().layers.length === 1")
     assert pg.evaluate("window.__zine.page().layers[0].type") == "bitmap"
+    assert pg.errors == []
+
+
+def test_layers_mode_splits_sheet_and_everything_moves(page_factory):
+    pg = page_factory()
+    wait_ready(pg)
+    assert pg.evaluate("window.__zine.page().layers.length") == 0
+    pg.click("#btnLayersMode")
+    pg.wait_for_function("window.__zine.page().layers.length >= 3")
+    page = pg.evaluate("({layout: window.__zine.page().layout, top: window.__zine.page().txt_top, kinds: window.__zine.page().layers.map(l => l.type)})")
+    assert page["layout"] == "free" and page["top"] == ""
+    assert "bitmap" in page["kinds"] and "text" in page["kinds"]  # кадры и подписи стали слоями
+    assert pg.evaluate("document.querySelectorAll('.ghost').length") >= 2
+    # выбор слоя клавишами и дубликат
+    n = pg.evaluate("window.__zine.page().layers.length")
+    pg.keyboard.press(".")
+    pg.keyboard.press("Control+d")
+    assert pg.evaluate("window.__zine.page().layers.length") == n + 1
+    # перетаскивание строки в списке слоёв меняет порядок
+    first = pg.evaluate("window.__zine.page().layers[0].type + window.__zine.page().layers[0].x")
+    pg.evaluate("""(() => { const rows = [...document.querySelectorAll('.layers-list .lrow')]; const dt = new DataTransfer();
+      rows[rows.length - 1].dispatchEvent(new DragEvent('dragstart', { dataTransfer: dt, bubbles: true }));
+      rows[0].dispatchEvent(new DragEvent('drop', { dataTransfer: dt, bubbles: true, cancelable: true })); })()""")
+    assert pg.evaluate("window.__zine.page().layers[0].type + window.__zine.page().layers[0].x") != first
+    pg.keyboard.press("l")
+    assert pg.evaluate("document.querySelectorAll('.ghost').length") == 0
     assert pg.errors == []

@@ -490,3 +490,12 @@ ul.layers-list { list-style: none; margin: 0; padding: 0; }
 #layersBox .row { flex-wrap: wrap; } #layersBox .row .btn { min-width: 0; padding-left: 8px; padding-right: 8px; }
 #layersBox { min-width: 0; } .layers-list { min-width: 0; } .lrow { min-width: 0; }
 #layersBox select.sel { width: 100%; }
+
+/* режим слоёв */
+.ghosts { position: absolute; inset: 0; overflow: hidden; pointer-events: none; z-index: 5; }
+.ghost { position: absolute; left: 0; top: 0; border: 1.5px dashed #e0301e99; transform-origin: center; box-sizing: border-box; }
+.ghost::after { content: attr(data-n); position: absolute; left: -1px; top: -1px; font: 700 10px/1 var(--mono, monospace); background: #e0301e; color: #fff; padding: 2px 4px; }
+.ghost.off { opacity: .35; } .ghost.lock { border-color: #888; } .ghost.lock::after { background: #888; }
+body.layers-mode #btnLayersMode { background: var(--hl, #dfff00); color: #111; }
+.lrow.drag { opacity: .4; } .lrow.over { outline: 2px dashed #e0301e; outline-offset: 1px; }
+.btn.wide { width: 100%; }

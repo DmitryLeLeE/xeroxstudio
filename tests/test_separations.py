@@ -113,3 +113,18 @@ def test_text_presets_and_templates_are_valid():
         for t in tpl:
             assert t.get("preset") is None or t["preset"] in config.TEXT_PRESETS, name
             assert t["type"] != "sticker" or t["sticker"] in stickers.STICKERS, name
+
+
+def test_free_sheet_with_layers_renders_in_python():
+    import numpy as np
+    import config
+    import engine
+    g = engine.ZineGraphicEngine()
+    photo = np.random.default_rng(2).integers(0, 255, (120, 80, 3), dtype=np.uint8)
+    g.layer_images = {"p": photo}
+    st = dict(config.DEFAULT_STATE, layout="free", txt_top="", txt_bottom="")
+    st["layers"] = [{"type": "bitmap", "img": "p", "x": 0.3, "y": 0.3, "size": 0.4, "rot": 5, "backing": True, "torn": True},
+                    {"type": "bitmap", "img": "p", "x": 0.7, "y": 0.7, "size": 0.4, "rot": -5, "backing": True, "torn": True}]
+    out, _ = g.render_zine_page(None, st, scale=0.4)
+    blank, _ = g.render_zine_page(None, dict(st, layers=[]), scale=0.4)
+    assert out.tobytes() != blank.tobytes()
