@@ -1,5 +1,8 @@
 # Changelog
 
+## 1.5.1
+- Fix: with several render workers, two renders of the same photo started together could fail with "source missing". Use this build instead of 1.5.0.
+
 ## 1.5.0
 - **Browser: several render workers.** Exporting a book (ZIP of pages, PDF) renders neighbouring pages in parallel while the previous one is being written. On a 2-core machine six 2x pages take 3.5 s instead of 6.1 s. Up to 3 workers on desktop, 1 on phones (memory). `?workers=N` overrides it.
 
