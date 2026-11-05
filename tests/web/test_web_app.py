@@ -336,7 +336,11 @@ def test_history_panel_folder_and_story_video(page_factory, tmp_path):
     pg.set_input_files("#fileDir", str(d))
     pg.wait_for_timeout(1500)
     assert pg.evaluate("document.querySelectorAll('#thumbs .th').length") == 3
-    # видео для сторис (реальное время ~5 c)
+    # видео для сторис (реальное время ~5 c); в Playwright WebKit запись холста недоступна
+    import os
+    if os.environ.get("ZINE_BROWSER") == "webkit":
+        assert pg.errors == []
+        return
     pg.evaluate("window.showSaveFilePicker = undefined")
     pg.click("#btnFile")
     with pg.expect_download(timeout=40000) as dl:
