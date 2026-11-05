@@ -1,5 +1,8 @@
 # Changelog
 
+## 1.4.2
+- **Stains look real now** (both versions): coffee leaves an uneven ring with a dark rim and a few splashes around it, grease is a soft translucent spot. They are multiplied onto the sheet, so paper and ink show through.
+
 ## 1.4.1
 - **Browser: page rendering moved to a Web Worker.** Big renders (export, ink separations, booklet) no longer freeze the interface; the preview stays responsive while a 3x sheet is being built. The result is identical to the old main-thread path (checked pixel by pixel). Browsers without OffscreenCanvas fall back to the old path automatically; `?noworker` forces it.
 

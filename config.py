@@ -6,7 +6,7 @@ import os
 import sys
 
 APP_NAME = "Xerox Zine Studio"
-APP_VERSION = "1.4.1"
+APP_VERSION = "1.4.2"
 
 
 def resource_path(name):

@@ -21,6 +21,56 @@ LANCZOS = Image.Resampling.LANCZOS
 BICUBIC = Image.Resampling.BICUBIC
 
 
+
+def _smooth(e0, e1, x):
+    t = np.clip((x - e0) / (e1 - e0), 0.0, 1.0)
+    return t * t * (3 - 2 * t)
+
+
+def _apply_stain(arr, rng, cx, cy, r, grease, power=1.0):
+    """Пятно от кофе (кольцо с тёмным неровным ободком, брызги) или жира (мягкое прозрачное, как на копии).
+    Накладывается умножением, поэтому бумага и краска просвечивают."""
+    h, w, _ = arr.shape
+    half = int(r * (1.35 if grease else 2.0)) + 3
+    x0, y0 = int(cx) - half, int(cy) - half
+    xa, xb, ya, yb = max(0, x0), min(w, x0 + 2 * half), max(0, y0), min(h, y0 + 2 * half)
+    if xb <= xa or yb <= ya:
+        return
+    ks = (2, 3, 4, 5, 7, 9)
+    amp = [rng.uniform(0.02, 0.07) * (1.7 if grease else 1.0) / (k ** 0.5) for k in ks]
+    ph = [rng.uniform(0, 6.2832) for _ in ks]
+    ring_ph = rng.uniform(0, 6.2832)
+    mp = [rng.uniform(0, 6.2832) for _ in range(4)]
+    mf = [rng.uniform(3, 7), rng.uniform(3, 7)]
+    gx, gy = np.meshgrid(np.arange(xa, xb, dtype=np.float32), np.arange(ya, yb, dtype=np.float32))
+    dx, dy = gx - cx, gy - cy
+    dist = np.hypot(dx, dy)
+    th = np.arctan2(dy, dx)
+    rr = np.ones_like(th)
+    for k, a, p in zip(ks, amp, ph):
+        rr += a * np.cos(k * th + p)
+    t = dist / (r * rr)
+    mottle = 0.5 + 0.5 * np.sin(dx / r * mf[0] + mp[0]) * np.sin(dy / r * mf[1] + mp[1])
+    if grease:
+        alpha = 0.36 * (1.0 - _smooth(0.45, 1.0, t)) * (0.8 + 0.4 * mottle)
+        alpha += 0.07 * np.exp(-(((t - 0.88) / 0.12) ** 2))
+        col = np.array((124, 100, 46), dtype=np.float32)
+    else:
+        inside = np.clip((1.03 - t) / 0.06, 0.0, 1.0)
+        ring = np.exp(-(((t - 0.95) / 0.045) ** 2)) * (0.4 + 0.6 * (0.5 + 0.5 * np.cos(th - ring_ph)))
+        alpha = inside * (0.11 + 0.05 * mottle) + ring * 0.62
+        alpha += 0.05 * np.exp(-(((t - 1.1) / 0.1) ** 2))
+        # брызги вокруг: мелкие кольца
+        for _ in range(int(rng.integers(2, 5))):
+            ang, dd = rng.uniform(0, 6.2832), r * rng.uniform(1.15, 1.7)
+            rd = r * rng.uniform(0.05, 0.13)
+            td = np.hypot(gx - (cx + dd * np.cos(ang)), gy - (cy + dd * np.sin(ang))) / rd
+            alpha += np.clip((1.05 - td) / 0.1, 0, 1) * 0.2 + np.exp(-(((td - 0.92) / 0.12) ** 2)) * 0.45
+        col = np.array((98, 58, 24), dtype=np.float32)
+    alpha = np.clip(alpha * power, 0.0, 0.88)[..., None]
+    reg = arr[ya:yb, xa:xb]
+    arr[ya:yb, xa:xb] = reg * (1.0 - alpha + alpha * col / 255.0)
+
 class ZineGraphicEngine:
 
     @staticmethod
@@ -322,14 +372,12 @@ class ZineGraphicEngine:
         m = min(w, h)
 
         if stains > 0:
-            layer = Image.new("RGBA", (w, h), (0, 0, 0, 0))
-            d = ImageDraw.Draw(layer)
-            for _ in range(1 + int(stains / 25)):
+            arr = np.asarray(base.convert("RGB"), dtype=np.float32)
+            for i in range(1 + int(stains / 25)):
                 cx, cy = rng.uniform(0.1, 0.9) * w, rng.uniform(0.1, 0.9) * h
                 r = rng.uniform(0.04, 0.1) * m * (0.6 + stains / 100)
-                d.ellipse([cx - r, cy - r * 0.9, cx + r, cy + r * 0.9], fill=(150, 105, 55, int(28 + stains * 0.3)),
-                          outline=(105, 65, 28, int(70 + stains * 0.8)), width=max(2, int(3 * s)))
-            base = Image.alpha_composite(base, layer.filter(ImageFilter.GaussianBlur(max(1.0, 2 * s))))
+                _apply_stain(arr, rng, cx, cy, r, grease=(i % 2 == 1), power=0.55 + stains / 220.0)
+            base = Image.fromarray(np.clip(arr + 0.5, 0, 255).astype(np.uint8), "RGB").convert("RGBA")
 
         if dust > 0:
             layer = Image.new("RGBA", (w, h), (0, 0, 0, 0))

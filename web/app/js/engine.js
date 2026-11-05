@@ -107,20 +107,65 @@ export function patternBits(gray, w, h, dotSize, angleDeg, kind) {
 }
 
 
+const smooth = (e0, e1, x) => { const t = Math.min(1, Math.max(0, (x - e0) / (e1 - e0))); return t * t * (3 - 2 * t); };
+
+/** Пятно от кофе (кольцо с неровным ободком и брызгами) или жира (мягкое, прозрачное). Умножением, как в engine.py. */
+function applyStain(c, w, h, rng, cx, cy, r, grease, power) {
+  const half = Math.floor(r * (grease ? 1.35 : 2.0)) + 3;
+  const x0 = Math.max(0, Math.floor(cx) - half), y0 = Math.max(0, Math.floor(cy) - half);
+  const x1 = Math.min(w, Math.floor(cx) + half), y1 = Math.min(h, Math.floor(cy) + half);
+  if (x1 <= x0 || y1 <= y0) return;
+  const ks = [2, 3, 4, 5, 7, 9];
+  const amp = ks.map((k) => rng.uniform(0.02, 0.07) * (grease ? 1.7 : 1) / Math.sqrt(k));
+  const ph = ks.map(() => rng.uniform(0, 6.2832));
+  const ringPh = rng.uniform(0, 6.2832);
+  const mp = [rng.uniform(0, 6.2832), rng.uniform(0, 6.2832), rng.uniform(0, 6.2832), rng.uniform(0, 6.2832)];
+  const mf = [rng.uniform(3, 7), rng.uniform(3, 7)];
+  const drops = [];
+  if (!grease) for (let n = rng.int(2, 5); n > 0; n--) {
+    const ang = rng.uniform(0, 6.2832), dd = r * rng.uniform(1.15, 1.7);
+    drops.push([cx + dd * Math.cos(ang), cy + dd * Math.sin(ang), r * rng.uniform(0.05, 0.13)]);
+  }
+  const col = grease ? [124, 100, 46] : [98, 58, 24];
+  const img = c.getImageData(x0, y0, x1 - x0, y1 - y0), d = img.data, bw = x1 - x0;
+  for (let y = y0; y < y1; y++) {
+    for (let x = x0; x < x1; x++) {
+      const dx = x - cx, dy = y - cy, dist = Math.hypot(dx, dy), th = Math.atan2(dy, dx);
+      let rr = 1;
+      for (let k = 0; k < ks.length; k++) rr += amp[k] * Math.cos(ks[k] * th + ph[k]);
+      const t = dist / (r * rr);
+      const mottle = 0.5 + 0.5 * Math.sin(dx / r * mf[0] + mp[0]) * Math.sin(dy / r * mf[1] + mp[1]);
+      let a;
+      if (grease) {
+        a = 0.36 * (1 - smooth(0.45, 1.0, t)) * (0.8 + 0.4 * mottle) + 0.07 * Math.exp(-(((t - 0.88) / 0.12) ** 2));
+      } else {
+        const inside = Math.min(1, Math.max(0, (1.03 - t) / 0.06));
+        const ring = Math.exp(-(((t - 0.95) / 0.045) ** 2)) * (0.4 + 0.6 * (0.5 + 0.5 * Math.cos(th - ringPh)));
+        a = inside * (0.11 + 0.05 * mottle) + ring * 0.62 + 0.05 * Math.exp(-(((t - 1.1) / 0.1) ** 2));
+        for (const [px, py, rd] of drops) {
+          const td = Math.hypot(x - px, y - py) / rd;
+          if (td < 1.6) a += Math.min(1, Math.max(0, (1.05 - td) / 0.1)) * 0.2 + Math.exp(-(((td - 0.92) / 0.12) ** 2)) * 0.45;
+        }
+      }
+      a = Math.min(0.88, Math.max(0, a * power));
+      if (a <= 0.002) continue;
+      const i = ((y - y0) * bw + (x - x0)) * 4;
+      for (let k = 0; k < 3; k++) d[i + k] = d[i + k] * (1 - a + a * col[k] / 255);
+    }
+  }
+  c.putImageData(img, x0, y0);
+}
+
 /** Износ листа поверх готового кадра: пятна, пыль и волоски, сгиб, дырки, штамп (аналог add_wear в engine.py). */
 function addWear(canvas, st, seed, s) {
   const stains = Number(st.stains), dust = Number(st.dust), fold = Number(st.fold), holes = Number(st.holes), stamp = String(st.stamp || "").replace(/\n/g, " ").trim();
   if (!(stains > 0 || dust > 0 || fold > 0 || holes || stamp)) return;
   const w = canvas.width, h = canvas.height, m = Math.min(w, h), c = ctx2d(canvas), rng = new Rng(seed);
   if (stains > 0) {
-    c.save(); c.filter = `blur(${Math.max(1, 2 * s)}px)`;
     for (let i = 0; i < 1 + Math.floor(stains / 25); i++) {
       const cx = rng.uniform(0.1, 0.9) * w, cy = rng.uniform(0.1, 0.9) * h, r = rng.uniform(0.04, 0.1) * m * (0.6 + stains / 100);
-      c.beginPath(); c.ellipse(cx, cy, r, r * 0.9, 0, 0, Math.PI * 2);
-      c.fillStyle = `rgba(150,105,55,${(28 + stains * 0.3) / 255})`; c.fill();
-      c.lineWidth = Math.max(2, 3 * s); c.strokeStyle = `rgba(105,65,28,${(70 + stains * 0.8) / 255})`; c.stroke();
+      applyStain(c, w, h, rng, cx, cy, r, i % 2 === 1, 0.55 + stains / 220);
     }
-    c.restore();
   }
   if (dust > 0) {
     c.fillStyle = "rgba(20,20,20,.78)";
