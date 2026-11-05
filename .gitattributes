@@ -18,3 +18,7 @@ web/*.mp4 binary
 *.mp4 binary
 *.gif binary
 *.jpg binary
+*.ttf binary
+web/**/*.ttf binary
+assets/fonts/*.ttf binary
+*.woff2 binary
