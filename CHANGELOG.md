@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.7.0
+- **Style gallery (browser).** The ✨ button (and the Styles icon) shows every ready style rendered on your own photo; click a tile to apply it. A second tab shows six random variations (respecting Remix locks), with "six more" for another batch.
+- **Two panel modes (browser).** *Icons* (default): a slim rail of icons on the side, each opens one settings section next to the sheet, rare sliders are tucked under "More settings". *Detailed*: every setting in one list, as before. The choice is remembered.
+- **Less clutter above the sheet.** Text, sticker and caption placing are in one "＋ Add" menu; "Before/after" and the zoom label shrink on phones; export scale shows the final size (for example 2× · 2000×3000); rare export formats sit under "More formats & tools" in the File menu.
+- **Layer bar.** When a layer is selected, a small bar over the sheet offers edit, duplicate, bring to front and delete.
+
 ## 1.6.0
 - **Layers are easier to reach.** Browser: two buttons above the sheet (＋Aa, ＋✦) add a text or a sticker straight away; a new text is selected for typing right away; double-click a text on the sheet to edit it; Delete removes the selected layer, arrow keys nudge it (Shift = bigger step), Esc deselects.
 - **Desktop: drag layers with the mouse** right on the preview, with a dashed frame around the selected layer and a "move" cursor over layers. Click outside a layer still pans the sheet.

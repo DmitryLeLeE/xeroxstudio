@@ -39,12 +39,12 @@ def page_factory(browser, base_url):
     """Открывает страницу; собирает ошибки консоли (включая нарушения CSP)."""
     made = []
 
-    def make(path="/app/", mobile=False, width=1280, height=800, welcomed=True, lang="en"):
+    def make(path="/app/", mobile=False, width=1280, height=800, welcomed=True, lang="en", mode="pro"):
         kw = {"viewport": {"width": width, "height": height}}
         if mobile:
             kw = dict(viewport={"width": width, "height": height}, is_mobile=True, has_touch=True, device_scale_factor=2)
         ctx = browser.new_context(accept_downloads=True, **kw)
-        init = f"localStorage.setItem('zine.lang','{lang}');"
+        init = f"localStorage.setItem('zine.lang','{lang}');localStorage.setItem('zine.mode', JSON.stringify('{mode}'));localStorage.setItem('zine.hint.layers','true');"
         if welcomed:
             init += "localStorage.setItem('zine.welcomed','1');"
         ctx.add_init_script(init)

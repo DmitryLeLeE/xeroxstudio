@@ -130,52 +130,52 @@ const SECTIONS = () => [
     { k: "format", t: "select", label: T("Формат холста", "Canvas format"), opts: () => FORMAT_KEYS.map((k) => [k, lbl(k, k)]) },
     { k: "layout", t: "select", label: T("Раскладка кадров", "Frame layout"), opts: () => pairs(CFG.LAYOUTS) },
     { k: "rows", t: "range", label: T("Строк / копий", "Rows / copies"), min: 3, max: 16, step: 1 },
-    { k: "tilt", t: "range", label: T("Наклон кадров (°)", "Frame tilt (°)"), min: 0, max: 5, step: 0.2 },
+    { k: "tilt", adv: true, t: "range", label: T("Наклон кадров (°)", "Frame tilt (°)"), min: 0, max: 5, step: 0.2 },
   ] },
   { tab: "style", title: T("2. ФОТО И КАДРЫ", "2. PHOTO & FRAMES"), items: [
-    { k: "fit_mode", t: "select", label: T("Как класть фото в кадр", "Fit photo into frame"), opts: () => pairs(CFG.FIT_MODES) },
+    { k: "fit_mode", adv: true, t: "select", label: T("Как класть фото в кадр", "Fit photo into frame"), opts: () => pairs(CFG.FIT_MODES) },
     { k: "bright", t: "range", label: T("Яркость фото", "Photo brightness"), min: 0.6, max: 2, step: 0.05 },
-    { k: "edge_x", t: "range", label: T("Рваный край по X", "Torn edge X"), min: 0, max: 50, step: 1 },
-    { k: "edge_y", t: "range", label: T("Рваный край по Y", "Torn edge Y"), min: 0, max: 50, step: 1 },
+    { k: "edge_x", adv: true, t: "range", label: T("Рваный край по X", "Torn edge X"), min: 0, max: 50, step: 1 },
+    { k: "edge_y", adv: true, t: "range", label: T("Рваный край по Y", "Torn edge Y"), min: 0, max: 50, step: 1 },
     { k: "loss", t: "range", label: T("Потеря качества копий", "Generation loss"), min: 0, max: 100, step: 1 },
-    { k: "tape", t: "range", label: T("Малярный скотч на кадрах", "Masking tape on frames"), min: 0, max: 100, step: 1 },
-    { k: "censor", t: "check", label: T("Чёрная полоса на глазах (поиск лиц)", "Black bar over eyes (face detection)") },
-    { k: "sticker", t: "check", label: T("Вырезка-стикер (тёмный объект на светлом фоне)", "Sticker cut-out (dark object on light background)") },
+    { k: "tape", adv: true, t: "range", label: T("Малярный скотч на кадрах", "Masking tape on frames"), min: 0, max: 100, step: 1 },
+    { k: "censor", adv: true, t: "check", label: T("Чёрная полоса на глазах (поиск лиц)", "Black bar over eyes (face detection)") },
+    { k: "sticker", adv: true, t: "check", label: T("Вырезка-стикер (тёмный объект на светлом фоне)", "Sticker cut-out (dark object on light background)") },
     { t: "button", label: T("🎲 Другие края и пыль", "🎲 New edges & dust"), act: () => { flushCommit(); page().seed = newSeed(); commit(); requestRender(); } },
-    { t: "buttons", items: [[T("🧬 Мутировать вид", "🧬 Mutate look"), () => mutate()]] },
-    { t: "locks" },
+    { t: "buttons", adv: true, items: [[T("🧬 Мутировать вид", "🧬 Mutate look"), () => mutate()]] },
+    { t: "locks", adv: true },
   ] },
   { tab: "style", title: T("3. РАСТР И ТОНЕР", "3. HALFTONE & TONER"), items: [
     { k: "dither", t: "select", label: T("Тип растра", "Raster type"), opts: () => pairs(CFG.DITHERS) },
     { k: "dot_size", t: "range", label: T("Размер точки растра", "Dot size"), min: 3, max: 22, step: 1 },
-    { k: "angle", t: "range", label: T("Угол растра (°)", "Screen angle (°)"), min: 0, max: 90, step: 1 },
+    { k: "angle", adv: true, t: "range", label: T("Угол растра (°)", "Screen angle (°)"), min: 0, max: 90, step: 1 },
     { k: "contrast", t: "range", label: T("Контраст", "Contrast"), min: 1, max: 4.5, step: 0.1 },
     { k: "noise", t: "range", label: T("Шум тонера", "Toner noise"), min: 0, max: 100, step: 1 },
-    { k: "streaks", t: "range", label: T("Полосы сканера", "Scanner streaks"), min: 0, max: 100, step: 1 },
-    { k: "misreg", t: "range", label: T("Приводка (сдвиг краски)", "Misregistration"), min: 0, max: 12, step: 1 },
-    { k: "copier_edge", t: "range", label: T("Тень края копира", "Copier edge shadow"), min: 0, max: 100, step: 1 },
+    { k: "streaks", adv: true, t: "range", label: T("Полосы сканера", "Scanner streaks"), min: 0, max: 100, step: 1 },
+    { k: "misreg", adv: true, t: "range", label: T("Приводка (сдвиг краски)", "Misregistration"), min: 0, max: 12, step: 1 },
+    { k: "copier_edge", adv: true, t: "range", label: T("Тень края копира", "Copier edge shadow"), min: 0, max: 100, step: 1 },
     { k: "paper", t: "range", label: T("Фактура бумаги", "Paper texture"), min: 0, max: 100, step: 1 },
     { k: "overprint", t: "range", label: T("Второй цвет (оверпринт)", "Second ink (overprint)"), min: 0, max: 100, step: 1 },
     { k: "ink2", t: "color2", label: T("Цвет второй краски", "Second ink colour") },
-    { k: "overprint3", t: "range", label: T("Третья краска (полутона)", "Third ink (midtones)"), min: 0, max: 100, step: 1 },
-    { k: "ink3", t: "color2", label: T("Цвет третьей краски", "Third ink colour") },
-    { k: "overprint4", t: "range", label: T("Четвёртая краска (света)", "Fourth ink (highlights)"), min: 0, max: 100, step: 1 },
-    { k: "ink4", t: "color2", label: T("Цвет четвёртой краски", "Fourth ink colour") },
+    { k: "overprint3", adv: true, t: "range", label: T("Третья краска (полутона)", "Third ink (midtones)"), min: 0, max: 100, step: 1 },
+    { k: "ink3", adv: true, t: "color2", label: T("Цвет третьей краски", "Third ink colour") },
+    { k: "overprint4", adv: true, t: "range", label: T("Четвёртая краска (света)", "Fourth ink (highlights)"), min: 0, max: 100, step: 1 },
+    { k: "ink4", adv: true, t: "color2", label: T("Цвет четвёртой краски", "Fourth ink colour") },
   ] },
   { tab: "style", title: T("4. ПАЛИТРА (RISOGRAPH)", "4. PALETTE (RISOGRAPH)"), items: [
     { k: "palette", t: "select", label: T("Бумага / краска", "Paper / ink"),
       opts: () => [...Object.keys(CFG.RISO_PALETTES).map((k) => [k, k]), [CFG.CUSTOM_PALETTE, lbl(CFG.CUSTOM_PALETTE, CFG.CUSTOM_PALETTE)]] },
     { t: "swatches" },
     { t: "button", label: T("🎨 Палитра из фото", "🎨 Palette from photo"), act: () => paletteFromPhoto() },
-    { k: "invert", t: "check", label: T("Инвертировать цвета", "Invert colors") },
+    { k: "invert", adv: true, t: "check", label: T("Инвертировать цвета", "Invert colors") },
   ] },
   { tab: "style", title: T("5. ИЗНОС ЛИСТА И ШТАМП", "5. SHEET WEAR & STAMP"), items: [
     { k: "fold", t: "range", label: T("Сгиб листа", "Fold crease"), min: 0, max: 100, step: 1 },
-    { k: "holes", t: "check", label: T("Дырки от дырокола", "Punch holes") },
+    { k: "holes", adv: true, t: "check", label: T("Дырки от дырокола", "Punch holes") },
     { k: "stains", t: "range", label: T("Пятна (кофе, жир)", "Stains (coffee, grease)"), min: 0, max: 100, step: 1 },
     { k: "dust", t: "range", label: T("Пыль и волоски", "Dust & hairs"), min: 0, max: 100, step: 1 },
-    { k: "stamp", t: "text", label: T("Штамп (пусто = нет)", "Stamp (empty = none)") },
-    { k: "stamp_rot", t: "range", label: T("Поворот штампа (°)", "Stamp rotation (°)"), min: -45, max: 45, step: 1 },
+    { k: "stamp", adv: true, t: "text", label: T("Штамп (пусто = нет)", "Stamp (empty = none)") },
+    { k: "stamp_rot", adv: true, t: "range", label: T("Поворот штампа (°)", "Stamp rotation (°)"), min: -45, max: 45, step: 1 },
   ] },
   { tab: "style", title: T("6. СЛОИ: СТИКЕРЫ И НАДПИСИ", "6. LAYERS: STICKERS & TEXTS"), items: [{ t: "layers" }] },
   { tab: "text", title: T("7. МАНИФЕСТЫ И ТИПОГРАФИКА", "7. MANIFESTOS & TYPOGRAPHY"), items: [
@@ -187,16 +187,69 @@ const SECTIONS = () => [
       [T("★ В мои", "★ Save to mine"), () => saveMyManifesto()],
     ] },
     { k: "font", t: "select", label: T("Шрифт", "Font"), opts: () => Object.keys(CFG.FONTS).map((k) => [k, k]) },
-    { k: "tstyle", t: "select", label: T("Подложка", "Backing"), opts: () => pairs(CFG.TEXT_STYLES) },
-    { k: "text_align", t: "select", label: T("Выравнивание", "Alignment"), opts: () => pairs(CFG.TEXT_ALIGNS) },
+    { k: "tstyle", adv: true, t: "select", label: T("Подложка", "Backing"), opts: () => pairs(CFG.TEXT_STYLES) },
+    { k: "text_align", adv: true, t: "select", label: T("Выравнивание", "Alignment"), opts: () => pairs(CFG.TEXT_ALIGNS) },
     { k: "font_size", t: "range", label: T("Размер шрифта", "Font size"), min: 14, max: 120, step: 1 },
-    { k: "txt_x", t: "range", label: T("Позиция X (%)", "Position X (%)"), min: 2, max: 85, step: 1 },
-    { k: "txt_y1", t: "range", label: T("Верхняя надпись Y (%)", "Top caption Y (%)"), min: 2, max: 50, step: 1 },
-    { k: "txt_y2", t: "range", label: T("Нижняя надпись Y (%)", "Bottom caption Y (%)"), min: 30, max: 95, step: 1 },
-    { k: "text_rot", t: "range", label: T("Поворот надписи (°)", "Caption rotation (°)"), min: -45, max: 45, step: 1 },
+    { k: "txt_x", adv: true, t: "range", label: T("Позиция X (%)", "Position X (%)"), min: 2, max: 85, step: 1 },
+    { k: "txt_y1", adv: true, t: "range", label: T("Верхняя надпись Y (%)", "Top caption Y (%)"), min: 2, max: 50, step: 1 },
+    { k: "txt_y2", adv: true, t: "range", label: T("Нижняя надпись Y (%)", "Bottom caption Y (%)"), min: 30, max: 95, step: 1 },
+    { k: "text_rot", adv: true, t: "range", label: T("Поворот надписи (°)", "Caption rotation (°)"), min: -45, max: 45, step: 1 },
   ] },
 ];
 
+// Режимы панели: «иконки» (боковая лента значков, настройки выезжают по одной секции, редкие спрятаны под «Ещё») и «подробно» (все настройки списком).
+let MODE = ls.get("zine.mode", "icons") === "pro" ? "pro" : "icons";
+const isPhone = () => innerWidth <= 860;
+function setMode(m) {
+  MODE = m; ls.set("zine.mode", m);
+  document.documentElement.dataset.mode = m;
+  $$("#modeRow button").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.mode === m)));
+  $$("#sections details.sect").forEach((d, i) => { d.open = m === "pro" || !isPhone() ? true : i === 0; });
+  if (m === "icons") setFly(ls.get("zine.fly", "s2"));
+}
+function buildModeRow() {
+  const row = $("#modeRow"); row.textContent = "";
+  for (const [m, t, tip] of [["icons", T("▣ Иконки", "▣ Icons"), T("Компактно: значки сбоку, настройки по одной секции", "Compact: icons on the side, one settings section at a time")], ["pro", T("☰ Подробно", "☰ Detailed"), T("Все настройки списком", "All settings in one list")]]) {
+    const b = document.createElement("button"); b.type = "button"; b.dataset.mode = m; b.textContent = t; b.title = tip;
+    b.addEventListener("click", () => setMode(m)); row.append(b);
+  }
+}
+// Лента значков (только ПК, режим «иконки»)
+const ICONS = {
+  gallery: '<path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8z"/><path d="M19 16l.7 2 2 .7-2 .7-.7 2-.7-2-2-.7 2-.7z"/>',
+  photo: '<rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="9" cy="11" r="2"/><path d="M21 17l-5-5-9 7"/>',
+  s0: '<rect x="3" y="3" width="8" height="8"/><rect x="13" y="3" width="8" height="8"/><rect x="3" y="13" width="8" height="8"/><rect x="13" y="13" width="8" height="8"/>',
+  s1: '<path d="M6 2v14a2 2 0 0 0 2 2h14"/><path d="M2 6h14a2 2 0 0 1 2 2v14"/>',
+  s2: '<circle cx="6" cy="6" r="2.6"/><circle cx="15" cy="6" r="1.6"/><circle cx="6" cy="15" r="1.6"/><circle cx="15" cy="15" r="2.6"/><circle cx="20" cy="20" r="1"/>',
+  s3: '<path d="M12 3s6 6.5 6 11a6 6 0 0 1-12 0c0-4.5 6-11 6-11z"/>',
+  s4: '<path d="M5 3h10l4 4v14H5z"/><path d="M15 3v4h4"/><path d="M8 14l2 2 3-4 3 3"/>',
+  s5: '<path d="M12 3l9 5-9 5-9-5z"/><path d="M3 13l9 5 9-5"/>',
+  s6: '<text x="12" y="17" text-anchor="middle" font-size="14" font-weight="800" fill="currentColor" stroke="none">Aa</text>',
+  list: '<path d="M4 6h16M4 12h16M4 18h16"/>',
+};
+function buildRail() {
+  const rail = $("#rail"); rail.textContent = "";
+  const names = [T("Фото", "Photo"), T("Сетка", "Grid"), T("Кадры", "Frames"), T("Растр", "Toner"), T("Цвет", "Colour"), T("Износ", "Wear"), T("Слои", "Layers"), T("Текст", "Text")];
+  const items = [["gallery", T("Стили", "Styles"), T("Галерея стилей и случайных вариантов", "Gallery of styles and random variations")],
+    ["photo", names[0], T("Фото страницы", "Page photo")], ...[0, 1, 2, 3, 4, 5, 6].map((i) => [`s${i}`, names[i + 1], SECTIONS()[i].title.replace(/^\d+\.\s*/, "")])];
+  for (const [id, label, tip] of items) {
+    const b = document.createElement("button"); b.type = "button"; b.dataset.fly = id; b.title = tip; b.setAttribute("aria-label", tip);
+    b.innerHTML = `<svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ICONS[id]}</svg><span>${label}</span>`;
+    b.addEventListener("click", () => (id === "gallery" ? openGallery("presets") : setFly(app.dataset.fly === id ? "" : id)));
+    rail.append(b);
+  }
+  const sp = document.createElement("span"); sp.className = "spacer"; rail.append(sp);
+  const m = document.createElement("button"); m.type = "button"; m.title = T("Все настройки списком", "All settings in one list");
+  m.innerHTML = `<svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true">${ICONS.list}</svg><span>${T("Всё", "All")}</span>`;
+  m.addEventListener("click", () => setMode("pro")); rail.append(m);
+}
+function setFly(id) {
+  ls.set("zine.fly", id || "");
+  app.dataset.fly = id || "";
+  $$("#rail button[data-fly]").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.fly === id)));
+  $$("#sections details.sect").forEach((d) => { d.classList.toggle("fly-on", d.dataset.sec === id); if (d.dataset.sec === id) d.open = true; });
+}
+document.documentElement.dataset.mode = MODE;
 const ctlEls = {}; // k -> {el, out}
 const decimals = (step) => (String(step).split(".")[1] || "").length;
 let presetSel = null;
@@ -206,16 +259,26 @@ function buildSettings() {
   host.textContent = "";
   for (const k of Object.keys(ctlEls)) delete ctlEls[k];
   buildPresetRow();
+  let SECTIONS_I = 0;
   for (const sec of SECTIONS()) {
     const det = document.createElement("details");
-    det.className = "sect"; det.open = true; det.dataset.tab = sec.tab;
+    det.className = "sect"; det.open = true; det.dataset.tab = sec.tab; det.dataset.sec = `s${SECTIONS_I++}`;
     det.innerHTML = `<summary>${sec.title}</summary>`;
     const body = document.createElement("div");
     body.className = "sect-body";
     det.append(body);
-    for (const it of sec.items) body.append(buildControl(it));
+    for (const it of sec.items) { const el = buildControl(it); if (it.adv) el.classList.add("adv"); body.append(el); }
+    if (body.querySelector(".adv")) {
+      const mb = document.createElement("button"); mb.type = "button"; mb.className = "btn more-btn";
+      const upd = () => { mb.textContent = det.classList.contains("more") ? T("Скрыть редкие ▴", "Hide rare ▴") : T("Ещё настройки ▾", "More settings ▾"); };
+      upd(); mb.addEventListener("click", () => { det.classList.toggle("more"); upd(); });
+      body.append(mb);
+    }
+    det.addEventListener("toggle", () => { if (det.open && MODE === "icons" && isPhone()) for (const o of $$("#sections details.sect")) if (o !== det && o.dataset.tab === det.dataset.tab) o.open = false; });
     host.append(det);
   }
+  buildModeRow(); buildRail();
+  setMode(MODE);
   syncUI();
 }
 
@@ -359,6 +422,7 @@ function syncUI() {
   }
   updateSwatches();
   refreshLayersUI();
+  try { updateScaleLabels(); } catch { /* список масштаба ещё не создан */ }
 }
 
 // ---------------------------------------------------------------- пресеты
@@ -378,7 +442,10 @@ function buildPresetRow() {
   const del = document.createElement("button");
   del.className = "btn icon"; del.textContent = "🗑"; del.title = T("Удалить выбранный свой пресет", "Delete selected custom preset");
   del.addEventListener("click", deletePreset);
-  row.append(presetSel, save, del);
+  const gal = document.createElement("button");
+  gal.className = "btn icon"; gal.textContent = "✨"; gal.title = T("Галерея стилей на вашем фото", "Gallery of styles on your photo");
+  gal.addEventListener("click", () => openGallery("presets"));
+  row.append(presetSel, gal, save, del);
 }
 function fillPresets(selected = "") {
   presetSel.textContent = "";
@@ -717,6 +784,8 @@ const layerBox = (ly) => {
 function updateLayerSel() {
   if (!LY || !page()) return;
   const el = $("#layerSel"), ly = layersOf()[LY.sel];
+  $("#layerBar").hidden = !ly;
+  if (ly) $("#lbEdit").hidden = ly.type !== "text";
   if (!ly) { el.hidden = true; return; }
   const [bw, bh] = baseSize(), pw = bw * V.zoom, ph = bh * V.zoom, [w, h] = layerBox(ly);
   el.hidden = false;
@@ -741,6 +810,10 @@ function addLayer(proto) {
   LY.sel = L.length - 1;
   commit(); requestRender(); refreshLayersUI();
   if (proto && proto.type === "text" && innerWidth > 860) revealLayerText();
+  if (!ls.get("zine.hint.layers", false)) {
+    ls.set("zine.hint.layers", true);
+    toast(T("Тяните слой по листу. Двойной клик по тексту — править, Delete — убрать.", "Drag the layer on the sheet. Double-click a text to edit, Delete to remove."), "ok", 5000);
+  }
 }
 function layerName(ly, i) {
   const base = ly.type === "sticker" ? `${lbl("", "")}${(CFG.STICKERS[ly.sticker] || {})[LANG === "ru" ? "ru" : "en"] || ly.sticker}` : `“${String(ly.text || "").split("\n")[0].slice(0, 22) || T("пусто", "empty")}”`;
@@ -1113,19 +1186,62 @@ document.addEventListener("keydown", (e) => { if (e.key === "Escape" && mDlg.ope
 // ---------------------------------------------------------------- Remix
 const LOCK_DEFS = [["palette", "Палитра", "Palette"], ["layout", "Раскладка", "Layout"], ["raster", "Растр", "Raster"], ["text", "Текст", "Text"], ["font", "Шрифт", "Font"], ["wear", "Износ", "Wear"]];
 const LOCKS = ls.get("zine.locks", {}) || {};
-function remix() {
-  flushCommit();
-  const st = page(), L = LOCKS, patch = { seed: newSeed(), tilt: +(Math.random() * 2.5).toFixed(1), loss: rnd(10, 60) };
+// Случайный набор настроек (с учётом замков). Цитату пишет прямо в переданное состояние.
+function remixPatch(st) {
+  const L = LOCKS, patch = { seed: newSeed(), tilt: +(Math.random() * 2.5).toFixed(1), loss: rnd(10, 60) };
   if (!L.text) { setQuote(st, pick(CFG.MANIFESTOS)); patch.tstyle = pick(CFG.TEXT_STYLES)[1]; }
   if (!L.palette) patch.palette = pick(Object.keys(CFG.RISO_PALETTES));
   if (!L.layout) { patch.layout = pick(CFG.LAYOUTS)[1]; patch.rows = rnd(4, 8); }
   if (!L.raster) { patch.dither = pick(CFG.DITHERS)[1]; patch.dot_size = rnd(5, 12); patch.angle = rnd(0, 90); }
   if (!L.font) patch.font = pick(Object.keys(CFG.FONTS));
   if (!L.wear) Object.assign(patch, { fold: Math.random() < 0.25 ? rnd(30, 90) : 0, stains: Math.random() < 0.3 ? rnd(20, 80) : 0, dust: Math.random() < 0.4 ? rnd(15, 70) : 0, holes: Math.random() < 0.15 });
-  Object.assign(st, patch);
+  return patch;
+}
+function remix() {
+  flushCommit();
+  const st = page();
+  Object.assign(st, remixPatch(st));
   syncUI(); resetPresetLabel(); commit(); requestRender(); scanSweep();
   toast(T("🎲 Новый стиль", "🎲 New style"), "ok", 1000);
 }
+
+// ---------------------------------------------------------------- галерея стилей: плитки на вашем фото
+const GAL = { kind: "presets", token: 0 };
+function galleryTiles(kind) {
+  const base = clone(page());
+  if (kind === "presets") return Object.keys(allPresets()).map((name) => {
+    const t = clone(base); for (const k of CFG.STYLE_KEYS) if (k in allPresets()[name]) t[k] = clone(allPresets()[name][k]);
+    return { label: lbl(name, name), st: t };
+  });
+  return Array.from({ length: 6 }, (_, i) => { const t = clone(base); Object.assign(t, remixPatch(t)); return { label: `#${i + 1}`, st: t }; });
+}
+function applyTile(tile) {
+  flushCommit();
+  const st = page();
+  for (const k of Object.keys(tile.st)) if (k !== "img" && k !== "crop" && k !== "layers" && JSON.stringify(st[k]) !== JSON.stringify(tile.st[k])) st[k] = clone(tile.st[k]);
+  syncUI(); resetPresetLabel(); commit(); requestRender(); scanSweep();
+  $("#dlgGallery").close();
+}
+function openGallery(kind = GAL.kind) {
+  GAL.kind = kind;
+  $$("#dlgGallery .gal-tabs button").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.g === kind)));
+  $("#galMore").hidden = kind !== "vars";
+  const grid = $("#galGrid"), token = ++GAL.token; grid.textContent = "";
+  const tiles = galleryTiles(kind), src = srcFor(page());
+  const [bw, bh] = baseSize();
+  for (const t of tiles) {
+    const b = document.createElement("button"); b.type = "button"; b.className = "gal-tile";
+    const cv = document.createElement("canvas"); cv.width = 200; cv.height = Math.round((200 * bh) / bw);
+    cv.getContext("2d").fillStyle = "#ddd"; cv.getContext("2d").fillRect(0, 0, cv.width, cv.height);
+    const cap = document.createElement("span"); cap.textContent = t.label;
+    b.append(cv, cap); b.addEventListener("click", () => applyTile(t)); grid.append(b);
+    RC.renderPage(src, t.st, { outSize: [cv.width, cv.height] }).then((r) => { if (token === GAL.token) cv.getContext("2d").drawImage(r.canvas, 0, 0); }).catch(() => {});
+  }
+  if (!$("#dlgGallery").open) $("#dlgGallery").showModal();
+}
+$$("#dlgGallery .gal-tabs button").forEach((b) => b.addEventListener("click", () => openGallery(b.dataset.g)));
+$("#galMore").addEventListener("click", () => openGallery("vars"));
+$("#dlgGallery").addEventListener("close", () => { GAL.token++; });
 const MUTATE_KEYS = ["dot_size", "angle", "contrast", "noise", "streaks", "misreg", "loss", "paper", "copier_edge", "tilt", "fold", "stains", "dust", "overprint", "tape"];
 function mutate() {
   flushCommit();
@@ -1295,6 +1411,16 @@ const scaleSel = $("#expScale");
 scaleSel.value = ls.get("zine.scale", "2");
 scaleSel.addEventListener("change", () => ls.set("zine.scale", scaleSel.value));
 const exportScale = () => Number(scaleSel.value) || 2;
+// В списке масштаба показываем итоговый размер: 2× · 2000×3000 px (17×25 см при 300 dpi)
+function updateScaleLabels() {
+  if (!page()) return;
+  const [bw, bh] = baseSize();
+  for (const o of scaleSel.options) {
+    const k = Number(o.value), w = Math.floor(bw * k), h = Math.floor(bh * k);
+    o.textContent = `${o.value}× · ${w}×${h}`;
+    o.title = `${w}×${h} px = ${(w / 300 * 2.54).toFixed(1)}×${(h / 300 * 2.54).toFixed(1)} ${T("см при 300 dpi", "cm at 300 dpi")}`;
+  }
+}
 const pageName = (i, n = S.pages.length) => `${S.name || "zine"}_page_${pad(i + 1, Math.max(2, String(n).length))}`;
 const render = (i, opts) => RC.renderPage(srcFor(S.pages[i]), S.pages[i], opts);
 // Считает страницы на несколько шагов вперёд: пока одна пишется в файл, соседние уже готовятся в других воркерах.
@@ -1749,17 +1875,17 @@ function menuItems() {
     ...(CAN_SHARE() ? [[T("Поделиться страницей…", "Share page…"), sharePage]] : []),
     ...(CAN_COPY() ? [[T("Копировать страницу в буфер", "Copy page to clipboard"), copyPage]] : []),
     [T("Все страницы в PNG (ZIP)", "All pages as PNG (ZIP)"), exportAllPng],
-    [T("1-bit трафарет (PNG)", "1-bit stencil (PNG)"), exportStencil],
-    [T("Разделение красок для ризографа (ZIP)", "Riso ink separations (ZIP)"), exportSeparations],
+    [T("1-bit трафарет (PNG)", "1-bit stencil (PNG)"), exportStencil, "", true],
+    [T("Разделение красок для ризографа (ZIP)", "Riso ink separations (ZIP)"), exportSeparations, "", true],
     [T("Книга в PDF", "Book as PDF"), exportPdf],
     [T("PDF для печати (A4, поля 10 мм)", "Print PDF (A4, 10 mm margins)"), exportPdfA4],
-    [T("Мини-зин на 8 страниц (A4)", "8-page mini-zine (A4)"), exportMiniZine],
-    [T("Буклет на скрепку, A4 (любое число страниц)", "Saddle-stitch booklet, A4 (any page count)"), () => exportBooklet("a4")],
-    [T("Буклет на скрепку, Letter", "Saddle-stitch booklet, Letter"), () => exportBooklet("letter")],
-    [T("Лист калибровки принтера (A4)", "Printer calibration sheet (A4)"), exportCalibration],
-    [T("Видео для сторис (печать листа, 9:16)", "Story video (sheet printing, 9:16)"), exportStoryVideo],
-    [T("Как сложить мини-зин (схема)", "How to fold the mini-zine (guide)"), showFoldGuide],
-    [SOUND.on ? T("Звук копира: выключить", "Copier sound: turn off") : T("Звук копира: включить", "Copier sound: turn on"), toggleSound],
+    [T("Мини-зин на 8 страниц (A4)", "8-page mini-zine (A4)"), exportMiniZine, "", true],
+    [T("Буклет на скрепку, A4 (любое число страниц)", "Saddle-stitch booklet, A4 (any page count)"), () => exportBooklet("a4"), "", true],
+    [T("Буклет на скрепку, Letter", "Saddle-stitch booklet, Letter"), () => exportBooklet("letter"), "", true],
+    [T("Лист калибровки принтера (A4)", "Printer calibration sheet (A4)"), exportCalibration, "", true],
+    [T("Видео для сторис (печать листа, 9:16)", "Story video (sheet printing, 9:16)"), exportStoryVideo, "", true],
+    [T("Как сложить мини-зин (схема)", "How to fold the mini-zine (guide)"), showFoldGuide, "", true],
+    [SOUND.on ? T("Звук копира: выключить", "Copier sound: turn off") : T("Звук копира: включить", "Copier sound: turn on"), toggleSound, "", true],
     "hr", T("СТРАНИЦЫ И ТЕКСТ", "PAGES & TEXT"),
     [T("История действий…", "History…"), openHistory, "Ctrl+H"],
     [T("Применить стиль страницы ко всем", "Apply this page's style to all pages"), applyStyleToAll],
@@ -1772,15 +1898,25 @@ function menuItems() {
 function buildMenu() {
   const m = $("#menuFile");
   m.textContent = "";
+  let more = null;
   for (const it of menuItems()) {
-    if (it === "hr") { m.append(document.createElement("hr")); continue; }
+    if (it === "hr") { more = null; m.append(document.createElement("hr")); continue; }
     if (typeof it === "string") { const h = document.createElement("div"); h.className = "mh"; h.textContent = it; m.append(h); continue; }
     const b = document.createElement("button");
     b.setAttribute("role", "menuitem");
     b.innerHTML = `<span></span>${it[2] && !TOUCH ? `<kbd>${it[2]}</kbd>` : ""}`;
     $("span", b).textContent = it[0];
     b.addEventListener("click", () => { closeMenu(); it[1](); });
-    m.append(b);
+    if (it[3]) { // редкие форматы прячем под «Ещё»
+      if (!more) {
+        const t = document.createElement("button"); t.type = "button"; t.className = "more-toggle"; t.setAttribute("aria-expanded", "false");
+        t.innerHTML = `<span>▸ ${T("Ещё форматы и инструменты", "More formats & tools")}</span>`;
+        const box = document.createElement("div"); box.hidden = true; more = box;
+        t.addEventListener("click", () => { box.hidden = !box.hidden; t.setAttribute("aria-expanded", String(!box.hidden)); $("span", t).textContent = `${box.hidden ? "▸" : "▾"} ${T("Ещё форматы и инструменты", "More formats & tools")}`; });
+        m.append(t, box);
+      }
+      more.append(b);
+    } else m.append(b);
   }
 }
 function closeMenu() { $("#menuFile").hidden = true; $("#btnFile").setAttribute("aria-expanded", "false"); }
@@ -1918,8 +2054,27 @@ $("#pgDel").addEventListener("click", deletePage);
 $("#btnLang").addEventListener("click", () => { setLang(LANG === "ru" ? "en" : "ru"); location.reload(); });
 $("#srcWrap").addEventListener("click", (e) => { if (!srcFor(page()) && e.target.closest("#srcWrap")) $("#fileImg").click(); });
 
-$("#btnAddText").addEventListener("click", () => addLayer({ type: "text", text: T("НОВАЯ НАДПИСЬ", "NEW TEXT") }));
-$("#btnAddSticker").addEventListener("click", openStickers);
+const closeAdd = () => { $("#menuAdd").hidden = true; $("#btnAdd").setAttribute("aria-expanded", "false"); };
+$("#btnAdd").addEventListener("click", (e) => {
+  e.stopPropagation();
+  const m = $("#menuAdd"), open = m.hidden; m.hidden = !open; $("#btnAdd").setAttribute("aria-expanded", String(open));
+  if (open) $("button", m).focus();
+});
+$("#menuAdd").addEventListener("keydown", (e) => { if (e.key === "Escape") { closeAdd(); $("#btnAdd").focus(); } });
+document.addEventListener("click", (e) => { if (!e.target.closest(".menu-wrap")) closeAdd(); });
+$("#btnAddText").addEventListener("click", () => { closeAdd(); addLayer({ type: "text", text: T("НОВАЯ НАДПИСЬ", "NEW TEXT") }); });
+$("#btnAddSticker").addEventListener("click", () => { closeAdd(); openStickers(); });
+for (const ev of ["pointerdown", "dblclick", "wheel"]) $("#layerBar").addEventListener(ev, (e) => e.stopPropagation()); // чтобы лист под панелью не начал двигаться
+$("#layerBar").addEventListener("click", (e) => {
+  const b = e.target.closest("button"); if (!b) return;
+  const L = layersOf(), ly = L[LY.sel]; if (!ly) return;
+  flushCommit();
+  if (b.dataset.act === "edit") { revealLayerText(); return; }
+  if (b.dataset.act === "copy") { const c = clone(ly); c.x = Math.min(0.95, c.x + 0.05); c.y = Math.min(0.95, c.y + 0.05); L.push(c); LY.sel = L.length - 1; }
+  else if (b.dataset.act === "front") { L.push(L.splice(LY.sel, 1)[0]); LY.sel = L.length - 1; }
+  else if (b.dataset.act === "del") { L.splice(LY.sel, 1); LY.sel = L.length - 1; }
+  touchLayers();
+});
 const app = $("#app");
 app.dataset.tab = innerWidth <= 860 ? "view" : "style"; // на телефоне сначала большой лист
 $$("#tabbar button").forEach((b) => b.addEventListener("click", () => {

@@ -46,7 +46,8 @@
 </div>
 
 <h1 class="sr-only">Xerox Zine Studio — xerox zine generator</h1>
-<main class="app" id="app" data-tab="style">
+<main class="app" id="app" data-tab="style" data-fly="">
+  <nav class="rail" id="rail" aria-label="Tools"></nav>
   <!-- Фото -->
   <section class="panel col-source" id="colSource" data-tab="photo" aria-labelledby="hSource">
     <h2 id="hSource" class="cap" data-ru="ФОТО СТРАНИЦЫ" data-en="PAGE PHOTO"></h2>
@@ -68,6 +69,7 @@
 
   <!-- Настройки -->
   <section class="panel col-settings" id="colSettings" aria-label="Настройки">
+    <div id="modeRow" class="mode-row" data-tab="style" role="group" aria-label="Mode"></div>
     <div id="presetRow" class="preset-row" data-tab="style"></div>
     <div id="sections"></div>
   </section>
@@ -76,18 +78,29 @@
   <section class="col-view" id="colView" data-tab="view" aria-label="Предпросмотр">
     <div class="hud">
       <button class="btn sm" id="btnFit" data-ru="⛶ Вписать" data-en="⛶ Fit"></button>
-      <button class="btn sm" id="btn100">1:1</button>
-      <span class="zoom" id="zoomLbl" aria-live="off">100%</span>
-      <button class="btn sm toggle" id="btnTextMode" aria-pressed="false" data-ru="✎ Подпись" data-en="✎ Caption" data-ru-title="Режим: тап/клик по листу ставит подпись (на ПК — Shift+клик)" data-en-title="Mode: tap/click on the sheet places the caption (desktop: Shift+click)"></button>
-      <button class="btn sm" id="btnAddText" data-ru="＋Aa" data-en="＋Aa" data-ru-title="Добавить надпись на лист: потом тяните её пальцем или мышью" data-en-title="Add a text to the sheet, then drag it with finger or mouse"></button>
-      <button class="btn sm" id="btnAddSticker" data-ru="＋✦" data-en="＋✦" data-ru-title="Добавить стикер на лист: потом тяните его" data-en-title="Add a sticker to the sheet"></button>
-      <button class="btn sm toggle" id="btnCompare" aria-pressed="false" data-ru="⇔ До/после" data-en="⇔ Before/after" data-ru-title="Сравнить с исходным фото: тяните разделитель по листу" data-en-title="Compare with the original photo: drag the divider across the sheet"></button>
+      <button class="btn sm hide-xs" id="btn100">1:1</button>
+      <span class="zoom hide-xs" id="zoomLbl" aria-live="off">100%</span>
+      <div class="menu-wrap">
+        <button class="btn sm" id="btnAdd" aria-haspopup="true" aria-expanded="false" aria-controls="menuAdd" data-ru-title="Добавить на лист надпись, стикер или подпись" data-en-title="Add a text, a sticker or a caption to the sheet">＋ <span class="hide-xs" data-ru="Добавить" data-en="Add"></span> ▾</button>
+        <div class="menu menu-sm" id="menuAdd" hidden>
+          <button type="button" id="btnAddText"><span data-ru="Надпись (слой)" data-en="Text (layer)"></span></button>
+          <button type="button" id="btnAddSticker"><span data-ru="Стикер…" data-en="Sticker…"></span></button>
+          <button type="button" class="toggle" id="btnTextMode" aria-pressed="false" data-ru-title="Тап/клик по листу ставит подпись (на ПК — Shift+клик)" data-en-title="Tap/click on the sheet places the caption (desktop: Shift+click)"><span data-ru="✎ Подпись: режим размещения" data-en="✎ Caption: placing mode"></span></button>
+        </div>
+      </div>
+      <button class="btn sm toggle" id="btnCompare" aria-pressed="false" data-ru="⇔ <i class='hide-sm'>До/после</i>" data-en="⇔ <i class='hide-sm'>Before/after</i>" data-ru-title="Сравнить с исходным фото: тяните разделитель по листу" data-en-title="Compare with the original photo: drag the divider across the sheet"></button>
       <span class="spacer"></span>
       <label class="hide-xs"><span class="muted small" data-ru="Экспорт:" data-en="Export:"></span>
         <select id="expScale" class="sel sm" aria-label="Export scale"><option value="1">1×</option><option value="2" selected>2×</option><option value="3">3×</option></select></label>
       <button class="btn primary sm" id="btnSavePng"><span data-ru="💾 PNG" data-en="💾 PNG"></span></button>
     </div>
     <div class="viewport" id="viewport" tabindex="0" aria-label="Предпросмотр страницы">
+      <div class="layer-bar" id="layerBar" hidden role="toolbar" aria-label="Layer">
+        <button type="button" data-act="edit" id="lbEdit" data-ru-title="Править текст (двойной клик по слою)" data-en-title="Edit text (double-click the layer)">✎</button>
+        <button type="button" data-act="copy" data-ru-title="Копия" data-en-title="Duplicate">⧉</button>
+        <button type="button" data-act="front" data-ru-title="Наверх" data-en-title="Bring to front">↑</button>
+        <button type="button" data-act="del" data-ru-title="Удалить (Delete)" data-en-title="Delete (Delete key)">🗑</button>
+      </div>
       <div class="layer-sel" id="layerSel" hidden></div>
       <canvas id="preview" role="img" aria-label="Zine page preview"></canvas>
       <div class="scanbar" id="scanbar" aria-hidden="true"></div>
@@ -165,6 +178,16 @@
 <dialog id="dlgHistory" class="dlg">
   <form method="dialog" class="dlg-head"><h3 data-ru="История действий" data-en="History"></h3><button class="btn icon" aria-label="Close">✕</button></form>
   <div class="dlg-body"><p class="muted small" data-ru="Нажми на шаг, чтобы вернуться к нему. Последний шаг внизу." data-en="Click a step to jump back to it. The latest step is at the bottom."></p><ol class="hist-list" id="histList"></ol></div>
+</dialog>
+
+<dialog id="dlgGallery" class="dlg wide">
+  <form method="dialog" class="dlg-head"><h3 data-ru="Стили на вашем фото" data-en="Styles on your photo"></h3><button class="btn icon" aria-label="Close">✕</button></form>
+  <div class="gal-tabs" role="group">
+    <button type="button" data-g="presets" aria-pressed="true" data-ru="Готовые стили" data-en="Ready styles"></button>
+    <button type="button" data-g="vars" aria-pressed="false" data-ru="🎲 Случайные варианты" data-en="🎲 Random variations"></button>
+  </div>
+  <div class="dlg-body"><div class="gal-grid" id="galGrid"></div></div>
+  <div class="dlg-foot"><button type="button" class="btn" id="galMore" data-ru="🎲 Ещё шесть" data-en="🎲 Six more"></button><span class="muted small" data-ru="Клик по плитке применяет стиль к текущей странице. Отменить можно Ctrl+Z." data-en="Click a tile to apply it to the current page. Undo with Ctrl+Z."></span></div>
 </dialog>
 
 <dialog id="dlgStickers" class="dlg">

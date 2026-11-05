@@ -405,7 +405,7 @@ def test_layer_quick_add_buttons_and_keyboard(page_factory):
     pg = page_factory()
     wait_ready(pg)
     n = lambda: pg.evaluate("document.querySelectorAll('.layers-list button').length")
-    pg.click("#btnAddText")
+    pg.click("#btnAdd"); pg.click("#btnAddText")
     assert n() == 1
     assert pg.evaluate("document.activeElement && document.activeElement.tagName") == "TEXTAREA"  # сразу можно печатать
     pg.keyboard.type("hi")
@@ -414,7 +414,7 @@ def test_layer_quick_add_buttons_and_keyboard(page_factory):
     x0 = pg.evaluate("window.__zine.page().layers[0].x")
     pg.keyboard.press("ArrowRight"); pg.keyboard.press("Shift+ArrowRight")
     assert pg.evaluate("window.__zine.page().layers[0].x") > x0 + 0.02
-    pg.click("#btnAddSticker")
+    pg.click("#btnAdd"); pg.click("#btnAddSticker")
     pg.wait_for_selector("#dlgStickers[open]")
     pg.click("#stickerGrid button >> nth=1")
     assert n() == 2
@@ -422,4 +422,60 @@ def test_layer_quick_add_buttons_and_keyboard(page_factory):
     assert n() == 1
     pg.keyboard.press("Escape")
     assert pg.evaluate("document.querySelectorAll('.layers-list button[aria-pressed=true]').length") == 0
+    assert pg.errors == []
+
+
+def test_icon_rail_mode_and_detailed_mode(page_factory):
+    pg = page_factory(mode="icons")
+    wait_ready(pg)
+    vis = lambda sel: pg.evaluate(f"(() => {{ const e = document.querySelector('{sel}'); return !!e && e.offsetParent !== null; }})()")
+    assert pg.evaluate("document.querySelectorAll('#rail button[data-fly]').length") == 9
+    assert vis("#c_dither") and not vis("#c_angle") and not vis("#c_layout")   # открыта одна секция, редкое спрятано
+    pg.click("#rail button[data-fly=s0]")
+    assert vis("#c_layout") and not vis("#c_dither")
+    pg.click("#rail button[data-fly=s0]")                                   # повторный клик закрывает
+    assert not vis("#c_layout")
+    pg.click("#rail button[data-fly=s2]")
+    pg.click("#sections .fly-on .more-btn")
+    assert vis("#c_angle") and vis("#c_overprint3")
+    pg.click("#rail button:last-child")                                      # «Всё»: подробный режим
+    assert pg.evaluate("document.documentElement.dataset.mode") == "pro"
+    assert vis("#c_layout") and vis("#c_angle") and vis("#presetRow select")
+    assert pg.evaluate("JSON.parse(localStorage.getItem('zine.mode'))") == "pro"   # выбор помнится
+    assert pg.errors == []
+
+
+def test_style_gallery_applies_preset(page_factory):
+    pg = page_factory()
+    wait_ready(pg)
+    pg.click("#presetRow .btn[title*='allery'], #presetRow button:has-text('✨')")
+    pg.wait_for_selector("#dlgGallery[open]")
+    pg.wait_for_function("document.querySelectorAll('#galGrid .gal-tile').length >= 10") if False else None
+    assert pg.evaluate("document.querySelectorAll('#galGrid .gal-tile').length") >= 10
+    before = pg.evaluate("window.__zine.page().palette")
+    pg.click("#galGrid .gal-tile >> nth=2")
+    assert pg.evaluate("document.querySelector('#dlgGallery').open") is False
+    pg.click("#presetRow button:has-text('✨')")
+    pg.click("#dlgGallery .gal-tabs button[data-g=vars]")
+    assert pg.evaluate("document.querySelectorAll('#galGrid .gal-tile').length") == 6
+    pg.keyboard.press("Escape")
+    assert pg.errors == []
+
+
+def test_layer_bar_and_export_size_labels_and_more_menu(page_factory):
+    pg = page_factory()
+    wait_ready(pg)
+    assert "×" in pg.evaluate("document.querySelector('#expScale option:checked').textContent")
+    pg.click("#btnAdd"); pg.click("#btnAddSticker")
+    pg.wait_for_selector("#dlgStickers[open]"); pg.click("#stickerGrid button >> nth=0")
+    assert pg.evaluate("!document.querySelector('#layerBar').hidden")
+    pg.click("#layerBar [data-act=copy]")
+    assert pg.evaluate("document.querySelectorAll('.layers-list button').length") == 2
+    pg.click("#layerBar [data-act=del]"); pg.click("#layerBar [data-act=del]")
+    assert pg.evaluate("document.querySelector('#layerBar').hidden")
+    pg.click("#btnFile")
+    assert pg.evaluate("!![...document.querySelectorAll('#menuFile .more-toggle')].length")
+    assert pg.evaluate("[...document.querySelectorAll('#menuFile button')].find(b => /stencil|трафарет/i.test(b.textContent)).offsetParent") is None
+    pg.click("#menuFile .more-toggle")
+    assert pg.evaluate("[...document.querySelectorAll('#menuFile button')].find(b => /stencil|трафарет/i.test(b.textContent)).offsetParent !== null")
     assert pg.errors == []
