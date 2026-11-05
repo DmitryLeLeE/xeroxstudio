@@ -404,6 +404,8 @@ export const CFG = {
   "ghost": 0,
   "bands": 0,
   "smear": 0,
+  "gutter": 0,
+  "recopy": 0,
   "stamp": "",
   "stamp_rot": -12,
   "layers": [],
@@ -448,6 +450,8 @@ export const CFG = {
   "ghost",
   "bands",
   "smear",
+  "gutter",
+  "recopy",
   "palette",
   "invert",
   "custom_colors",
@@ -505,6 +509,8 @@ export const CFG = {
    "ghost": 0,
    "bands": 0,
    "smear": 0,
+   "gutter": 0,
+   "recopy": 0,
    "palette": "Classic B&W (Xerox)",
    "invert": false,
    "custom_colors": [
@@ -572,6 +578,8 @@ export const CFG = {
    "ghost": 0,
    "bands": 0,
    "smear": 0,
+   "gutter": 0,
+   "recopy": 0,
    "palette": "Vintage Newsprint (Cream / Charcoal)",
    "invert": false,
    "custom_colors": [
@@ -639,6 +647,8 @@ export const CFG = {
    "ghost": 0,
    "bands": 0,
    "smear": 0,
+   "gutter": 0,
+   "recopy": 0,
    "palette": "Acid Cyberpunk (Neon Lime / Black)",
    "invert": false,
    "custom_colors": [
@@ -706,6 +716,8 @@ export const CFG = {
    "ghost": 0,
    "bands": 0,
    "smear": 0,
+   "gutter": 0,
+   "recopy": 0,
    "palette": "Hot Pink Riot (Fluo Pink / Black)",
    "invert": false,
    "custom_colors": [
@@ -773,6 +785,8 @@ export const CFG = {
    "ghost": 0,
    "bands": 0,
    "smear": 0,
+   "gutter": 0,
+   "recopy": 0,
    "palette": "Blueprint / Cyanotype (Navy / Cyan)",
    "invert": false,
    "custom_colors": [
@@ -840,6 +854,8 @@ export const CFG = {
    "ghost": 0,
    "bands": 0,
    "smear": 0,
+   "gutter": 0,
+   "recopy": 0,
    "palette": "Classic B&W (Xerox)",
    "invert": false,
    "custom_colors": [
@@ -907,6 +923,8 @@ export const CFG = {
    "ghost": 0,
    "bands": 0,
    "smear": 0,
+   "gutter": 0,
+   "recopy": 0,
    "palette": "Пользовательская (Custom)",
    "invert": false,
    "custom_colors": [
@@ -974,6 +992,8 @@ export const CFG = {
    "ghost": 0,
    "bands": 0,
    "smear": 0,
+   "gutter": 0,
+   "recopy": 0,
    "palette": "Vintage Newsprint (Cream / Charcoal)",
    "invert": false,
    "custom_colors": [
@@ -1041,6 +1061,8 @@ export const CFG = {
    "ghost": 0,
    "bands": 0,
    "smear": 0,
+   "gutter": 0,
+   "recopy": 0,
    "palette": "Safety Orange (Blaze Orange / Charcoal)",
    "invert": false,
    "custom_colors": [
@@ -1108,6 +1130,8 @@ export const CFG = {
    "ghost": 0,
    "bands": 0,
    "smear": 0,
+   "gutter": 0,
+   "recopy": 0,
    "palette": "Vintage Newsprint (Cream / Charcoal)",
    "invert": false,
    "custom_colors": [
@@ -1175,6 +1199,8 @@ export const CFG = {
    "ghost": 0,
    "bands": 0,
    "smear": 0,
+   "gutter": 0,
+   "recopy": 0,
    "palette": "Vintage Newsprint (Cream / Charcoal)",
    "invert": false,
    "custom_colors": [
@@ -1242,6 +1268,8 @@ export const CFG = {
    "ghost": 0,
    "bands": 0,
    "smear": 0,
+   "gutter": 0,
+   "recopy": 0,
    "palette": "Blueprint / Cyanotype (Navy / Cyan)",
    "invert": false,
    "custom_colors": [
@@ -1309,6 +1337,8 @@ export const CFG = {
    "ghost": 0,
    "bands": 0,
    "smear": 0,
+   "gutter": 0,
+   "recopy": 0,
    "palette": "Classic B&W (Xerox)",
    "invert": false,
    "custom_colors": [
@@ -1376,6 +1406,8 @@ export const CFG = {
    "ghost": 0,
    "bands": 0,
    "smear": 0,
+   "gutter": 0,
+   "recopy": 0,
    "palette": "Acid Cyberpunk (Neon Lime / Black)",
    "invert": false,
    "custom_colors": [
@@ -1443,6 +1475,8 @@ export const CFG = {
    "ghost": 0,
    "bands": 0,
    "smear": 0,
+   "gutter": 0,
+   "recopy": 0,
    "palette": "Пользовательская (Custom)",
    "invert": false,
    "custom_colors": [
@@ -1510,6 +1544,8 @@ export const CFG = {
    "ghost": 0,
    "bands": 0,
    "smear": 0,
+   "gutter": 0,
+   "recopy": 0,
    "palette": "Nightvision (Muted Green / Phosphor)",
    "invert": false,
    "custom_colors": [
@@ -1577,6 +1613,8 @@ export const CFG = {
    "ghost": 0,
    "bands": 0,
    "smear": 0,
+   "gutter": 0,
+   "recopy": 0,
    "palette": "Vintage Newsprint (Cream / Charcoal)",
    "invert": false,
    "custom_colors": [
@@ -1644,6 +1682,8 @@ export const CFG = {
    "ghost": 0,
    "bands": 0,
    "smear": 0,
+   "gutter": 0,
+   "recopy": 0,
    "palette": "Classic B&W (Xerox)",
    "invert": false,
    "custom_colors": [
@@ -1711,6 +1751,8 @@ export const CFG = {
    "ghost": 0,
    "bands": 0,
    "smear": 0,
+   "gutter": 0,
+   "recopy": 0,
    "palette": "Classic B&W (Xerox)",
    "invert": false,
    "custom_colors": [
@@ -1778,6 +1820,8 @@ export const CFG = {
    "ghost": 0,
    "bands": 0,
    "smear": 0,
+   "gutter": 0,
+   "recopy": 0,
    "palette": "Nightvision (Muted Green / Phosphor)",
    "invert": false,
    "custom_colors": [
@@ -1845,6 +1889,8 @@ export const CFG = {
    "ghost": 0,
    "bands": 0,
    "smear": 0,
+   "gutter": 0,
+   "recopy": 0,
    "palette": "Classic B&W (Xerox)",
    "invert": false,
    "custom_colors": [
@@ -1912,6 +1958,8 @@ export const CFG = {
    "ghost": 0,
    "bands": 0,
    "smear": 0,
+   "gutter": 0,
+   "recopy": 0,
    "palette": "Safety Orange (Blaze Orange / Charcoal)",
    "invert": false,
    "custom_colors": [
@@ -1979,6 +2027,8 @@ export const CFG = {
    "ghost": 0,
    "bands": 0,
    "smear": 0,
+   "gutter": 0,
+   "recopy": 0,
    "palette": "Blueprint / Cyanotype (Navy / Cyan)",
    "invert": false,
    "custom_colors": [
@@ -2046,6 +2096,8 @@ export const CFG = {
    "ghost": 0,
    "bands": 0,
    "smear": 0,
+   "gutter": 0,
+   "recopy": 0,
    "palette": "Crimson Zine (Off-White / Blood Red)",
    "invert": false,
    "custom_colors": [
@@ -2113,6 +2165,8 @@ export const CFG = {
    "ghost": 60,
    "bands": 35,
    "smear": 25,
+   "gutter": 0,
+   "recopy": 0,
    "palette": "Classic B&W (Xerox)",
    "invert": false,
    "custom_colors": [
@@ -2180,6 +2234,146 @@ export const CFG = {
    "ghost": 30,
    "bands": 25,
    "smear": 65,
+   "gutter": 0,
+   "recopy": 0,
+   "palette": "Classic B&W (Xerox)",
+   "invert": false,
+   "custom_colors": [
+    [
+     255,
+     255,
+     255
+    ],
+    [
+     0,
+     0,
+     0
+    ]
+   ],
+   "font": "Arial Black",
+   "font_size": 34,
+   "tstyle": "white_box",
+   "text_align": "left",
+   "txt_x": 7,
+   "txt_y1": 10,
+   "txt_y2": 70,
+   "text_rot": 0.0
+  },
+  "Копия с книги": {
+   "layout": "full_page",
+   "rows": 1,
+   "tilt": -1.2,
+   "fit_mode": "contain",
+   "bright": 1.3,
+   "edge_x": 15,
+   "edge_y": 10,
+   "loss": 25,
+   "dither": "halftone",
+   "dot_size": 6,
+   "angle": 45,
+   "contrast": 2.6,
+   "noise": 28,
+   "streaks": 20,
+   "misreg": 2,
+   "copier_edge": 55,
+   "paper": 40,
+   "overprint": 0,
+   "ink2": [
+    255,
+    60,
+    140
+   ],
+   "overprint3": 0,
+   "ink3": [
+    0,
+    120,
+    190
+   ],
+   "overprint4": 0,
+   "ink4": [
+    255,
+    200,
+    0
+   ],
+   "tape": 0,
+   "fold": 0,
+   "holes": 0,
+   "stains": 0,
+   "dust": 30,
+   "ghost": 0,
+   "bands": 15,
+   "smear": 0,
+   "gutter": 80,
+   "recopy": 0,
+   "palette": "Classic B&W (Xerox)",
+   "invert": false,
+   "custom_colors": [
+    [
+     255,
+     255,
+     255
+    ],
+    [
+     0,
+     0,
+     0
+    ]
+   ],
+   "font": "Arial Black",
+   "font_size": 34,
+   "tstyle": "white_box",
+   "text_align": "left",
+   "txt_x": 7,
+   "txt_y1": 10,
+   "txt_y2": 70,
+   "text_rot": 0.0
+  },
+  "Копия с копии с копии": {
+   "layout": "staggered",
+   "rows": 4,
+   "tilt": 0.0,
+   "fit_mode": "contain",
+   "bright": 1.3,
+   "edge_x": 15,
+   "edge_y": 10,
+   "loss": 70,
+   "dither": "halftone",
+   "dot_size": 8,
+   "angle": 45,
+   "contrast": 2.2,
+   "noise": 35,
+   "streaks": 40,
+   "misreg": 4,
+   "copier_edge": 30,
+   "paper": 50,
+   "overprint": 0,
+   "ink2": [
+    255,
+    60,
+    140
+   ],
+   "overprint3": 0,
+   "ink3": [
+    0,
+    120,
+    190
+   ],
+   "overprint4": 0,
+   "ink4": [
+    255,
+    200,
+    0
+   ],
+   "tape": 0,
+   "fold": 0,
+   "holes": 0,
+   "stains": 0,
+   "dust": 25,
+   "ghost": 20,
+   "bands": 0,
+   "smear": 0,
+   "gutter": 0,
+   "recopy": 85,
    "palette": "Classic B&W (Xerox)",
    "invert": false,
    "custom_colors": [
@@ -2247,6 +2441,8 @@ export const CFG = {
    "ghost": 85,
    "bands": 40,
    "smear": 0,
+   "gutter": 0,
+   "recopy": 0,
    "palette": "Vintage Newsprint (Cream / Charcoal)",
    "invert": false,
    "custom_colors": [
@@ -2314,6 +2510,8 @@ export const CFG = {
    "ghost": 20,
    "bands": 85,
    "smear": 0,
+   "gutter": 0,
+   "recopy": 0,
    "palette": "Classic B&W (Xerox)",
    "invert": false,
    "custom_colors": [
@@ -2381,6 +2579,8 @@ export const CFG = {
    "ghost": 25,
    "bands": 55,
    "smear": 0,
+   "gutter": 0,
+   "recopy": 0,
    "palette": "Vintage Newsprint (Cream / Charcoal)",
    "invert": false,
    "custom_colors": [
@@ -2448,6 +2648,8 @@ export const CFG = {
    "ghost": 35,
    "bands": 0,
    "smear": 0,
+   "gutter": 0,
+   "recopy": 0,
    "palette": "Vintage Newsprint (Cream / Charcoal)",
    "invert": false,
    "custom_colors": [
@@ -2515,6 +2717,8 @@ export const CFG = {
    "ghost": 70,
    "bands": 30,
    "smear": 0,
+   "gutter": 0,
+   "recopy": 0,
    "palette": "Blueprint / Cyanotype (Navy / Cyan)",
    "invert": false,
    "custom_colors": [
@@ -2582,6 +2786,8 @@ export const CFG = {
    "ghost": 0,
    "bands": 0,
    "smear": 0,
+   "gutter": 0,
+   "recopy": 0,
    "palette": "Пользовательская (Custom)",
    "invert": false,
    "custom_colors": [
@@ -2649,6 +2855,8 @@ export const CFG = {
    "ghost": 0,
    "bands": 0,
    "smear": 0,
+   "gutter": 0,
+   "recopy": 0,
    "palette": "Пользовательская (Custom)",
    "invert": false,
    "custom_colors": [
@@ -2716,6 +2924,8 @@ export const CFG = {
    "ghost": 20,
    "bands": 45,
    "smear": 0,
+   "gutter": 0,
+   "recopy": 0,
    "palette": "Nightvision (Muted Green / Phosphor)",
    "invert": false,
    "custom_colors": [
@@ -2783,6 +2993,8 @@ export const CFG = {
    "ghost": 0,
    "bands": 0,
    "smear": 0,
+   "gutter": 0,
+   "recopy": 0,
    "palette": "Пользовательская (Custom)",
    "invert": false,
    "custom_colors": [
@@ -2850,6 +3062,8 @@ export const CFG = {
    "ghost": 0,
    "bands": 0,
    "smear": 0,
+   "gutter": 0,
+   "recopy": 0,
    "palette": "Пользовательская (Custom)",
    "invert": false,
    "custom_colors": [
@@ -2917,6 +3131,8 @@ export const CFG = {
    "ghost": 0,
    "bands": 0,
    "smear": 0,
+   "gutter": 0,
+   "recopy": 0,
    "palette": "Пользовательская (Custom)",
    "invert": false,
    "custom_colors": [
@@ -2984,6 +3200,8 @@ export const CFG = {
    "ghost": 0,
    "bands": 0,
    "smear": 0,
+   "gutter": 0,
+   "recopy": 0,
    "palette": "Safety Orange (Blaze Orange / Charcoal)",
    "invert": false,
    "custom_colors": [
@@ -3051,6 +3269,8 @@ export const CFG = {
    "ghost": 40,
    "bands": 0,
    "smear": 0,
+   "gutter": 0,
+   "recopy": 0,
    "palette": "Пользовательская (Custom)",
    "invert": false,
    "custom_colors": [
@@ -3118,6 +3338,8 @@ export const CFG = {
    "ghost": 0,
    "bands": 0,
    "smear": 0,
+   "gutter": 0,
+   "recopy": 0,
    "palette": "Пользовательская (Custom)",
    "invert": false,
    "custom_colors": [
@@ -3185,6 +3407,8 @@ export const CFG = {
    "ghost": 20,
    "bands": 0,
    "smear": 0,
+   "gutter": 0,
+   "recopy": 0,
    "palette": "Пользовательская (Custom)",
    "invert": false,
    "custom_colors": [

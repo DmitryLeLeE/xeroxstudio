@@ -180,6 +180,8 @@ const SECTIONS = () => [
     { k: "ghost", t: "range", label: T("Эхо барабана (бледный повтор)", "Drum echo (faint repeat)"), min: 0, max: 100, step: 1 },
     { k: "bands", t: "range", label: T("Полосы тонера", "Toner banding"), min: 0, max: 100, step: 1 },
     { k: "smear", t: "range", label: T("Заедание бумаги", "Paper jam smear"), min: 0, max: 100, step: 1 },
+    { k: "gutter", t: "range", label: T("Корешок книги (тень в сгибе)", "Book spine shadow"), min: 0, max: 100, step: 1 },
+    { k: "recopy", t: "range", label: T("Копия с копии (перекопирование листа)", "Copy of a copy (re-copied sheet)"), min: 0, max: 100, step: 1 },
     { k: "stamp", adv: true, t: "text", label: T("Штамп (пусто = нет)", "Stamp (empty = none)") },
     { k: "stamp_rot", adv: true, t: "range", label: T("Поворот штампа (°)", "Stamp rotation (°)"), min: -45, max: 45, step: 1 },
   ] },
@@ -2226,6 +2228,7 @@ function menuItems() {
     [T("Библиотека манифестов…", "Manifesto library…"), openManifest, "Ctrl+M"],
     "hr",
     ...(isPhone() ? [[T("Тема: бумага / тёмная", "Theme: paper / dark"), () => $("#btnTheme").click()], [T("Язык: English", "Language: Русский"), () => $("#btnLang").click()]] : []),
+    [T("Гайд для новичков", "Beginner's guide"), () => showGuide(0)],
     [T("Горячие клавиши", "Keyboard shortcuts"), showHelp, "F1"],
     [T("О программе и лицензии", "About & licenses"), showAbout],
   ];
@@ -2270,6 +2273,35 @@ $("#menuFile").addEventListener("keydown", (e) => {
   if (e.key === "Escape") { closeMenu(); $("#btnFile").focus(); }
 });
 
+// ---------------------------------------------------------------- гайд для новичков
+const GUIDE_STEPS = () => [
+  { t: T("1. Возьми фото", "1. Pick a photo"), p: T("Любое: портрет, улица, скриншот, рисунок. Фото остаётся на твоём устройстве. Можно перетащить файл прямо на лист или вставить из буфера (Ctrl+V). Нет под рукой? Нажми «Сначала поиграю с примером» в приветствии.", "Anything: a portrait, a street, a screenshot, a drawing. The photo stays on your device. Drag a file onto the sheet or paste it (Ctrl+V). Nothing at hand? Use the sample in the welcome window."), a: T("Выбрать фото", "Choose a photo"), f: () => $("#btnPhoto").click() },
+  { t: T("2. Выбери стиль", "2. Pick a style"), p: T(`Не знаешь, с чего начать, открой галерею: ${Object.keys(CFG.BUILTIN_PRESETS).length} готовых стилей сразу на твоём фото. Кнопка 🎲 Remix (Alt+R) даёт случайный вариант, повторяй, пока не понравится. Ctrl+Z вернёт прежний.`, `Not sure where to start? Open the gallery: ${Object.keys(CFG.BUILTIN_PRESETS).length} ready styles on your own photo. The 🎲 Remix button (Alt+R) gives a random variant; repeat until you like it. Ctrl+Z goes back.`), a: T("Открыть галерею", "Open the gallery"), f: () => openGallery("presets") },
+  { t: T("3. Подкрути ксерокс", "3. Tweak the copier"), p: T("Четыре ручки решают почти всё: размер точки растра, контраст, шум и потеря качества копий. Потом вкладка «Износ»: сгиб, скотч, пятна, тень корешка книги и «копия с копии».", "Four knobs do most of the work: dot size, contrast, noise and generation loss. Then the Wear tab: fold, tape, stains, book spine shadow and copy-of-a-copy."), a: T("Открыть растр", "Open toner"), f: () => { if (MODE === "pro") setMode("icons"); setFly("s2"); } },
+  { t: T("4. Добавь слова", "4. Add words"), p: T("Свой текст сверху и снизу или готовая фраза из библиотеки (Ctrl+M): там есть и злые, и грустные, и про IT. Шрифт, плашка, скотч и наклон меняются тут же.", "Your own text on top and bottom or a ready phrase from the library (Ctrl+M): angry, gloomy and IT ones. Font, box, tape and tilt change instantly."), a: T("Открыть текст", "Open text"), f: () => { if (MODE === "pro") setMode("icons"); setFly("s6"); } },
+  { t: T("5. Двигай всё слоями", "5. Move everything as layers"), p: T("Кнопка «Слои» (L) разбирает лист на объекты: фото, подписи, штамп. Тяни любой мышью или пальцем, ручки на рамке меняют размер и поворот. Сюда же добавляются стикеры, свои фото и готовые шаблоны (афиша, обложка, розыск, хакер-терминал…).", "The Layers button (L) splits the sheet into objects: photos, captions, stamp. Drag any of them; handles on the frame resize and rotate. Add stickers, your own photos and ready templates here (poster, cover, wanted, hacker terminal…)."), a: T("Включить слои", "Turn on layers"), f: () => setLayersMode(true) },
+  { t: T("6. Распечатай и скопируй", "6. Print it and photocopy it"), p: T("PNG для сети. Для печати: Файл → «PDF для печати (A4)» или мини-зин на 8 страниц из одного листа. Самый честный результат: распечатай, пусти через настоящий ксерокс и ещё раз через него же, потом сложи по схеме.", "PNG for the web. For print: File → “Print PDF (A4)” or an 8-page mini-zine from a single sheet. The most honest result: print it, run it through a real photocopier, then copy the copy, and fold it by the diagram."), a: T("Как сложить зин", "How to fold the zine"), f: () => showFoldGuide() },
+];
+function showGuide(i = 0) {
+  const steps = GUIDE_STEPS(), d = $("#dlgGuide"), box = $("#guideBody"), s = steps[i];
+  box.textContent = "";
+  const dots = document.createElement("div"); dots.className = "gd-dots";
+  steps.forEach((_, n) => { const b = document.createElement("button"); b.type = "button"; b.className = "gdot"; b.setAttribute("aria-label", `${n + 1}`); b.setAttribute("aria-current", String(n === i)); b.addEventListener("click", () => showGuide(n)); dots.append(b); });
+  const h = document.createElement("h4"); h.textContent = s.t;
+  const p = document.createElement("p"); p.textContent = s.p;
+  const act = document.createElement("button"); act.type = "button"; act.className = "btn primary wide"; act.textContent = s.a;
+  act.addEventListener("click", () => { d.close(); s.f(); });
+  const nav = document.createElement("div"); nav.className = "row gap";
+  const prev = document.createElement("button"); prev.type = "button"; prev.className = "btn grow"; prev.textContent = T("← Назад", "← Back"); prev.disabled = i === 0; prev.addEventListener("click", () => showGuide(i - 1));
+  const next = document.createElement("button"); next.type = "button"; next.className = "btn grow"; next.textContent = i === steps.length - 1 ? T("Готово", "Done") : T("Дальше →", "Next →");
+  next.addEventListener("click", () => { if (i === steps.length - 1) d.close(); else showGuide(i + 1); });
+  nav.append(prev, next);
+  box.append(dots, h, p, act, nav);
+  ls.set("zine.guide.seen", true);
+  if (!d.open) d.showModal();
+}
+$("#wGuide").addEventListener("click", () => { closeWelcome(); showGuide(0); });
+$("#helpGuide").addEventListener("click", () => { $("#dlgHelp").close(); showGuide(0); });
 function showHelp() {
   const k = (a, b) => `<tr><td><kbd>${a}</kbd></td><td>${b}</td></tr>`;
   $("#helpBody").innerHTML = `<table>

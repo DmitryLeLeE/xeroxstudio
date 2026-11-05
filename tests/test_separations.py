@@ -96,7 +96,7 @@ def test_text_warp_stretch_and_copier_mechanics_python():
     # механика копира: каждый ползунок меняет лист, нулевые значения - нет
     src = Image.fromarray(np.random.default_rng(5).integers(0, 255, (300, 200, 3), dtype=np.uint8))
     assert g.add_mechanism(src, dict(st), 7).tobytes() == src.tobytes()
-    for key in ("ghost", "bands", "smear"):
+    for key in ("ghost", "bands", "smear", "gutter", "recopy"):
         assert g.add_mechanism(src, dict(st, **{key: 70}), 7).tobytes() != src.tobytes(), key
 
 

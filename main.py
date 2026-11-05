@@ -551,6 +551,8 @@ class XeroxZineStudioApp:
         self._slider(c, "ghost", "Эхо барабана (бледный повтор)", 0, 100)
         self._slider(c, "bands", "Полосы тонера", 0, 100)
         self._slider(c, "smear", "Заедание бумаги", 0, 100)
+        self._slider(c, "gutter", "Корешок книги (тень в сгибе)", 0, 100)
+        self._slider(c, "recopy", "Копия с копии (перекопирование листа)", 0, 100)
         self._entry(c, "stamp", "Штамп (пусто = нет)")
         self._slider(c, "stamp_rot", "Поворот штампа (°)", -45, 45)
 

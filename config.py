@@ -291,6 +291,8 @@ DEFAULT_STATE = {
     "ghost": 0,
     "bands": 0,
     "smear": 0,
+    "gutter": 0,
+    "recopy": 0,
     "stamp": "",
     "stamp_rot": -12,
     "layers": [],

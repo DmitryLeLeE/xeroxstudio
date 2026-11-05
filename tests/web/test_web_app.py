@@ -704,3 +704,45 @@ def test_layers_mode_keeps_cropped_photo(page_factory, tmp_path):
     ink = pg.evaluate("(() => { const c = document.querySelector('#preview'); const d = c.getContext('2d').getImageData(0, 0, c.width, c.height).data; let n = 0; for (let i = 0; i < d.length; i += 16) if (d[i] < 110) n++; return n; })()")
     assert n >= 2 and ink > 3000, (n, ink)
     assert pg.errors == []
+
+
+def test_beginner_guide_opens_walks_and_runs_actions(page_factory):
+    pg = page_factory(width=1440, height=860, lang="ru")
+    wait_ready(pg)
+    pg.click("#btnHelp")
+    pg.click("#helpGuide")
+    pg.wait_for_selector("#dlgGuide[open]")
+    assert pg.evaluate("document.querySelectorAll('#guideBody .gdot').length") == 6
+    for _ in range(5):
+        pg.click("#guideBody .row .btn:last-child")
+    assert "Распечатай" in pg.inner_text("#guideBody h4")
+    pg.click("#guideBody .row .btn:last-child")  # «Готово»
+    assert pg.evaluate("document.querySelector('#dlgGuide').open") is False
+    pg.keyboard.press("F1")
+    pg.click("#helpGuide")
+    pg.click("#guideBody .gdot:nth-child(5)")
+    pg.click("#guideBody .btn.primary")  # «Включить слои»
+    assert pg.evaluate("document.querySelector('#btnLayersMode').getAttribute('aria-pressed')") == "true"
+    assert pg.errors == []
+
+
+def test_guide_page_is_static_crawlable_and_valid(page_factory):
+    pg = page_factory(path="/guide/", width=1000, height=800)
+    pg.wait_for_selector("h1")
+    assert pg.errors == []
+    assert pg.evaluate("document.querySelectorAll('.guide-steps li').length") == 12
+    ld = json.loads(pg.evaluate("document.querySelector('script[type=\"application/ld+json\"]').textContent"))
+    assert ld["@type"] == "HowTo" and len(ld["step"]) == 6
+    assert pg.evaluate("document.querySelector('link[rel=canonical]').href").endswith("/guide/")
+
+
+def test_gutter_and_recopy_change_the_render(page_factory):
+    pg = page_factory(width=1440, height=860)
+    wait_ready(pg)
+    base = pg.evaluate("window.__zine.page().gutter === 0 && window.__zine.page().recopy === 0")
+    assert base is True
+    for key in ("gutter", "recopy"):
+        pg.evaluate("(k) => { const z = window.__zine; z.page()[k] = 90; z.requestRender(); }", key)
+        pg.wait_for_timeout(1500)
+        assert pg.evaluate("(k) => window.__zine.page()[k]", key) == 90
+    assert pg.errors == []

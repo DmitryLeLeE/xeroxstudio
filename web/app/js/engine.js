@@ -160,7 +160,8 @@ function applyStain(c, w, h, rng, cx, cy, r, grease, power) {
 /** Механика копира: эхо барабана, полосы тонера, заедание бумаги (аналог add_mechanism в engine.py). */
 function addMechanism(canvas, st, seed, s) {
   const ghost = Number(st.ghost) || 0, bands = Number(st.bands) || 0, smear = Number(st.smear) || 0;
-  if (!(ghost > 0 || bands > 0 || smear > 0)) return;
+  const gutter = Number(st.gutter) || 0, recopy = Number(st.recopy) || 0;
+  if (!(ghost > 0 || bands > 0 || smear > 0 || gutter > 0 || recopy > 0)) return;
   const w = canvas.width, h = canvas.height, c = ctx2d(canvas);
   if (smear > 0) { // бумага заела: одна строка тянется вниз полосой
     const y0 = Math.floor((0.15 + 0.65 * hash01(seed, 97)) * h), hb = Math.max(3, Math.floor((0.02 + 0.07 * smear / 100) * h));
@@ -180,6 +181,32 @@ function addMechanism(canvas, st, seed, s) {
       const a = (bands / 100) * 0.2 * (0.5 + 0.5 * Math.sin((2 * Math.PI * y) / P + phase));
       if (a > 0.004) { c.fillStyle = `rgba(0,0,0,${a.toFixed(4)})`; c.fillRect(0, y, w, 1); }
     }
+  }
+  if (gutter > 0) { // тёмный корешок по центру, как при копировании разворота книги
+    const sig = w * (0.02 + 0.05 * gutter / 100);
+    for (let x = 0; x < w; x++) {
+      const a = 0.9 * gutter / 100 * Math.exp(-(((x - w * 0.5) / sig) ** 2));
+      if (a > 0.004) { c.fillStyle = `rgba(0,0,0,${a.toFixed(4)})`; c.fillRect(x, 0, 1, h); }
+    }
+  }
+  if (recopy > 0) { // лист пересняли несколько раз: каждый проход мутнее, контрастнее и теряет тонер
+    const passes = 1 + Math.floor(recopy / 35), kc = 1.10 + 0.14 * recopy / 100, id = c.getImageData(0, 0, w, h), d = id.data;
+    let a = new Float32Array(w * h * 3), b = new Float32Array(w * h * 3);
+    for (let i = 0, p = 0; i < w * h; i++, p += 4) { a[i * 3] = d[p]; a[i * 3 + 1] = d[p + 1]; a[i * 3 + 2] = d[p + 2]; }
+    for (let n = 0; n < passes; n++) {
+      for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) for (let ch = 0; ch < 3; ch++) {
+        const o = (y * w + x) * 3 + ch, l = (y * w + Math.max(0, x - 1)) * 3 + ch, r = (y * w + Math.min(w - 1, x + 1)) * 3 + ch;
+        b[o] = (a[l] + 2 * a[o] + a[r]) / 4;
+      }
+      for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) for (let ch = 0; ch < 3; ch++) {
+        const o = (y * w + x) * 3 + ch, u = (Math.max(0, y - 1) * w + x) * 3 + ch, dn = (Math.min(h - 1, y + 1) * w + x) * 3 + ch;
+        let v = (b[u] + 2 * b[o] + b[dn]) / 4;
+        v = Math.min(255, Math.max(0, (v - 128) * kc + 128));
+        a[o] = 255 - (255 - v) * 0.97;
+      }
+    }
+    for (let i = 0, p = 0; i < w * h; i++, p += 4) { d[p] = Math.round(a[i * 3]); d[p + 1] = Math.round(a[i * 3 + 1]); d[p + 2] = Math.round(a[i * 3 + 2]); }
+    c.putImageData(id, 0, 0);
   }
 }
 

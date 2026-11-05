@@ -591,3 +591,15 @@ html[data-theme="robot"] .top .btn { border-color: #1d5a1d; color: var(--fg); ba
 html[data-theme="robot"] .top .btn:hover { border-color: #00ff6a; color: #00ff6a; }
 html[data-theme="robot"] .top .btn.pink { border-color: #00ff6a; background: #00ff6a; color: #000; }
 html[data-theme="robot"] .brand em { background: #00ff6a; color: #000; border-radius: 0; }
+
+/* гайд для новичков */
+.gd-body { display: grid; gap: 12px; }
+.gd-body h4 { margin: 0; font-size: 18px; color: var(--fg); letter-spacing: 0; } .gd-body p { margin: 0; line-height: 1.5; }
+.gd-dots { display: flex; gap: 6px; }
+.gdot { width: 22px; height: 8px; padding: 0; border: 0; border-radius: 0; background: var(--line); cursor: pointer; min-height: 0; }
+.gdot[aria-current="true"] { background: var(--accent); }
+#dlgGuide .btn { min-height: 40px; }
+html[data-theme="usa"] .rail .rail-all { background: #0b1030 !important; color: #ffd21f !important; }
+html[data-theme="usa"] .rail .rail-all[aria-pressed="true"] { background: #e8222d !important; color: #fff !important; }
+html[data-theme="usa"] .hud-scale, html[data-theme="usa"] .hud-scale * { color: #fff; }
+html[data-theme="usa"] .hud-scale select { color: var(--fg); }

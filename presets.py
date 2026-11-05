@@ -13,7 +13,7 @@ import config
 
 STYLE_KEYS = (
     "layout", "rows", "tilt", "fit_mode", "bright", "edge_x", "edge_y", "loss",
-    "dither", "dot_size", "angle", "contrast", "noise", "streaks", "misreg", "copier_edge", "paper", "overprint", "ink2", "overprint3", "ink3", "overprint4", "ink4", "tape", "fold", "holes", "stains", "dust", "ghost", "bands", "smear",
+    "dither", "dot_size", "angle", "contrast", "noise", "streaks", "misreg", "copier_edge", "paper", "overprint", "ink2", "overprint3", "ink3", "overprint4", "ink4", "tape", "fold", "holes", "stains", "dust", "ghost", "bands", "smear", "gutter", "recopy",
     "palette", "invert", "custom_colors",
     "font", "font_size", "tstyle", "text_align", "txt_x", "txt_y1", "txt_y2", "text_rot",
 )
@@ -148,6 +148,16 @@ BUILTIN = {
         "layout": "staggered", "rows": 4, "palette": "Classic B&W (Xerox)", "dither": "halftone",
         "dot_size": 7, "contrast": 2.5, "noise": 30, "streaks": 35, "misreg": 3, "loss": 60, "tilt": 1.5, "copier_edge": 45,
         "paper": 45, "fold": 40, "smear": 65, "ghost": 30, "bands": 25,
+    },
+    "Копия с книги": {
+        "layout": "full_page", "rows": 1, "palette": "Classic B&W (Xerox)", "dither": "halftone",
+        "dot_size": 6, "contrast": 2.6, "noise": 28, "streaks": 20, "misreg": 2, "loss": 25, "tilt": -1.2, "copier_edge": 55,
+        "paper": 40, "gutter": 80, "bands": 15, "dust": 30,
+    },
+    "Копия с копии с копии": {
+        "layout": "staggered", "rows": 4, "palette": "Classic B&W (Xerox)", "dither": "halftone",
+        "dot_size": 8, "contrast": 2.2, "noise": 35, "streaks": 40, "misreg": 4, "loss": 70, "copier_edge": 30,
+        "paper": 50, "recopy": 85, "ghost": 20, "dust": 25,
     },
     "Эхо барабана": {
         "layout": "duo", "rows": 2, "palette": "Vintage Newsprint (Cream / Charcoal)", "dither": "halftone",

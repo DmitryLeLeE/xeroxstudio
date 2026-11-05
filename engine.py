@@ -604,7 +604,8 @@ class ZineGraphicEngine:
     def add_mechanism(img, st, seed, s=1.0):
         """Механика копира: заедание бумаги, эхо барабана, полосы тонера. Те же формулы, что addMechanism в engine.js."""
         ghost, bands, smear = float(st.get("ghost", 0) or 0), float(st.get("bands", 0) or 0), float(st.get("smear", 0) or 0)
-        if not (ghost > 0 or bands > 0 or smear > 0):
+        gutter, recopy = float(st.get("gutter", 0) or 0), float(st.get("recopy", 0) or 0)
+        if not (ghost > 0 or bands > 0 or smear > 0 or gutter > 0 or recopy > 0):
             return img
         arr = np.asarray(img.convert("RGB"), dtype=np.float32).copy()
         h, w = arr.shape[:2]
@@ -625,6 +626,21 @@ class ZineGraphicEngine:
             y = np.arange(h, dtype=np.float32)
             a = (bands / 100.0) * 0.2 * (0.5 + 0.5 * np.sin(2 * math.pi * y / P + phase))
             arr = arr * (1.0 - a)[:, None, None]
+        if gutter > 0:  # тёмный корешок по центру, как при копировании разворота книги
+            x = np.arange(w, dtype=np.float32)
+            sig = w * (0.02 + 0.05 * gutter / 100.0)
+            a = 0.9 * gutter / 100.0 * np.exp(-(((x - w * 0.5) / sig) ** 2))
+            arr = arr * (1.0 - a)[None, :, None]
+        if recopy > 0:  # лист пересняли несколько раз: каждый проход мутнее, контрастнее и теряет тонер
+            passes = 1 + int(recopy // 35)
+            kc = 1.10 + 0.14 * recopy / 100.0
+            for _ in range(passes):
+                p = np.pad(arr, ((0, 0), (1, 1), (0, 0)), mode="edge")
+                arr = (p[:, :-2] + 2 * p[:, 1:-1] + p[:, 2:]) / 4.0
+                p = np.pad(arr, ((1, 1), (0, 0), (0, 0)), mode="edge")
+                arr = (p[:-2] + 2 * p[1:-1] + p[2:]) / 4.0
+                arr = np.clip((arr - 128.0) * kc + 128.0, 0, 255)
+                arr = 255.0 - (255.0 - arr) * 0.97
         return Image.fromarray(np.clip(arr + 0.5, 0, 255).astype(np.uint8), "RGB")
 
     @staticmethod
