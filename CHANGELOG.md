@@ -1,5 +1,8 @@
 # Changelog
 
+## 2.2.2
+- **Phones: scrolling no longer moves sliders.** On touch screens a slider only moves when you grab its handle; touching anywhere else on the track scrolls the panel.
+
 ## 2.2.1
 - Fixed the style gallery (browser) that lost its styling in 2.1.0: tiles, tabs and grid look right again.
 

@@ -325,7 +325,17 @@ function buildControl(it) {
     inp.addEventListener("dblclick", () => { // двойной клик возвращает значение по умолчанию
       flushCommit(); page()[it.k] = DEF[it.k]; syncUI(); commit(); requestRender();
     });
-    wrap.append(inp);
+    if (matchMedia("(pointer: coarse)").matches) { // сенсорный экран: ползунок двигается только если взяться за бегунок, иначе палец листает панель
+      const box = document.createElement("div"); box.className = "rng-touch"; box.append(inp); wrap.append(box);
+      let grab = null;
+      const valAt = (x) => { const r = inp.getBoundingClientRect(), f = clamp((x - r.left - 14) / Math.max(1, r.width - 28), 0, 1), st = Number(it.step) || 1; return clamp(Math.round((Number(it.min) + f * (it.max - it.min)) / st) * st, it.min, it.max); };
+      const thumbX = () => { const r = inp.getBoundingClientRect(), f = (inp.value - it.min) / (it.max - it.min); return r.left + 14 + f * (r.width - 28); };
+      box.addEventListener("pointerdown", (e) => { if (Math.abs(e.clientX - thumbX()) <= 30) { grab = e.pointerId; box.setPointerCapture(e.pointerId); } });
+      box.addEventListener("pointermove", (e) => { if (grab !== e.pointerId) return; inp.value = valAt(e.clientX); inp.dispatchEvent(new Event("input")); });
+      const end = (e) => { if (grab !== e.pointerId) return; grab = null; inp.dispatchEvent(new Event("change")); };
+      box.addEventListener("pointerup", end); box.addEventListener("pointercancel", end);
+      box.addEventListener("dblclick", () => inp.dispatchEvent(new Event("dblclick")));
+    } else wrap.append(inp);
     ctlEls[it.k] = { el: inp, out, dec };
   } else if (it.t === "check") {
     wrap.innerHTML = `<label class="chk"><input type="checkbox" id="${id}"><span>${it.label}</span></label>`;

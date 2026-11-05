@@ -440,3 +440,7 @@ html:not([data-theme="paper"]) .top { background: #000; }
 .gal-tile:nth-child(odd) { transform: rotate(-.7deg); } .gal-tile:nth-child(even) { transform: rotate(.6deg); }
 .gal-tile:hover, .gal-tile:focus-visible { transform: translate(-1px,-3px) rotate(0); box-shadow: 5px 6px 0 var(--accent); border-color: var(--accent); }
 .gal-tile canvas { width: 100%; height: auto; display: block; background: #ddd; border: 1px solid #0003; }
+
+/* сенсорные экраны: бегунок берётся пальцем только за сам бегунок, остальное — прокрутка панели */
+.rng-touch { touch-action: pan-y; padding: 6px 0; margin: -6px 0; }
+.rng-touch input[type=range] { pointer-events: none; touch-action: pan-y; }
