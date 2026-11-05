@@ -33,9 +33,11 @@ class Rng {
 
 // ---------------------------------------------------------------- канвасы
 export function makeCanvas(w, h) {
+  const cw = Math.max(1, Math.round(w)), ch = Math.max(1, Math.round(h));
+  if (typeof document === "undefined") return new OffscreenCanvas(cw, ch); // внутри воркера
   const c = document.createElement("canvas");
-  c.width = Math.max(1, Math.round(w));
-  c.height = Math.max(1, Math.round(h));
+  c.width = cw;
+  c.height = ch;
   return c;
 }
 const ctx2d = (c) => c.getContext("2d", { willReadFrequently: true });
@@ -636,11 +638,12 @@ function fontSpec(name, size) {
 }
 
 export async function ensureFonts(state, text) {
-  if (!document.fonts || !document.fonts.load) return;
+  const fonts = typeof document !== "undefined" ? document.fonts : self.fonts;
+  if (!fonts || !fonts.load) return;
   const st = mergeState(state);
   const sample = (text || `${st.txt_top} ${st.txt_bottom}`) + " ABCabc012";
-  const jobs = [document.fonts.load(fontSpec(st.font, 40), sample)];
-  if (st.layout === "contact_sheet") jobs.push(document.fonts.load(fontSpec("Courier New Bold", 15), "0123456789A"));
+  const jobs = [fonts.load(fontSpec(st.font, 40), sample)];
+  if (st.layout === "contact_sheet") jobs.push(fonts.load(fontSpec("Courier New Bold", 15), "0123456789A"));
   await Promise.all(jobs.map((p) => p.catch(() => null)));
 }
 

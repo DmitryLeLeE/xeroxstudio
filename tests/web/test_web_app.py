@@ -348,3 +348,37 @@ def test_history_panel_folder_and_story_video(page_factory, tmp_path):
     data = open(dl.value.path(), "rb").read()
     assert len(data) > 5000 and (data[:4] == b"\x1aE\xdf\xa3" or data[4:8] == b"ftyp")
     assert pg.errors == []
+
+
+_PARITY_JS = """async (scale) => {
+  const { E, RC } = window.__zine;
+  const st = { ...E.mergeState({}), txt_top: 'TEST', overprint: 60, paper: 50, dust: 40 };
+  const c = document.createElement('canvas'); c.width = 320; c.height = 320;
+  const x = c.getContext('2d'); const g = x.createLinearGradient(0, 0, 320, 320);
+  g.addColorStop(0, '#222'); g.addColorStop(1, '#eee'); x.fillStyle = g; x.fillRect(0, 0, 320, 320);
+  x.fillStyle = '#888'; x.beginPath(); x.arc(150, 150, 70, 0, 7); x.fill();
+  const src = { canvas: c };
+  const a = await RC.renderPage(src, st, { scale });
+  const b = await E.renderPage(src, st, { scale });
+  let bd = 0; for (let i = 0; i < a.bits.length; i++) if (a.bits[i] !== b.bits[i]) bd++;
+  return { mode: RC.renderMode(), same: a.width === b.width && a.height === b.height,
+           frac: bd / a.bits.length, isCanvas: a.canvas instanceof HTMLCanvasElement };
+}"""
+
+
+def test_worker_render_matches_main_thread(page_factory):
+    pg = page_factory()
+    wait_ready(pg)
+    r = pg.evaluate(_PARITY_JS, 1)
+    assert r["same"] and r["isCanvas"]
+    if r["mode"] == "worker":      # в браузерах без OffscreenCanvas остаётся запасной путь
+        assert r["frac"] < 0.01
+    assert pg.errors == []
+
+
+def test_noworker_flag_falls_back_to_main_thread(page_factory):
+    pg = page_factory(path="/app/?noworker")
+    wait_ready(pg)
+    r = pg.evaluate(_PARITY_JS, 1)
+    assert r["mode"] == "main" and r["same"] and r["frac"] == 0
+    assert pg.errors == []

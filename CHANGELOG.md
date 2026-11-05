@@ -1,5 +1,8 @@
 # Changelog
 
+## 1.4.1
+- **Browser: page rendering moved to a Web Worker.** Big renders (export, ink separations, booklet) no longer freeze the interface; the preview stays responsive while a 3x sheet is being built. The result is identical to the old main-thread path (checked pixel by pixel). Browsers without OffscreenCanvas fall back to the old path automatically; `?noworker` forces it.
+
 ## 1.4.0
 - **Free layers** (both versions): any number of text blocks and stickers on a page, each with its own position, size, rotation, colour and order. In the browser you drag them on the sheet; the desktop app has a layer list with sliders. 16 vector stickers (star, burst, arrow, smiley, eye, bolt, heart, scissors, cross, spiral, scribble ring, barcode, flower, bubble, target, asterisk).
 - **Three and four inks** (both versions): a third ink for midtones and a fourth for highlights, each with its own screen angle and misregistration. Ink separations export all plates.
@@ -8,7 +11,6 @@
 - **Story video** (browser): a 9:16 clip of the sheet coming out of the copier, with the copier sound if it is on.
 - **Five bundled fonts:** Rubik Mono One, Press Start 2P, Marck Script (with Cyrillic), Special Elite and Permanent Marker (Latin only).
 - **Desktop:** saddle-stitch booklet (A4 / Letter) and printer calibration sheet, Remix locks, new wear effects.
-- Not done yet: rendering in a Web Worker.
 
 ## 1.3.0
 - **Five new screens** (both versions): lines, cross-hatch, stipple, mezzotint, Bayer. Python and JS give the same plate (tested).

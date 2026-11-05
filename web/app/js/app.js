@@ -1,6 +1,7 @@
 // Xerox Zine Studio — веб-версия. Всё работает в браузере, фото никуда не отправляются.
 import { CFG } from "./config.js";
 import * as E from "./engine.js";
+import * as RC from "./render-client.js";
 import * as IO from "./io.js";
 import { initFaces } from "./faces.js";
 import {
@@ -528,7 +529,7 @@ async function pump() {
       const draft = R.draft; R.draft = false;
       const st = clone(page()), idx = S.cur;
       try {
-        const res = await E.renderPage(srcFor(st), st, { scale: previewScale(draft) });
+        const res = await RC.renderPage(srcFor(st), st, { scale: previewScale(draft) });
         if (idx === S.cur) {
           if (preview.width !== res.width || preview.height !== res.height) { preview.width = res.width; preview.height = res.height; }
           pctx.drawImage(res.canvas, 0, 0);
@@ -573,7 +574,7 @@ async function pumpThumbs() {
         if (thumbCache.has(sig)) continue;
         if (R.running) { T_.again = true; break; } // главное превью важнее
         try {
-          const r = await E.renderPage(srcFor(st), st, { scale: THUMB_SCALE });
+          const r = await RC.renderPage(srcFor(st), st, { scale: THUMB_SCALE });
           setThumb(sig, r.canvas); paintThumbs();
         } catch (e) { console.warn("миниатюра", e); thumbCache.set(sig, document.createElement("canvas")); }
         await sleep(15);
@@ -1285,7 +1286,7 @@ scaleSel.value = ls.get("zine.scale", "2");
 scaleSel.addEventListener("change", () => ls.set("zine.scale", scaleSel.value));
 const exportScale = () => Number(scaleSel.value) || 2;
 const pageName = (i, n = S.pages.length) => `${S.name || "zine"}_page_${pad(i + 1, Math.max(2, String(n).length))}`;
-const render = (i, opts) => E.renderPage(srcFor(S.pages[i]), S.pages[i], opts);
+const render = (i, opts) => RC.renderPage(srcFor(S.pages[i]), S.pages[i], opts);
 const pngU8 = async (canvas) => IO.pngSetDpi(await IO.blobToU8(await IO.canvasToBlob(canvas)), 300);
 const memHint = (e) => (/memory|alloc|canvas/i.test(String(e && e.message)) ? T(" Не хватило памяти — попробуйте масштаб поменьше.", " Out of memory — try a lower scale.") : "");
 
@@ -1699,7 +1700,7 @@ async function exportMiniZine() {
     const rendered = [];
     for (let i = 0; i < 8; i++) {
       await progress(T(`Рендеринг страницы ${i + 1} из 8…`, `Rendering page ${i + 1} of 8…`), i / 9);
-      rendered.push((await E.renderPage(srcFor(items[i]), items[i], { outSize: [cw, rh] })).canvas);
+      rendered.push((await RC.renderPage(srcFor(items[i]), items[i], { outSize: [cw, rh] })).canvas);
     }
     // классическая раскладка: верхний ряд перевёрнут 5-4-3-2, нижний 6-7-8-1
     [4, 3, 2, 1].forEach((idx, col) => {
@@ -1918,6 +1919,7 @@ async function loadSample() {
 }
 
 async function init() {
+  RC.warmUp();
   applyStaticLang();
   $("#btnLang").textContent = LANG === "ru" ? "EN" : "RU";
   S.pages = [freshPage()];
@@ -1937,7 +1939,7 @@ async function init() {
       });
     }).catch(() => {});
   }
-  window.__zine = { S, E, IO, page, requestRender, commit, undo, redo, gotoPage, addPage, exportPng, remix }; // для автотестов
+  window.__zine = { S, E, RC, IO, page, requestRender, commit, undo, redo, gotoPage, addPage, exportPng, remix }; // для автотестов
   window.__ready = true;
 }
 init();
