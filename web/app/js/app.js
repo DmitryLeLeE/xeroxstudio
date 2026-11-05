@@ -684,7 +684,7 @@ vp.addEventListener("wheel", (e) => {
   const r = vp.getBoundingClientRect();
   zoomAt(Math.exp(-e.deltaY * (e.ctrlKey ? 0.01 : 0.0016)), e.clientX - r.left, e.clientY - r.top);
 }, { passive: false });
-vp.addEventListener("dblclick", () => { if (!textMode) V.fitted ? zoom100() : fitView(); });
+vp.addEventListener("dblclick", (e) => { if (!textMode && hitLayer(e.clientX, e.clientY) < 0) V.fitted ? zoom100() : fitView(); });
 
 let textMode = false;
 function setTextMode(on) {
@@ -740,6 +740,7 @@ function addLayer(proto) {
   L.push({ type: "text", text: "", sticker: "star", x: 0.5, y: 0.5, size: 0.2, rot: 0, color: "ink", style: "box", font: "Arial Black", ...proto });
   LY.sel = L.length - 1;
   commit(); requestRender(); refreshLayersUI();
+  if (proto && proto.type === "text" && innerWidth > 860) revealLayerText();
 }
 function layerName(ly, i) {
   const base = ly.type === "sticker" ? `${lbl("", "")}${(CFG.STICKERS[ly.sticker] || {})[LANG === "ru" ? "ru" : "en"] || ly.sticker}` : `“${String(ly.text || "").split("\n")[0].slice(0, 22) || T("пусто", "empty")}”`;
@@ -808,6 +809,14 @@ function refreshLayersUI() {
   }
   updateLayerSel();
 }
+// Открывает правку текста выбранного слоя: на ПК фокус в поле, на телефоне переходит на вкладку со стилем.
+function revealLayerText() {
+  const ly = layersOf()[LY.sel]; if (!ly || ly.type !== "text") return;
+  if (innerWidth <= 860) { app.dataset.tab = "style"; syncTabbar(); }
+  const det = $("#layersBox").closest("details"); if (det) det.open = true;
+  const ta = $("#layersBox textarea"); if (!ta) return;
+  ta.scrollIntoView({ block: "nearest" }); ta.focus(); ta.select();
+}
 function touchLayers() { resetPresetLabel(); commit(); requestRender(); refreshLayersUI(); }
 function openStickers() {
   const grid = $("#stickerGrid");
@@ -839,6 +848,7 @@ vp.addEventListener("pointermove", (e) => {
   ly.x = clamp((e.clientX - r.left) / r.width + layerDrag.ox, 0, 1); ly.y = clamp((e.clientY - r.top) / r.height + layerDrag.oy, 0, 1);
   layerDrag.moved = true; resetPresetLabel(); requestRender({ draft: true }); updateLayerSel();
 }, true);
+vp.addEventListener("dblclick", (e) => { const i = hitLayer(e.clientX, e.clientY); if (i >= 0) { LY.sel = i; refreshLayersUI(); revealLayerText(); } });
 const endLayerDrag = () => { if (layerDrag) { if (layerDrag.moved) { commit(); requestRender(); } layerDrag = null; } };
 vp.addEventListener("pointerup", endLayerDrag, true);
 vp.addEventListener("pointercancel", endLayerDrag, true);
@@ -1839,6 +1849,16 @@ document.addEventListener("keydown", (e) => {
   if (e.altKey && key === "n") { e.preventDefault(); addPage(); return; }
   if (e.altKey && key === "d") { e.preventDefault(); duplicatePage(); return; }
   if (mod || e.altKey) return;
+  const Ls = layersOf(), sel = Ls[LY.sel];
+  if (sel && /^(Delete|Backspace)$/.test(e.key)) { e.preventDefault(); flushCommit(); Ls.splice(LY.sel, 1); LY.sel = Ls.length - 1; touchLayers(); return; }
+  if (sel && e.key === "Escape") { LY.sel = -1; refreshLayersUI(); return; }
+  if (sel && /^Arrow(Left|Right|Up|Down)$/.test(e.key) && document.activeElement && !/^(select|button)$/i.test(document.activeElement.tagName)) {
+    e.preventDefault();
+    const d = e.shiftKey ? 0.02 : 0.004;
+    sel.x = clamp(sel.x + (e.key === "ArrowRight" ? d : e.key === "ArrowLeft" ? -d : 0), 0, 1);
+    sel.y = clamp(sel.y + (e.key === "ArrowDown" ? d : e.key === "ArrowUp" ? -d : 0), 0, 1);
+    resetPresetLabel(); requestRender({ draft: true }); updateLayerSel(); commitSoon(); return;
+  }
   if (e.key === "[") gotoPage(S.cur - 1);
   else if (e.key === "]") gotoPage(S.cur + 1);
   else if (e.key === "0") fitView();
@@ -1898,6 +1918,8 @@ $("#pgDel").addEventListener("click", deletePage);
 $("#btnLang").addEventListener("click", () => { setLang(LANG === "ru" ? "en" : "ru"); location.reload(); });
 $("#srcWrap").addEventListener("click", (e) => { if (!srcFor(page()) && e.target.closest("#srcWrap")) $("#fileImg").click(); });
 
+$("#btnAddText").addEventListener("click", () => addLayer({ type: "text", text: T("НОВАЯ НАДПИСЬ", "NEW TEXT") }));
+$("#btnAddSticker").addEventListener("click", openStickers);
 const app = $("#app");
 app.dataset.tab = innerWidth <= 860 ? "view" : "style"; // на телефоне сначала большой лист
 $$("#tabbar button").forEach((b) => b.addEventListener("click", () => {

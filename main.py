@@ -3,6 +3,7 @@ Main: точка входа, фоновый рендер и диспетчер �
 """
 
 import copy
+import math
 import logging
 import os
 import queue
@@ -485,7 +486,7 @@ class XeroxZineStudioApp:
         self.layer_list = tk.Listbox(c, height=5, bg=FIELD, fg=FG, selectbackground=ACCENT, activestyle="none", relief="flat",
                                      highlightthickness=1, highlightbackground=LINE, exportselection=False, font=FONT)
         self.layer_list.pack(fill=tk.X, pady=(0, 3))
-        self.layer_list.bind("<<ListboxSelect>>", lambda e: self._load_layer_controls())
+        self.layer_list.bind("<<ListboxSelect>>", lambda e: (self._load_layer_controls(), self._update_layer_frame()))
         rowl = tk.Frame(c, bg=PANEL2)
         rowl.pack(fill=tk.X)
         make_button(rowl, "＋ Надпись", self._add_text_layer).pack(side=tk.LEFT, padx=(0, 3))
@@ -544,6 +545,9 @@ class XeroxZineStudioApp:
         self.viewport = InteractivePanZoomCanvas(col)
         self.viewport.pack(fill=tk.BOTH, expand=True, padx=4, pady=2)
         self.viewport.on_text_click_relocate = self._on_canvas_text_relocate
+        self.viewport.layer_hit = self._layer_hit
+        self.viewport.on_layer_press = self._layer_press
+        self.viewport.on_layer_move = self._layer_move
         self.viewport.on_transform_changed = lambda z: self.zoom_lbl.config(text=f"{z * 100:.0f}%")
         self.toast = ToastNotification(self.viewport)
 
@@ -696,6 +700,56 @@ class XeroxZineStudioApp:
             lb.selection_clear(0, tk.END)
             lb.selection_set(idx)
         self._load_layer_controls()
+        self._update_layer_frame()
+
+    # --- слои мышью: выбрать и перетащить прямо на листе
+    def _layer_box(self, ly, W, H):
+        """Примерная рамка слоя в долях листа: (cx, cy, w, h). Угол поворота учитывается по габаритам."""
+        size = max(0.02, float(ly.get("size", 0.2)))
+        if ly.get("type") == "sticker":
+            bw, bh = size * W, size * W
+        else:
+            lines = str(ly.get("text", "")).strip().splitlines() or [""]
+            fpx = max(8, size * W * 0.5)
+            bw = max(len(x) for x in lines) * fpx * 0.62 + fpx * 0.6
+            bh = len(lines) * fpx * 1.15 + fpx * 0.6
+        rot = math.radians(float(ly.get("rot", 0)))
+        ew = abs(bw * math.cos(rot)) + abs(bh * math.sin(rot))
+        eh = abs(bw * math.sin(rot)) + abs(bh * math.cos(rot))
+        return float(ly.get("x", 0.5)), float(ly.get("y", 0.5)), ew / W, eh / H
+
+    def _layer_hit(self, fx, fy):
+        img = self.viewport.current_image
+        if img is None or not self.layers:
+            return None
+        for i in range(len(self.layers) - 1, -1, -1):  # верхний слой первым
+            cx, cy, bw, bh = self._layer_box(self.layers[i], img.width, img.height)
+            if abs(fx - cx) <= bw / 2 and abs(fy - cy) <= bh / 2:
+                return i
+        return None
+
+    def _layer_press(self, idx):
+        self.layer_list.selection_clear(0, tk.END)
+        self.layer_list.selection_set(idx)
+        self.layer_list.see(idx)
+        self._load_layer_controls()
+        self._update_layer_frame()
+        ly = self.layers[idx]
+        return float(ly.get("x", 0.5)), float(ly.get("y", 0.5))
+
+    def _layer_move(self, idx, nx, ny):
+        ly = self.layers[idx]
+        ly["x"], ly["y"] = round(nx, 4), round(ny, 4)
+        self._load_layer_controls()
+        self._update_layer_frame()
+        self.preset_var.set(PRESET_HINT)
+        self.schedule_render()
+
+    def _update_layer_frame(self):
+        img = self.viewport.current_image
+        ly = self._sel_layer() if getattr(self, "layer_list", None) is not None else None
+        self.viewport.layer_frame = self._layer_box(ly, img.width, img.height) if (ly and img is not None) else None
+        self.viewport.redraw()
 
     def _sel_layer(self):
         sel = self.layer_list.curselection()
@@ -939,6 +993,7 @@ class XeroxZineStudioApp:
     def _on_rendered(self, poster, stencil, secs):
         self.final_poster, self.stencil_1bit = poster, stencil
         self.viewport.set_image(poster, keep_view=True)
+        self._update_layer_frame()
         self._set_thumb(self.cur_page_idx, poster)
         self.status_var.set(f"стр. {self.cur_page_idx + 1}/{len(self.pages)}  ·  {poster.width}×{poster.height} px  ·  рендер {secs:.2f} с")
 

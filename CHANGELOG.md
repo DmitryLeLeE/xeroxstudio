@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.6.0
+- **Layers are easier to reach.** Browser: two buttons above the sheet (＋Aa, ＋✦) add a text or a sticker straight away; a new text is selected for typing right away; double-click a text on the sheet to edit it; Delete removes the selected layer, arrow keys nudge it (Shift = bigger step), Esc deselects.
+- **Desktop: drag layers with the mouse** right on the preview, with a dashed frame around the selected layer and a "move" cursor over layers. Click outside a layer still pans the sheet.
+
 ## 1.5.1
 - Fix: with several render workers, two renders of the same photo started together could fail with "source missing". Use this build instead of 1.5.0.
 

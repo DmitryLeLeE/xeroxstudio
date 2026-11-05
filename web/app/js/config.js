@@ -1,6 +1,6 @@
 // Сгенерировано из config.py и presets.py (tools/gen_config_js.py). Не править вручную.
 export const CFG = {
- "APP_VERSION": "1.5.1",
+ "APP_VERSION": "1.6.0",
  "CANVAS_FORMATS": {
   "2:3 Постер (1000×1500)": [
    1000,

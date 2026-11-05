@@ -399,3 +399,27 @@ def test_worker_pool_renders_in_parallel_and_matches(page_factory):
         assert r["pool"] >= 1 and r["frac"] < 0.01
     assert r["sizes"] == [r["sizes"][0]] * 4
     assert pg.errors == []
+
+
+def test_layer_quick_add_buttons_and_keyboard(page_factory):
+    pg = page_factory()
+    wait_ready(pg)
+    n = lambda: pg.evaluate("document.querySelectorAll('.layers-list button').length")
+    pg.click("#btnAddText")
+    assert n() == 1
+    assert pg.evaluate("document.activeElement && document.activeElement.tagName") == "TEXTAREA"  # сразу можно печатать
+    pg.keyboard.type("hi")
+    pg.click("#viewport", position={"x": 5, "y": 5})  # убрать фокус из поля
+    pg.evaluate("document.activeElement.blur()")
+    x0 = pg.evaluate("window.__zine.page().layers[0].x")
+    pg.keyboard.press("ArrowRight"); pg.keyboard.press("Shift+ArrowRight")
+    assert pg.evaluate("window.__zine.page().layers[0].x") > x0 + 0.02
+    pg.click("#btnAddSticker")
+    pg.wait_for_selector("#dlgStickers[open]")
+    pg.click("#stickerGrid button >> nth=1")
+    assert n() == 2
+    pg.keyboard.press("Delete")
+    assert n() == 1
+    pg.keyboard.press("Escape")
+    assert pg.evaluate("document.querySelectorAll('.layers-list button[aria-pressed=true]').length") == 0
+    assert pg.errors == []

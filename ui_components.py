@@ -109,7 +109,7 @@ def enable_mousewheel_scroll(widget, canvas_target):
 
 # ---------------------------------------------------------------- холст предпросмотра
 class InteractivePanZoomCanvas(tk.Canvas):
-    """Предпросмотр: ЛКМ - двигать, колесо - зум, Shift+ЛКМ - поставить подпись."""
+    """Предпросмотр: ЛКМ - двигать лист (или слой под курсором), колесо - зум, Shift+ЛКМ - поставить подпись."""
 
     MIN_ZOOM, MAX_ZOOM = 0.05, 12.0
 
@@ -127,6 +127,12 @@ class InteractivePanZoomCanvas(tk.Canvas):
 
         self.on_transform_changed = None
         self.on_text_click_relocate = None
+        # свободные слои: попадание курсора, перенос, рамка выбранного (доли листа: cx, cy, w, h)
+        self.layer_hit = None
+        self.on_layer_press = None
+        self.on_layer_move = None
+        self.layer_frame = None
+        self._layer_drag = None
 
         self.bind("<ButtonPress-2>", self._start_pan)
         self.bind("<B2-Motion>", self._drag_pan)
@@ -177,8 +183,20 @@ class InteractivePanZoomCanvas(tk.Canvas):
         else:
             self.redraw()
 
+    def _frac(self, event):
+        rw = self.current_image.width * self.zoom_scale
+        rh = self.current_image.height * self.zoom_scale
+        return (event.x - self.pan_x) / max(1.0, rw), (event.y - self.pan_y) / max(1.0, rh)
+
     def _on_motion(self, event):
-        self.config(cursor="crosshair" if event.state & 0x0001 else "arrow")
+        cur = "arrow"
+        if event.state & 0x0001:
+            cur = "crosshair"
+        elif self.layer_hit and self.current_image:
+            fx, fy = self._frac(event)
+            if self.layer_hit(fx, fy) is not None:
+                cur = "fleur"
+        self.config(cursor=cur)
 
     def _start_pan(self, event):
         self.drag_start = (event.x, event.y)
@@ -203,19 +221,33 @@ class InteractivePanZoomCanvas(tk.Canvas):
     def _on_left_press(self, event):
         self.focus_set()
         self._placing = bool(event.state & 0x0001)
+        self._layer_drag = None
         if self._placing:
             self._place_text(event)
-        else:
-            self._start_pan(event)
+            return
+        if self.layer_hit and self.current_image:
+            fx, fy = self._frac(event)
+            idx = self.layer_hit(fx, fy)
+            if idx is not None:
+                cx, cy = self.on_layer_press(idx) if self.on_layer_press else (fx, fy)
+                self._layer_drag = (idx, cx - fx, cy - fy)
+                return
+        self._start_pan(event)
 
     def _on_left_drag(self, event):
         if self._placing:
             self._place_text(event)
+        elif self._layer_drag:
+            idx, dx, dy = self._layer_drag
+            fx, fy = self._frac(event)
+            if self.on_layer_move:
+                self.on_layer_move(idx, min(1.0, max(0.0, fx + dx)), min(1.0, max(0.0, fy + dy)))
         else:
             self._drag_pan(event)
 
     def _on_left_release(self, _event):
         self._placing = False
+        self._layer_drag = None
 
     def _on_wheel(self, event):
         up = getattr(event, "num", 0) == 4 or getattr(event, "delta", 0) > 0
@@ -251,6 +283,14 @@ class InteractivePanZoomCanvas(tk.Canvas):
                 self.pan_x - 1, self.pan_y - 1, self.pan_x + img.width * z, self.pan_y + img.height * z,
                 outline="#2a2a2a",
             )
+        if self.layer_frame and img is not None:
+            fcx, fcy, fw, fh = self.layer_frame
+            z = self.zoom_scale
+            x0 = self.pan_x + (fcx - fw / 2) * img.width * z
+            y0 = self.pan_y + (fcy - fh / 2) * img.height * z
+            x1 = self.pan_x + (fcx + fw / 2) * img.width * z
+            y1 = self.pan_y + (fcy + fh / 2) * img.height * z
+            self.create_rectangle(x0, y0, x1, y1, outline=ACCENT, width=2, dash=(6, 4))
         if self._overlay:
             k = UI_SCALE
             self.create_rectangle(cw / 2 - 190 * k, ch - 92 * k, cw / 2 + 190 * k, ch - 36 * k, fill="#000000", outline=ACCENT)
