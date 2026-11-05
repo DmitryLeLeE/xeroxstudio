@@ -6,7 +6,7 @@ import os
 import sys
 
 APP_NAME = "Xerox Zine Studio"
-APP_VERSION = "2.4.0"
+APP_VERSION = "2.5.0"
 
 
 def resource_path(name):
@@ -116,6 +116,7 @@ LAYOUTS = {
     "Триптих (три полосы)": "triptych",
     "Лента (ряд кадров)": "ribbon",
     "Во весь лист": "full_page",
+    "Свободный лист (всё слоями)": "free",
 }
 LAYOUT_ALIASES = {"reference_columns": "column"}  # старые проекты
 
@@ -214,10 +215,75 @@ DEFAULT_STATE = {
     "holes": 0,
     "stains": 0,
     "dust": 0,
+    "ghost": 0,
+    "bands": 0,
+    "smear": 0,
     "stamp": "",
     "stamp_rot": -12,
     "layers": [],
     "crop": [0.0, 0.0, 1.0, 1.0],
     "seed": 42,
     "img": None,
+}
+
+
+# --- слои: искажение текста, готовые стили надписей и шаблоны свободного листа
+WARPS = {
+    "Без искажения": "none",
+    "Арка": "arch",
+    "Прогиб": "dip",
+    "Волна": "wave",
+    "Раздувание": "bulge",
+    "Наклон": "slant",
+}
+TEXT_DEFAULTS = {"warp": "none", "warp_k": 0.5, "sx": 1.0, "rot": 0}
+# Свойства слоя-надписи, которые накладывает готовый стиль (всё остальное остаётся как было)
+TEXT_PRESETS = {
+    "Панк-плашка": {"style": "box", "font": "Impact", "rot": -3},
+    "Арка-вывеска": {"style": "plain", "font": "Rubik Mono One", "warp": "arch", "warp_k": 0.55},
+    "Кислотная волна": {"style": "tape", "font": "Rubik Wet Paint", "warp": "wave", "warp_k": 0.5, "rot": -2},
+    "Раздутый заголовок": {"style": "plain", "font": "Arial Black", "warp": "bulge", "warp_k": 0.7, "sx": 1.2},
+    "Падающий наклон": {"style": "box", "font": "Impact", "warp": "slant", "warp_k": 0.6, "rot": -4},
+    "Записка из газеты": {"style": "ransom", "font": "Arial Black"},
+    "Лента Dymo": {"style": "tape", "font": "Courier New Bold"},
+    "Машинопись": {"style": "box", "font": "Special Elite"},
+    "Глитч-крик": {"style": "plain", "font": "Rubik Glitch", "warp": "dip", "warp_k": 0.4},
+    "Растянутый плакат": {"style": "tape", "font": "Impact", "sx": 1.9},
+    "Узкий столбик": {"style": "box", "font": "Impact", "sx": 0.55},
+    "Баллончик": {"style": "plain", "font": "Rubik Spray Paint", "warp": "wave", "warp_k": 0.3, "rot": -6},
+}
+# Шаблоны свободного листа. photo=True: фото страницы как слой. Координаты и размер - доли ширины листа.
+LAYER_TEMPLATES = {
+    "Афиша": [
+        {"type": "bitmap", "photo": True, "x": 0.5, "y": 0.42, "size": 0.84, "rot": -2},
+        {"type": "text", "text": "ЖИВОЙ ЗВУК", "text_en": "LIVE NOISE", "preset": "Арка-вывеска", "x": 0.5, "y": 0.1, "size": 0.2},
+        {"type": "text", "text": "ПЯТНИЦА · 23:00 · ПОДВАЛ", "text_en": "FRIDAY · 11PM · BASEMENT", "preset": "Лента Dymo", "x": 0.5, "y": 0.86, "size": 0.12},
+        {"type": "sticker", "sticker": "star", "x": 0.86, "y": 0.72, "size": 0.2, "rot": 14},
+    ],
+    "Обложка зина": [
+        {"type": "bitmap", "photo": True, "x": 0.5, "y": 0.5, "size": 0.74, "rot": 2},
+        {"type": "text", "text": "НЕТ БОГОВ", "text_en": "NO GODS", "preset": "Записка из газеты", "x": 0.5, "y": 0.1, "size": 0.2},
+        {"type": "text", "text": "ВЫПУСК №1", "text_en": "ISSUE #1", "preset": "Панк-плашка", "x": 0.3, "y": 0.92, "size": 0.14},
+    ],
+    "Коллаж-стопка": [
+        {"type": "bitmap", "photo": True, "x": 0.38, "y": 0.3, "size": 0.62, "rot": -6},
+        {"type": "bitmap", "photo": True, "x": 0.62, "y": 0.58, "size": 0.5, "rot": 5},
+        {"type": "bitmap", "photo": True, "x": 0.35, "y": 0.8, "size": 0.36, "rot": -3},
+        {"type": "text", "text": "ВЫРЕЗКИ", "text_en": "CLIPPINGS", "preset": "Кислотная волна", "x": 0.7, "y": 0.1, "size": 0.18},
+    ],
+    "Объявление": [
+        {"type": "text", "text": "ВНИМАНИЕ", "text_en": "ATTENTION", "preset": "Раздутый заголовок", "x": 0.5, "y": 0.12, "size": 0.24},
+        {"type": "bitmap", "photo": True, "x": 0.5, "y": 0.5, "size": 0.6, "rot": 0},
+        {"type": "text", "text": "ЗВОНИТЬ ПОСЛЕ ПОЛУНОЧИ", "text_en": "CALL AFTER MIDNIGHT", "preset": "Машинопись", "x": 0.5, "y": 0.86, "size": 0.1},
+    ],
+    "Манифест": [
+        {"type": "text", "text": "ДЕЛАЙ\nСАМ", "text_en": "DO IT\nYOURSELF", "preset": "Падающий наклон", "x": 0.5, "y": 0.27, "size": 0.25},
+        {"type": "bitmap", "photo": True, "x": 0.66, "y": 0.68, "size": 0.56, "rot": 4},
+        {"type": "text", "text": "КОПИРУЙ", "text_en": "COPY IT", "preset": "Узкий столбик", "x": 0.2, "y": 0.8, "size": 0.18, "rot": -90},
+    ],
+    "Плакат-крик": [
+        {"type": "bitmap", "photo": True, "x": 0.5, "y": 0.55, "size": 0.9, "rot": 0},
+        {"type": "text", "text": "ГРОМЧЕ", "text_en": "LOUDER", "preset": "Растянутый плакат", "x": 0.5, "y": 0.12, "size": 0.2},
+        {"type": "text", "text": "ГРОМЧЕ", "text_en": "LOUDER", "preset": "Глитч-крик", "x": 0.5, "y": 0.92, "size": 0.2},
+    ],
 }

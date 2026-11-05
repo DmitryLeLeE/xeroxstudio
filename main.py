@@ -240,6 +240,8 @@ class XeroxZineStudioApp:
         def picked(_e):
             var.set(mapping[shown.get()])
             cb.selection_clear()
+            if key == "layout" and var.get() == "free":
+                self.root.after(0, self._ensure_free_start)
 
         cb.bind("<<ComboboxSelected>>", picked)
         var.trace_add("write", lambda *a: shown.set(inverse.get(var.get(), shown.get())))
@@ -541,11 +543,14 @@ class XeroxZineStudioApp:
         self.vars["invert"].trace_add("write", lambda *a: self._update_swatches())
 
         # 5. Износ листа
-        c = self._section(p, "5. ИЗНОС ЛИСТА И ШТАМП")
+        c = self._section(p, "5. ИЗНОС ЛИСТА, МЕХАНИКА КОПИРА И ШТАМП")
         self._slider(c, "fold", "Сгиб листа", 0, 100)
         self._check(c, "holes", "Дырки от дырокола")
         self._slider(c, "stains", "Пятна (кофе, жир)", 0, 100)
         self._slider(c, "dust", "Пыль и волоски", 0, 100)
+        self._slider(c, "ghost", "Эхо барабана (бледный повтор)", 0, 100)
+        self._slider(c, "bands", "Полосы тонера", 0, 100)
+        self._slider(c, "smear", "Заедание бумаги", 0, 100)
         self._entry(c, "stamp", "Штамп (пусто = нет)")
         self._slider(c, "stamp_rot", "Поворот штампа (°)", -45, 45)
 
@@ -565,8 +570,10 @@ class XeroxZineStudioApp:
         rowl2.pack(fill=tk.X, pady=(3, 0))
         for text, what in (("Копия", "copy"), ("Удалить", "delete"), ("👁 Скрыть", "hide"), ("⇋ Отразить", "flip"), ("↑", "up"), ("↓", "down")):
             make_button(rowl2, text, lambda w=what: self._layer_action(w)).pack(side=tk.LEFT, padx=(0, 3))
-        self.ly_vars = {"x": tk.DoubleVar(value=50), "y": tk.DoubleVar(value=50), "size": tk.DoubleVar(value=20), "rot": tk.DoubleVar(value=0), "opacity": tk.DoubleVar(value=100)}
-        for key, text, lo, hi in (("x", "Позиция X (%)", 0, 100), ("y", "Позиция Y (%)", 0, 100), ("size", "Размер (% ширины)", 4, 100), ("rot", "Поворот (°)", -180, 180), ("opacity", "Прозрачность слоя (% непрозрачности)", 10, 100)):
+        self.ly_vars = {"x": tk.DoubleVar(value=50), "y": tk.DoubleVar(value=50), "size": tk.DoubleVar(value=20), "rot": tk.DoubleVar(value=0), "opacity": tk.DoubleVar(value=100),
+                        "warp_k": tk.DoubleVar(value=50), "sx": tk.DoubleVar(value=100)}
+        for key, text, lo, hi in (("x", "Позиция X (%)", 0, 100), ("y", "Позиция Y (%)", 0, 100), ("size", "Размер (% ширины)", 4, 100), ("rot", "Поворот (°)", -180, 180), ("opacity", "Непрозрачность слоя (%)", 10, 100),
+                                ("warp_k", "Сила искажения (%)", 5, 100), ("sx", "Растяжение текста (%)", 40, 300)):
             self.ly_vars[key].trace_add("write", lambda *a, k=key: self._layer_var_changed(k))
             LabeledSlider(c, text, self.ly_vars[key], lo, hi, res=1, default=self.ly_vars[key].get()).pack(fill=tk.X, pady=1)
         self.ly_text = tk.StringVar()
@@ -578,6 +585,23 @@ class XeroxZineStudioApp:
         self.ly_color.trace_add("write", lambda *a: self._layer_var_changed("color"))
         self._label(c, "Цвет слоя")
         ttk.Combobox(c, textvariable=self.ly_color, values=["ink", "paper", "ink2", "ink3", "ink4"], state="readonly", font=FONT).pack(fill=tk.X, pady=(0, 3))
+
+        self.ly_warp = tk.StringVar(value="none")
+        self.ly_warp.trace_add("write", lambda *a: self._layer_var_changed("warp"))
+        self._label(c, "Искажение текста")
+        warp_names = {v: k for k, v in config.WARPS.items()}
+        warp_cb = ttk.Combobox(c, values=list(config.WARPS), state="readonly", font=FONT)
+        warp_cb.pack(fill=tk.X, pady=(0, 3))
+        warp_cb.bind("<<ComboboxSelected>>", lambda e: (self.ly_warp.set(config.WARPS[warp_cb.get()]), warp_cb.selection_clear()))
+        self.ly_warp.trace_add("write", lambda *a: warp_cb.set(warp_names.get(self.ly_warp.get(), "Без искажения")))
+        self._label(c, "Готовый стиль надписи (к выбранному слою)")
+        sp_cb = ttk.Combobox(c, values=list(config.TEXT_PRESETS), state="readonly", font=FONT)
+        sp_cb.pack(fill=tk.X, pady=(0, 3))
+        sp_cb.bind("<<ComboboxSelected>>", lambda e: (self._apply_text_preset(sp_cb.get()), sp_cb.set(""), sp_cb.selection_clear()))
+        self._label(c, "Шаблон листа (заменяет все слои)")
+        tp_cb = ttk.Combobox(c, values=list(config.LAYER_TEMPLATES), state="readonly", font=FONT)
+        tp_cb.pack(fill=tk.X, pady=(0, 3))
+        tp_cb.bind("<<ComboboxSelected>>", lambda e: (self._apply_layer_template(tp_cb.get()), tp_cb.set(""), tp_cb.selection_clear()))
 
         self.ly_style = tk.StringVar(value="box")
         self.ly_style.trace_add("write", lambda *a: self._layer_var_changed("style"))
@@ -811,8 +835,10 @@ class XeroxZineStudioApp:
         else:
             lines = str(ly.get("text", "")).strip().splitlines() or [""]
             fpx = max(8, size * W * 0.5)
-            bw = max(len(x) for x in lines) * fpx * 0.62 + fpx * 0.6
+            bw = (max(len(x) for x in lines) * fpx * 0.62 + fpx * 0.6) * float(ly.get("sx", 1.0) or 1.0)
             bh = len(lines) * fpx * 1.15 + fpx * 0.6
+            if (ly.get("warp") or "none") != "none":
+                bh *= 1 + 0.9 * float(ly.get("warp_k", 0.5) if ly.get("warp_k") is not None else 0.5)
         rot = math.radians(float(ly.get("rot", 0)))
         ew = abs(bw * math.cos(rot)) + abs(bh * math.sin(rot))
         eh = abs(bw * math.sin(rot)) + abs(bh * math.cos(rot))
@@ -868,6 +894,9 @@ class XeroxZineStudioApp:
                 self.ly_vars["y"].set(round(float(ly.get("y", 0.5)) * 100))
                 self.ly_vars["size"].set(round(float(ly.get("size", 0.2)) * 100))
                 self.ly_vars["rot"].set(round(float(ly.get("rot", 0))))
+                self.ly_warp.set(ly.get("warp") or "none")
+                self.ly_vars["warp_k"].set(round(float(ly.get("warp_k", 0.5) if ly.get("warp_k") is not None else 0.5) * 100))
+                self.ly_vars["sx"].set(round(float(ly.get("sx", 1.0) or 1.0) * 100))
                 self.ly_vars["opacity"].set(round(float(ly.get("opacity", 1.0) if ly.get("opacity") is not None else 1.0) * 100))
                 self.ly_text.set(ly.get("text", ""))
                 self.ly_color.set(ly.get("color", "ink"))
@@ -885,6 +914,12 @@ class XeroxZineStudioApp:
             ly[key] = float(self.ly_vars[key].get()) / 100.0
         elif key == "rot":
             ly["rot"] = float(self.ly_vars["rot"].get())
+        elif key == "warp":
+            ly["warp"] = self.ly_warp.get()
+        elif key == "warp_k":
+            ly["warp_k"] = float(self.ly_vars["warp_k"].get()) / 100.0
+        elif key == "sx":
+            ly["sx"] = float(self.ly_vars["sx"].get()) / 100.0
         elif key == "opacity":
             ly["opacity"] = float(self.ly_vars["opacity"].get()) / 100.0
         elif key == "text":
@@ -932,6 +967,57 @@ class XeroxZineStudioApp:
         lb.bind("<Double-Button-1>", ok)
         make_button(dlg, "Добавить", ok, kind="primary").pack(pady=(0, 10))
         dlg.grab_set()
+
+    def _ensure_free_start(self):
+        """Свободный лист без слоёв пуст: кладём на него фото страницы, чтобы было что двигать."""
+        if self.layers or not self.cur_img_key or self.cur_img_key not in self.images:
+            return
+        self._new_layer(type="bitmap", img=self.cur_img_key, size=0.8, backing=True, torn=True, dot=5, contrast=1.6, cutout=False, opacity=1.0)
+
+    def _apply_text_preset(self, name):
+        ly = self._sel_layer()
+        if not ly or name not in config.TEXT_PRESETS or ly.get("type") != "text":
+            return
+        base = {k: v for k, v in config.TEXT_DEFAULTS.items() if k != "rot"}
+        ly.update(base)
+        ly.update(config.TEXT_PRESETS[name])
+        self._refresh_layers_ui(select=self.layers.index(ly))
+        self.preset_var.set(PRESET_HINT)
+        self.schedule_render()
+
+    def _apply_layer_template(self, name):
+        tpl = config.LAYER_TEMPLATES.get(name)
+        if not tpl:
+            return
+        has_photo = bool(self.cur_img_key and self.cur_img_key in self.images)
+        base = {k: v for k, v in config.TEXT_DEFAULTS.items() if k != "rot"}
+        out = []
+        for t in tpl:
+            t = dict(t)
+            photo, preset = t.pop("photo", False), t.pop("preset", None)
+            t.pop("text_en", None)
+            if photo:
+                if has_photo:
+                    out.append(dict({"type": "bitmap", "img": self.cur_img_key, "x": 0.5, "y": 0.5, "size": 0.8, "rot": 0, "color": "ink", "opacity": 1.0,
+                                     "backing": True, "torn": True, "dot": 5, "contrast": 1.6, "cutout": False}, **t))
+            elif t.get("type") == "sticker":
+                out.append(dict({"color": "ink", "rot": 0, "opacity": 1.0}, **t))
+            else:
+                ly = {"type": "text", "sticker": "star", "color": "ink", "style": "box", "font": "Arial Black", "opacity": 1.0, "rot": 0}
+                ly.update(base)
+                ly.update(config.TEXT_PRESETS.get(preset, {}))
+                ly.update(t)
+                out.append(ly)
+        self.layers = out
+        self.vars["layout"].set("free")
+        self.txt_top.delete("1.0", tk.END)
+        self.txt_bot.delete("1.0", tk.END)
+        self._refresh_layers_ui()
+        self.preset_var.set(PRESET_HINT)
+        self.schedule_render()
+        self._mark_dirty(immediate=True)
+        if not has_photo and any(t.get("photo") for t in tpl):
+            messagebox.showinfo("Шаблон", "Фото не загружено: шаблон собран без него. Загрузи фото и выбери шаблон ещё раз.", parent=self.root)
 
     def _add_photo_layer(self):
         path = filedialog.askopenfilename(

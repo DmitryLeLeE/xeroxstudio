@@ -13,7 +13,7 @@ import config
 
 STYLE_KEYS = (
     "layout", "rows", "tilt", "fit_mode", "bright", "edge_x", "edge_y", "loss",
-    "dither", "dot_size", "angle", "contrast", "noise", "streaks", "misreg", "copier_edge", "paper", "overprint", "ink2", "overprint3", "ink3", "overprint4", "ink4", "tape", "fold", "holes", "stains", "dust",
+    "dither", "dot_size", "angle", "contrast", "noise", "streaks", "misreg", "copier_edge", "paper", "overprint", "ink2", "overprint3", "ink3", "overprint4", "ink4", "tape", "fold", "holes", "stains", "dust", "ghost", "bands", "smear",
     "palette", "invert", "custom_colors",
     "font", "font_size", "tstyle", "text_align", "txt_x", "txt_y1", "txt_y2", "text_rot",
 )
@@ -143,6 +143,41 @@ BUILTIN = {
         "layout": "staggered", "rows": 6, "palette": "Classic B&W (Xerox)", "dither": "halftone", "dot_size": 6, "contrast": 3.4,
         "noise": 60, "streaks": 65, "misreg": 3, "loss": 92, "paper": 70, "copier_edge": 60, "fold": 80, "holes": 1, "dust": 80, "tilt": 2.5,
         "font": "Special Elite", "font_size": 34, "tstyle": "white_box",
+    },
+    "Заевшая подача": {
+        "layout": "staggered", "rows": 4, "palette": "Classic B&W (Xerox)", "dither": "halftone",
+        "dot_size": 7, "contrast": 2.5, "noise": 30, "streaks": 35, "misreg": 3, "loss": 60, "tilt": 1.5, "copier_edge": 45,
+        "paper": 45, "fold": 40, "smear": 65, "ghost": 30, "bands": 25,
+    },
+    "Эхо барабана": {
+        "layout": "duo", "rows": 2, "palette": "Vintage Newsprint (Cream / Charcoal)", "dither": "halftone",
+        "dot_size": 6, "angle": 15, "contrast": 2.6, "noise": 25, "streaks": 20, "misreg": 2, "loss": 35, "copier_edge": 30,
+        "paper": 35, "ghost": 85, "bands": 40,
+    },
+    "Тонер на исходе": {
+        "layout": "column", "rows": 5, "palette": "Classic B&W (Xerox)", "dither": "halftone",
+        "dot_size": 8, "contrast": 1.7, "noise": 55, "streaks": 45, "misreg": 2, "loss": 70, "copier_edge": 50,
+        "paper": 30, "bands": 85, "ghost": 20,
+    },
+    "Офисный принтер 90-х": {
+        "layout": "contact_sheet", "rows": 5, "palette": "Vintage Newsprint (Cream / Charcoal)", "dither": "floyd",
+        "dot_size": 5, "contrast": 2.1, "noise": 28, "streaks": 40, "misreg": 1, "loss": 25, "copier_edge": 20,
+        "font": "Courier New Bold", "font_size": 28, "tstyle": "white_box", "paper": 25, "bands": 55, "ghost": 25,
+    },
+    "Копия копии копии": {
+        "layout": "pile", "rows": 5, "palette": "Classic B&W (Xerox)", "dither": "halftone",
+        "dot_size": 9, "contrast": 3.0, "noise": 60, "streaks": 50, "misreg": 4, "loss": 95, "tilt": 2.5, "copier_edge": 65,
+        "paper": 50, "ghost": 60, "smear": 25, "bands": 35,
+    },
+    "Фанзин из подвала": {
+        "layout": "center_hero", "rows": 4, "palette": "Vintage Newsprint (Cream / Charcoal)", "dither": "halftone",
+        "dot_size": 7, "angle": 15, "contrast": 2.2, "noise": 40, "streaks": 28, "misreg": 3, "loss": 45, "tilt": 3.0,
+        "edge_x": 22, "edge_y": 15, "paper": 80, "tape": 70, "stains": 60, "fold": 70, "ghost": 35, "font": "Special Elite", "font_size": 34, "tstyle": "dymo_tape",
+    },
+    "Ночная копирка": {
+        "layout": "triptych", "rows": 3, "palette": "Blueprint / Cyanotype (Navy / Cyan)", "dither": "halftone",
+        "dot_size": 6, "contrast": 2.3, "noise": 20, "streaks": 25, "misreg": 6, "loss": 40, "copier_edge": 30,
+        "ghost": 70, "bands": 30,
     },
 }
 

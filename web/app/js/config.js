@@ -1,6 +1,6 @@
 // Сгенерировано из config.py и presets.py (tools/gen_config_js.py). Не править вручную.
 export const CFG = {
- "APP_VERSION": "2.4.0",
+ "APP_VERSION": "2.5.0",
  "CANVAS_FORMATS": {
   "2:3 Постер (1000×1500)": [
    1000,
@@ -186,6 +186,10 @@ export const CFG = {
   [
    "Во весь лист",
    "full_page"
+  ],
+  [
+   "Свободный лист (всё слоями)",
+   "free"
   ]
  ],
  "LAYOUT_ALIASES": {
@@ -397,6 +401,9 @@ export const CFG = {
   "holes": 0,
   "stains": 0,
   "dust": 0,
+  "ghost": 0,
+  "bands": 0,
+  "smear": 0,
   "stamp": "",
   "stamp_rot": -12,
   "layers": [],
@@ -438,6 +445,9 @@ export const CFG = {
   "holes",
   "stains",
   "dust",
+  "ghost",
+  "bands",
+  "smear",
   "palette",
   "invert",
   "custom_colors",
@@ -492,6 +502,9 @@ export const CFG = {
    "holes": 0,
    "stains": 0,
    "dust": 0,
+   "ghost": 0,
+   "bands": 0,
+   "smear": 0,
    "palette": "Classic B&W (Xerox)",
    "invert": false,
    "custom_colors": [
@@ -556,6 +569,9 @@ export const CFG = {
    "holes": 0,
    "stains": 0,
    "dust": 0,
+   "ghost": 0,
+   "bands": 0,
+   "smear": 0,
    "palette": "Vintage Newsprint (Cream / Charcoal)",
    "invert": false,
    "custom_colors": [
@@ -620,6 +636,9 @@ export const CFG = {
    "holes": 0,
    "stains": 0,
    "dust": 0,
+   "ghost": 0,
+   "bands": 0,
+   "smear": 0,
    "palette": "Acid Cyberpunk (Neon Lime / Black)",
    "invert": false,
    "custom_colors": [
@@ -684,6 +703,9 @@ export const CFG = {
    "holes": 0,
    "stains": 0,
    "dust": 0,
+   "ghost": 0,
+   "bands": 0,
+   "smear": 0,
    "palette": "Hot Pink Riot (Fluo Pink / Black)",
    "invert": false,
    "custom_colors": [
@@ -748,6 +770,9 @@ export const CFG = {
    "holes": 0,
    "stains": 0,
    "dust": 0,
+   "ghost": 0,
+   "bands": 0,
+   "smear": 0,
    "palette": "Blueprint / Cyanotype (Navy / Cyan)",
    "invert": false,
    "custom_colors": [
@@ -812,6 +837,9 @@ export const CFG = {
    "holes": 0,
    "stains": 0,
    "dust": 0,
+   "ghost": 0,
+   "bands": 0,
+   "smear": 0,
    "palette": "Classic B&W (Xerox)",
    "invert": false,
    "custom_colors": [
@@ -876,6 +904,9 @@ export const CFG = {
    "holes": 0,
    "stains": 0,
    "dust": 0,
+   "ghost": 0,
+   "bands": 0,
+   "smear": 0,
    "palette": "Пользовательская (Custom)",
    "invert": false,
    "custom_colors": [
@@ -940,6 +971,9 @@ export const CFG = {
    "holes": 0,
    "stains": 0,
    "dust": 0,
+   "ghost": 0,
+   "bands": 0,
+   "smear": 0,
    "palette": "Vintage Newsprint (Cream / Charcoal)",
    "invert": false,
    "custom_colors": [
@@ -1004,6 +1038,9 @@ export const CFG = {
    "holes": 0,
    "stains": 0,
    "dust": 0,
+   "ghost": 0,
+   "bands": 0,
+   "smear": 0,
    "palette": "Safety Orange (Blaze Orange / Charcoal)",
    "invert": false,
    "custom_colors": [
@@ -1068,6 +1105,9 @@ export const CFG = {
    "holes": 0,
    "stains": 0,
    "dust": 0,
+   "ghost": 0,
+   "bands": 0,
+   "smear": 0,
    "palette": "Vintage Newsprint (Cream / Charcoal)",
    "invert": false,
    "custom_colors": [
@@ -1132,6 +1172,9 @@ export const CFG = {
    "holes": 0,
    "stains": 0,
    "dust": 0,
+   "ghost": 0,
+   "bands": 0,
+   "smear": 0,
    "palette": "Vintage Newsprint (Cream / Charcoal)",
    "invert": false,
    "custom_colors": [
@@ -1196,6 +1239,9 @@ export const CFG = {
    "holes": 0,
    "stains": 0,
    "dust": 0,
+   "ghost": 0,
+   "bands": 0,
+   "smear": 0,
    "palette": "Blueprint / Cyanotype (Navy / Cyan)",
    "invert": false,
    "custom_colors": [
@@ -1260,6 +1306,9 @@ export const CFG = {
    "holes": 0,
    "stains": 0,
    "dust": 0,
+   "ghost": 0,
+   "bands": 0,
+   "smear": 0,
    "palette": "Classic B&W (Xerox)",
    "invert": false,
    "custom_colors": [
@@ -1324,6 +1373,9 @@ export const CFG = {
    "holes": 0,
    "stains": 0,
    "dust": 0,
+   "ghost": 0,
+   "bands": 0,
+   "smear": 0,
    "palette": "Acid Cyberpunk (Neon Lime / Black)",
    "invert": false,
    "custom_colors": [
@@ -1388,6 +1440,9 @@ export const CFG = {
    "holes": 0,
    "stains": 0,
    "dust": 0,
+   "ghost": 0,
+   "bands": 0,
+   "smear": 0,
    "palette": "Пользовательская (Custom)",
    "invert": false,
    "custom_colors": [
@@ -1452,6 +1507,9 @@ export const CFG = {
    "holes": 0,
    "stains": 0,
    "dust": 0,
+   "ghost": 0,
+   "bands": 0,
+   "smear": 0,
    "palette": "Nightvision (Muted Green / Phosphor)",
    "invert": false,
    "custom_colors": [
@@ -1516,6 +1574,9 @@ export const CFG = {
    "holes": 0,
    "stains": 0,
    "dust": 0,
+   "ghost": 0,
+   "bands": 0,
+   "smear": 0,
    "palette": "Vintage Newsprint (Cream / Charcoal)",
    "invert": false,
    "custom_colors": [
@@ -1580,6 +1641,9 @@ export const CFG = {
    "holes": 0,
    "stains": 0,
    "dust": 0,
+   "ghost": 0,
+   "bands": 0,
+   "smear": 0,
    "palette": "Classic B&W (Xerox)",
    "invert": false,
    "custom_colors": [
@@ -1644,6 +1708,9 @@ export const CFG = {
    "holes": 1,
    "stains": 55,
    "dust": 60,
+   "ghost": 0,
+   "bands": 0,
+   "smear": 0,
    "palette": "Classic B&W (Xerox)",
    "invert": false,
    "custom_colors": [
@@ -1708,6 +1775,9 @@ export const CFG = {
    "holes": 0,
    "stains": 0,
    "dust": 0,
+   "ghost": 0,
+   "bands": 0,
+   "smear": 0,
    "palette": "Nightvision (Muted Green / Phosphor)",
    "invert": false,
    "custom_colors": [
@@ -1772,6 +1842,9 @@ export const CFG = {
    "holes": 0,
    "stains": 45,
    "dust": 70,
+   "ghost": 0,
+   "bands": 0,
+   "smear": 0,
    "palette": "Classic B&W (Xerox)",
    "invert": false,
    "custom_colors": [
@@ -1836,6 +1909,9 @@ export const CFG = {
    "holes": 0,
    "stains": 0,
    "dust": 0,
+   "ghost": 0,
+   "bands": 0,
+   "smear": 0,
    "palette": "Safety Orange (Blaze Orange / Charcoal)",
    "invert": false,
    "custom_colors": [
@@ -1900,6 +1976,9 @@ export const CFG = {
    "holes": 0,
    "stains": 0,
    "dust": 0,
+   "ghost": 0,
+   "bands": 0,
+   "smear": 0,
    "palette": "Blueprint / Cyanotype (Navy / Cyan)",
    "invert": false,
    "custom_colors": [
@@ -1964,6 +2043,9 @@ export const CFG = {
    "holes": 0,
    "stains": 0,
    "dust": 0,
+   "ghost": 0,
+   "bands": 0,
+   "smear": 0,
    "palette": "Crimson Zine (Off-White / Blood Red)",
    "invert": false,
    "custom_colors": [
@@ -1988,23 +2070,23 @@ export const CFG = {
    "text_rot": 0.0
   },
   "Копия копии копии": {
-   "layout": "staggered",
-   "rows": 6,
+   "layout": "pile",
+   "rows": 5,
    "tilt": 2.5,
    "fit_mode": "contain",
    "bright": 1.3,
    "edge_x": 15,
    "edge_y": 10,
-   "loss": 92,
+   "loss": 95,
    "dither": "halftone",
-   "dot_size": 6,
+   "dot_size": 9,
    "angle": 45,
-   "contrast": 3.4,
+   "contrast": 3.0,
    "noise": 60,
-   "streaks": 65,
-   "misreg": 3,
-   "copier_edge": 60,
-   "paper": 70,
+   "streaks": 50,
+   "misreg": 4,
+   "copier_edge": 65,
+   "paper": 50,
    "overprint": 0,
    "ink2": [
     255,
@@ -2024,10 +2106,13 @@ export const CFG = {
     0
    ],
    "tape": 0,
-   "fold": 80,
-   "holes": 1,
+   "fold": 0,
+   "holes": 0,
    "stains": 0,
-   "dust": 80,
+   "dust": 0,
+   "ghost": 60,
+   "bands": 35,
+   "smear": 25,
    "palette": "Classic B&W (Xerox)",
    "invert": false,
    "custom_colors": [
@@ -2042,7 +2127,409 @@ export const CFG = {
      0
     ]
    ],
+   "font": "Arial Black",
+   "font_size": 34,
+   "tstyle": "white_box",
+   "text_align": "left",
+   "txt_x": 7,
+   "txt_y1": 10,
+   "txt_y2": 70,
+   "text_rot": 0.0
+  },
+  "Заевшая подача": {
+   "layout": "staggered",
+   "rows": 4,
+   "tilt": 1.5,
+   "fit_mode": "contain",
+   "bright": 1.3,
+   "edge_x": 15,
+   "edge_y": 10,
+   "loss": 60,
+   "dither": "halftone",
+   "dot_size": 7,
+   "angle": 45,
+   "contrast": 2.5,
+   "noise": 30,
+   "streaks": 35,
+   "misreg": 3,
+   "copier_edge": 45,
+   "paper": 45,
+   "overprint": 0,
+   "ink2": [
+    255,
+    60,
+    140
+   ],
+   "overprint3": 0,
+   "ink3": [
+    0,
+    120,
+    190
+   ],
+   "overprint4": 0,
+   "ink4": [
+    255,
+    200,
+    0
+   ],
+   "tape": 0,
+   "fold": 40,
+   "holes": 0,
+   "stains": 0,
+   "dust": 0,
+   "ghost": 30,
+   "bands": 25,
+   "smear": 65,
+   "palette": "Classic B&W (Xerox)",
+   "invert": false,
+   "custom_colors": [
+    [
+     255,
+     255,
+     255
+    ],
+    [
+     0,
+     0,
+     0
+    ]
+   ],
+   "font": "Arial Black",
+   "font_size": 34,
+   "tstyle": "white_box",
+   "text_align": "left",
+   "txt_x": 7,
+   "txt_y1": 10,
+   "txt_y2": 70,
+   "text_rot": 0.0
+  },
+  "Эхо барабана": {
+   "layout": "duo",
+   "rows": 2,
+   "tilt": 0.0,
+   "fit_mode": "contain",
+   "bright": 1.3,
+   "edge_x": 15,
+   "edge_y": 10,
+   "loss": 35,
+   "dither": "halftone",
+   "dot_size": 6,
+   "angle": 15,
+   "contrast": 2.6,
+   "noise": 25,
+   "streaks": 20,
+   "misreg": 2,
+   "copier_edge": 30,
+   "paper": 35,
+   "overprint": 0,
+   "ink2": [
+    255,
+    60,
+    140
+   ],
+   "overprint3": 0,
+   "ink3": [
+    0,
+    120,
+    190
+   ],
+   "overprint4": 0,
+   "ink4": [
+    255,
+    200,
+    0
+   ],
+   "tape": 0,
+   "fold": 0,
+   "holes": 0,
+   "stains": 0,
+   "dust": 0,
+   "ghost": 85,
+   "bands": 40,
+   "smear": 0,
+   "palette": "Vintage Newsprint (Cream / Charcoal)",
+   "invert": false,
+   "custom_colors": [
+    [
+     255,
+     255,
+     255
+    ],
+    [
+     0,
+     0,
+     0
+    ]
+   ],
+   "font": "Arial Black",
+   "font_size": 34,
+   "tstyle": "white_box",
+   "text_align": "left",
+   "txt_x": 7,
+   "txt_y1": 10,
+   "txt_y2": 70,
+   "text_rot": 0.0
+  },
+  "Тонер на исходе": {
+   "layout": "column",
+   "rows": 5,
+   "tilt": 0.0,
+   "fit_mode": "contain",
+   "bright": 1.3,
+   "edge_x": 15,
+   "edge_y": 10,
+   "loss": 70,
+   "dither": "halftone",
+   "dot_size": 8,
+   "angle": 45,
+   "contrast": 1.7,
+   "noise": 55,
+   "streaks": 45,
+   "misreg": 2,
+   "copier_edge": 50,
+   "paper": 30,
+   "overprint": 0,
+   "ink2": [
+    255,
+    60,
+    140
+   ],
+   "overprint3": 0,
+   "ink3": [
+    0,
+    120,
+    190
+   ],
+   "overprint4": 0,
+   "ink4": [
+    255,
+    200,
+    0
+   ],
+   "tape": 0,
+   "fold": 0,
+   "holes": 0,
+   "stains": 0,
+   "dust": 0,
+   "ghost": 20,
+   "bands": 85,
+   "smear": 0,
+   "palette": "Classic B&W (Xerox)",
+   "invert": false,
+   "custom_colors": [
+    [
+     255,
+     255,
+     255
+    ],
+    [
+     0,
+     0,
+     0
+    ]
+   ],
+   "font": "Arial Black",
+   "font_size": 34,
+   "tstyle": "white_box",
+   "text_align": "left",
+   "txt_x": 7,
+   "txt_y1": 10,
+   "txt_y2": 70,
+   "text_rot": 0.0
+  },
+  "Офисный принтер 90-х": {
+   "layout": "contact_sheet",
+   "rows": 5,
+   "tilt": 0.0,
+   "fit_mode": "contain",
+   "bright": 1.3,
+   "edge_x": 15,
+   "edge_y": 10,
+   "loss": 25,
+   "dither": "floyd",
+   "dot_size": 5,
+   "angle": 45,
+   "contrast": 2.1,
+   "noise": 28,
+   "streaks": 40,
+   "misreg": 1,
+   "copier_edge": 20,
+   "paper": 25,
+   "overprint": 0,
+   "ink2": [
+    255,
+    60,
+    140
+   ],
+   "overprint3": 0,
+   "ink3": [
+    0,
+    120,
+    190
+   ],
+   "overprint4": 0,
+   "ink4": [
+    255,
+    200,
+    0
+   ],
+   "tape": 0,
+   "fold": 0,
+   "holes": 0,
+   "stains": 0,
+   "dust": 0,
+   "ghost": 25,
+   "bands": 55,
+   "smear": 0,
+   "palette": "Vintage Newsprint (Cream / Charcoal)",
+   "invert": false,
+   "custom_colors": [
+    [
+     255,
+     255,
+     255
+    ],
+    [
+     0,
+     0,
+     0
+    ]
+   ],
+   "font": "Courier New Bold",
+   "font_size": 28,
+   "tstyle": "white_box",
+   "text_align": "left",
+   "txt_x": 7,
+   "txt_y1": 10,
+   "txt_y2": 70,
+   "text_rot": 0.0
+  },
+  "Фанзин из подвала": {
+   "layout": "center_hero",
+   "rows": 4,
+   "tilt": 3.0,
+   "fit_mode": "contain",
+   "bright": 1.3,
+   "edge_x": 22,
+   "edge_y": 15,
+   "loss": 45,
+   "dither": "halftone",
+   "dot_size": 7,
+   "angle": 15,
+   "contrast": 2.2,
+   "noise": 40,
+   "streaks": 28,
+   "misreg": 3,
+   "copier_edge": 0,
+   "paper": 80,
+   "overprint": 0,
+   "ink2": [
+    255,
+    60,
+    140
+   ],
+   "overprint3": 0,
+   "ink3": [
+    0,
+    120,
+    190
+   ],
+   "overprint4": 0,
+   "ink4": [
+    255,
+    200,
+    0
+   ],
+   "tape": 70,
+   "fold": 70,
+   "holes": 0,
+   "stains": 60,
+   "dust": 0,
+   "ghost": 35,
+   "bands": 0,
+   "smear": 0,
+   "palette": "Vintage Newsprint (Cream / Charcoal)",
+   "invert": false,
+   "custom_colors": [
+    [
+     255,
+     255,
+     255
+    ],
+    [
+     0,
+     0,
+     0
+    ]
+   ],
    "font": "Special Elite",
+   "font_size": 34,
+   "tstyle": "dymo_tape",
+   "text_align": "left",
+   "txt_x": 7,
+   "txt_y1": 10,
+   "txt_y2": 70,
+   "text_rot": 0.0
+  },
+  "Ночная копирка": {
+   "layout": "triptych",
+   "rows": 3,
+   "tilt": 0.0,
+   "fit_mode": "contain",
+   "bright": 1.3,
+   "edge_x": 15,
+   "edge_y": 10,
+   "loss": 40,
+   "dither": "halftone",
+   "dot_size": 6,
+   "angle": 45,
+   "contrast": 2.3,
+   "noise": 20,
+   "streaks": 25,
+   "misreg": 6,
+   "copier_edge": 30,
+   "paper": 0,
+   "overprint": 0,
+   "ink2": [
+    255,
+    60,
+    140
+   ],
+   "overprint3": 0,
+   "ink3": [
+    0,
+    120,
+    190
+   ],
+   "overprint4": 0,
+   "ink4": [
+    255,
+    200,
+    0
+   ],
+   "tape": 0,
+   "fold": 0,
+   "holes": 0,
+   "stains": 0,
+   "dust": 0,
+   "ghost": 70,
+   "bands": 30,
+   "smear": 0,
+   "palette": "Blueprint / Cyanotype (Navy / Cyan)",
+   "invert": false,
+   "custom_colors": [
+    [
+     255,
+     255,
+     255
+    ],
+    [
+     0,
+     0,
+     0
+    ]
+   ],
+   "font": "Arial Black",
    "font_size": 34,
    "tstyle": "white_box",
    "text_align": "left",
@@ -2378,6 +2865,293 @@ export const CFG = {
    "bottom": "EVERYONE CAME"
   }
  ],
+ "WARPS": [
+  [
+   "Без искажения",
+   "none"
+  ],
+  [
+   "Арка",
+   "arch"
+  ],
+  [
+   "Прогиб",
+   "dip"
+  ],
+  [
+   "Волна",
+   "wave"
+  ],
+  [
+   "Раздувание",
+   "bulge"
+  ],
+  [
+   "Наклон",
+   "slant"
+  ]
+ ],
+ "TEXT_DEFAULTS": {
+  "warp": "none",
+  "warp_k": 0.5,
+  "sx": 1.0,
+  "rot": 0
+ },
+ "TEXT_PRESETS": {
+  "Панк-плашка": {
+   "style": "box",
+   "font": "Impact",
+   "rot": -3
+  },
+  "Арка-вывеска": {
+   "style": "plain",
+   "font": "Rubik Mono One",
+   "warp": "arch",
+   "warp_k": 0.55
+  },
+  "Кислотная волна": {
+   "style": "tape",
+   "font": "Rubik Wet Paint",
+   "warp": "wave",
+   "warp_k": 0.5,
+   "rot": -2
+  },
+  "Раздутый заголовок": {
+   "style": "plain",
+   "font": "Arial Black",
+   "warp": "bulge",
+   "warp_k": 0.7,
+   "sx": 1.2
+  },
+  "Падающий наклон": {
+   "style": "box",
+   "font": "Impact",
+   "warp": "slant",
+   "warp_k": 0.6,
+   "rot": -4
+  },
+  "Записка из газеты": {
+   "style": "ransom",
+   "font": "Arial Black"
+  },
+  "Лента Dymo": {
+   "style": "tape",
+   "font": "Courier New Bold"
+  },
+  "Машинопись": {
+   "style": "box",
+   "font": "Special Elite"
+  },
+  "Глитч-крик": {
+   "style": "plain",
+   "font": "Rubik Glitch",
+   "warp": "dip",
+   "warp_k": 0.4
+  },
+  "Растянутый плакат": {
+   "style": "tape",
+   "font": "Impact",
+   "sx": 1.9
+  },
+  "Узкий столбик": {
+   "style": "box",
+   "font": "Impact",
+   "sx": 0.55
+  },
+  "Баллончик": {
+   "style": "plain",
+   "font": "Rubik Spray Paint",
+   "warp": "wave",
+   "warp_k": 0.3,
+   "rot": -6
+  }
+ },
+ "LAYER_TEMPLATES": {
+  "Афиша": [
+   {
+    "type": "bitmap",
+    "photo": true,
+    "x": 0.5,
+    "y": 0.42,
+    "size": 0.84,
+    "rot": -2
+   },
+   {
+    "type": "text",
+    "text": "ЖИВОЙ ЗВУК",
+    "text_en": "LIVE NOISE",
+    "preset": "Арка-вывеска",
+    "x": 0.5,
+    "y": 0.1,
+    "size": 0.2
+   },
+   {
+    "type": "text",
+    "text": "ПЯТНИЦА · 23:00 · ПОДВАЛ",
+    "text_en": "FRIDAY · 11PM · BASEMENT",
+    "preset": "Лента Dymo",
+    "x": 0.5,
+    "y": 0.86,
+    "size": 0.12
+   },
+   {
+    "type": "sticker",
+    "sticker": "star",
+    "x": 0.86,
+    "y": 0.72,
+    "size": 0.2,
+    "rot": 14
+   }
+  ],
+  "Обложка зина": [
+   {
+    "type": "bitmap",
+    "photo": true,
+    "x": 0.5,
+    "y": 0.5,
+    "size": 0.74,
+    "rot": 2
+   },
+   {
+    "type": "text",
+    "text": "НЕТ БОГОВ",
+    "text_en": "NO GODS",
+    "preset": "Записка из газеты",
+    "x": 0.5,
+    "y": 0.1,
+    "size": 0.2
+   },
+   {
+    "type": "text",
+    "text": "ВЫПУСК №1",
+    "text_en": "ISSUE #1",
+    "preset": "Панк-плашка",
+    "x": 0.3,
+    "y": 0.92,
+    "size": 0.14
+   }
+  ],
+  "Коллаж-стопка": [
+   {
+    "type": "bitmap",
+    "photo": true,
+    "x": 0.38,
+    "y": 0.3,
+    "size": 0.62,
+    "rot": -6
+   },
+   {
+    "type": "bitmap",
+    "photo": true,
+    "x": 0.62,
+    "y": 0.58,
+    "size": 0.5,
+    "rot": 5
+   },
+   {
+    "type": "bitmap",
+    "photo": true,
+    "x": 0.35,
+    "y": 0.8,
+    "size": 0.36,
+    "rot": -3
+   },
+   {
+    "type": "text",
+    "text": "ВЫРЕЗКИ",
+    "text_en": "CLIPPINGS",
+    "preset": "Кислотная волна",
+    "x": 0.7,
+    "y": 0.1,
+    "size": 0.18
+   }
+  ],
+  "Объявление": [
+   {
+    "type": "text",
+    "text": "ВНИМАНИЕ",
+    "text_en": "ATTENTION",
+    "preset": "Раздутый заголовок",
+    "x": 0.5,
+    "y": 0.12,
+    "size": 0.24
+   },
+   {
+    "type": "bitmap",
+    "photo": true,
+    "x": 0.5,
+    "y": 0.5,
+    "size": 0.6,
+    "rot": 0
+   },
+   {
+    "type": "text",
+    "text": "ЗВОНИТЬ ПОСЛЕ ПОЛУНОЧИ",
+    "text_en": "CALL AFTER MIDNIGHT",
+    "preset": "Машинопись",
+    "x": 0.5,
+    "y": 0.86,
+    "size": 0.1
+   }
+  ],
+  "Манифест": [
+   {
+    "type": "text",
+    "text": "ДЕЛАЙ\nСАМ",
+    "text_en": "DO IT\nYOURSELF",
+    "preset": "Падающий наклон",
+    "x": 0.5,
+    "y": 0.27,
+    "size": 0.25
+   },
+   {
+    "type": "bitmap",
+    "photo": true,
+    "x": 0.66,
+    "y": 0.68,
+    "size": 0.56,
+    "rot": 4
+   },
+   {
+    "type": "text",
+    "text": "КОПИРУЙ",
+    "text_en": "COPY IT",
+    "preset": "Узкий столбик",
+    "x": 0.2,
+    "y": 0.8,
+    "size": 0.18,
+    "rot": -90
+   }
+  ],
+  "Плакат-крик": [
+   {
+    "type": "bitmap",
+    "photo": true,
+    "x": 0.5,
+    "y": 0.55,
+    "size": 0.9,
+    "rot": 0
+   },
+   {
+    "type": "text",
+    "text": "ГРОМЧЕ",
+    "text_en": "LOUDER",
+    "preset": "Растянутый плакат",
+    "x": 0.5,
+    "y": 0.12,
+    "size": 0.2
+   },
+   {
+    "type": "text",
+    "text": "ГРОМЧЕ",
+    "text_en": "LOUDER",
+    "preset": "Глитч-крик",
+    "x": 0.5,
+    "y": 0.92,
+    "size": 0.2
+   }
+  ]
+ },
  "STICKERS": {
   "star": {
    "ru": "Звезда",

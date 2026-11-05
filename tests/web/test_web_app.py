@@ -583,3 +583,38 @@ def test_photo_object_handles_snap_and_layer_rows(page_factory, tmp_path):
     assert pg.evaluate("window.__zine.page().layers[0].locked") is True
     assert pg.evaluate("document.querySelector('#layerSel').classList.contains('locked')")
     assert pg.errors == []
+
+
+def test_free_layout_templates_text_warp_and_mechanics(page_factory):
+    pg = page_factory()
+    wait_ready(pg)
+    # шаблон собирает свободный лист: раскладка free, слои с фото и надписями
+    pg.click("#rail button[data-fly=s5]")
+    pg.select_option("#layersBox select >> nth=0", "Афиша")
+    pg.wait_for_function("window.__zine.page().layers.length >= 3")
+    assert pg.evaluate("window.__zine.page().layout") == "free"
+    kinds = pg.evaluate("window.__zine.page().layers.map(l => l.type)")
+    assert "bitmap" in kinds and "text" in kinds and "sticker" in kinds
+    # искажение текста доходит до слоя и меняет рендер
+    pg.evaluate("document.querySelectorAll('.layers-list .lname')[2].click()")
+    sels = pg.locator("#layersBox .layer-ed select")
+    pg.wait_for_timeout(300)
+    n = sels.count()
+    pg.evaluate("""(() => { const s = [...document.querySelectorAll('#layersBox .layer-ed select')].find(x => [...x.options].some(o => o.value === 'wave')); s.value = 'wave'; s.dispatchEvent(new Event('change')); })()""")
+    assert pg.evaluate("window.__zine.page().layers.some(l => l.warp === 'wave')")
+    # новые ползунки механики копира есть и сохраняют значение
+    for k in ("ghost", "bands", "smear"):
+        assert pg.evaluate(f"window.__zine.page().{k}") == 0
+        pg.evaluate(f"(() => {{ const e = document.querySelector('#c_{k}'); e.value = 60; e.dispatchEvent(new Event('input')); e.dispatchEvent(new Event('change')); }})()")
+        assert pg.evaluate(f"window.__zine.page().{k}") == 60
+    assert pg.errors == []
+
+
+def test_choosing_free_layout_puts_photo_on_sheet(page_factory):
+    pg = page_factory()
+    wait_ready(pg)
+    assert pg.evaluate("window.__zine.page().layers.length") == 0
+    pg.evaluate("""(() => { const s = document.querySelector('#c_layout'); s.value = 'free'; s.dispatchEvent(new Event('change')); })()""")
+    pg.wait_for_function("window.__zine.page().layers.length === 1")
+    assert pg.evaluate("window.__zine.page().layers[0].type") == "bitmap"
+    assert pg.errors == []

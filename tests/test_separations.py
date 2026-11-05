@@ -77,3 +77,39 @@ def test_photo_layer_hidden_opacity_and_project_roundtrip(tmp_path):
     project_io.write_project(path, [dict(st, img="img1")], {"img1": photo, "p1": photo}, 0)
     _pages, images, _cur = project_io.read_project(path)
     assert "p1" in images  # картинка фото-слоя попала в проект
+
+
+def test_text_warp_stretch_and_copier_mechanics_python():
+    import numpy as np
+    from PIL import Image
+    import config
+    import engine
+    g = engine.ZineGraphicEngine()
+    img = Image.new("RGB", (600, 900), (240, 235, 220))
+    base = {"type": "text", "text": "ИСКАЖЕНИЕ", "x": 0.5, "y": 0.5, "size": 0.2, "style": "box", "color": "ink"}
+    st = dict(config.DEFAULT_STATE)
+    paint = lambda **kw: g.draw_layers(img, dict(st, layers=[dict(base, **kw)]), (240, 235, 220), (10, 10, 10)).tobytes()
+    plain = paint()
+    for warp in ("arch", "dip", "wave", "bulge", "slant"):
+        assert paint(warp=warp, warp_k=0.6) != plain, warp
+    assert paint(sx=1.8) != plain
+    # механика копира: каждый ползунок меняет лист, нулевые значения - нет
+    src = Image.fromarray(np.random.default_rng(5).integers(0, 255, (300, 200, 3), dtype=np.uint8))
+    assert g.add_mechanism(src, dict(st), 7).tobytes() == src.tobytes()
+    for key in ("ghost", "bands", "smear"):
+        assert g.add_mechanism(src, dict(st, **{key: 70}), 7).tobytes() != src.tobytes(), key
+
+
+def test_text_presets_and_templates_are_valid():
+    import config
+    import stickers
+    assert len(config.TEXT_PRESETS) >= 10 and len(config.LAYER_TEMPLATES) >= 5
+    for name, p in config.TEXT_PRESETS.items():
+        assert p.get("font", "Arial Black") in config.FONT_FILES, name
+        assert p.get("style", "box") in ("box", "tape", "plain", "ransom"), name
+        assert p.get("warp", "none") in config.WARPS.values(), name
+    for name, tpl in config.LAYER_TEMPLATES.items():
+        assert any(t.get("photo") for t in tpl) or name, name
+        for t in tpl:
+            assert t.get("preset") is None or t["preset"] in config.TEXT_PRESETS, name
+            assert t["type"] != "sticker" or t["sticker"] in stickers.STICKERS, name

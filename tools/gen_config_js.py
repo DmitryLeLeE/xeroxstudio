@@ -41,6 +41,7 @@ data = {
   "STYLE_KEYS": list(presets.STYLE_KEYS),
   "BUILTIN_PRESETS": {k: {kk: ([list(c) for c in vv] if kk == "custom_colors" else vv) for kk, vv in v.items()} for k, v in presets.all_presets().items() if k in presets.BUILTIN},
   "MANIFESTOS": manifestos.builtin(),
+  "WARPS": pairs(config.WARPS), "TEXT_DEFAULTS": config.TEXT_DEFAULTS, "TEXT_PRESETS": config.TEXT_PRESETS, "LAYER_TEMPLATES": config.LAYER_TEMPLATES,
   "STICKERS": {k: {"ru": v[0], "en": v[1], "prims": v[2]} for k, v in stickers.STICKERS.items()},
 }
 text = ("// Сгенерировано из config.py и presets.py (tools/gen_config_js.py). Не править вручную.\n"

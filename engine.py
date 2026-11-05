@@ -600,6 +600,62 @@ class ZineGraphicEngine:
         arr[..., 3] *= 1.0 - np.asarray(mask, dtype=np.float32) / 255.0
         return Image.fromarray(arr.astype(np.uint8), "RGBA")
 
+    @staticmethod
+    def add_mechanism(img, st, seed, s=1.0):
+        """Механика копира: заедание бумаги, эхо барабана, полосы тонера. Те же формулы, что addMechanism в engine.js."""
+        ghost, bands, smear = float(st.get("ghost", 0) or 0), float(st.get("bands", 0) or 0), float(st.get("smear", 0) or 0)
+        if not (ghost > 0 or bands > 0 or smear > 0):
+            return img
+        arr = np.asarray(img.convert("RGB"), dtype=np.float32).copy()
+        h, w = arr.shape[:2]
+        if smear > 0:
+            y0 = int((0.15 + 0.65 * _h01(int(seed), 97)) * h)
+            hb = max(3, int((0.02 + 0.07 * smear / 100.0) * h))
+            arr[y0:y0 + min(hb, h - y0)] = arr[y0].copy()
+        if ghost > 0:
+            dy, dx = int(h * 0.31), int(4 * s)
+            sh = np.full_like(arr, 255.0)
+            rolled = np.roll(arr, dy, axis=0)
+            sh[:, dx:] = rolled[:, :w - dx] if dx else rolled
+            a = 0.38 * ghost / 100.0
+            arr = arr * (1.0 - a) + a * arr * sh / 255.0
+        if bands > 0:
+            P = h / (5 + 3 * _h01(int(seed), 98))
+            phase = _h01(int(seed), 99) * 2 * math.pi
+            y = np.arange(h, dtype=np.float32)
+            a = (bands / 100.0) * 0.2 * (0.5 + 0.5 * np.sin(2 * math.pi * y / P + phase))
+            arr = arr * (1.0 - a)[:, None, None]
+        return Image.fromarray(np.clip(arr + 0.5, 0, 255).astype(np.uint8), "RGB")
+
+    @staticmethod
+    def _warp_image(loc, kind, k, bh=None):
+        """Искажение надписи по столбцам. loc - RGBA, поля сверху и снизу добавляются здесь. Как warpCanvas в engine.js."""
+        bh = bh or loc.height
+        m = int(math.ceil(bh * (0.15 + k * 0.9)))
+        W, H = loc.width, loc.height + 2 * m
+        src = Image.new("RGBA", (W, H), (0, 0, 0, 0))
+        src.paste(loc, (0, m))
+        out = Image.new("RGBA", (W, H), (0, 0, 0, 0))
+        for x in range(W):
+            t = ((x + 0.5) / W) * 2 - 1
+            col = src.crop((x, 0, x + 1, H))
+            if kind == "bulge":
+                sy = 1 + k * 0.8 * (1 - t * t)
+                nh = max(1, int(round(H * sy)))
+                out.paste(col.resize((1, nh), Image.BILINEAR), (x, int(round((H - nh) / 2))))
+                continue
+            dy = 0.0
+            if kind == "arch":
+                dy = -k * bh * 1.1 * (1 - t * t) + k * bh * 0.55
+            elif kind == "dip":
+                dy = k * bh * 1.1 * (1 - t * t) - k * bh * 0.55
+            elif kind == "wave":
+                dy = k * bh * 0.55 * math.sin(t * math.pi * 2)
+            elif kind == "slant":
+                dy = k * bh * 0.7 * t
+            out.paste(col, (x, int(round(dy))))
+        return out
+
     def photo_mask(self, key, dot=5, contrast=1.6, cutout=False, max_side=720):
         """Фото-объект -> маска краски (L, 255 = краска): контраст, растр и (по желанию) вырезка фона. Кэшируется."""
         imgs = getattr(self, "layer_images", None) or {}
@@ -680,6 +736,13 @@ class ZineGraphicEngine:
                         loc = self._ransom_image(text, fpx, color, paper_rgb, cols["ink2"])
                     else:
                         loc = self._text_layer_image(text, fpx, style, ly.get("font", "Arial Black"), color, paper_rgb)
+                        warp = ly.get("warp") or "none"
+                        if warp != "none":
+                            wk = min(1.0, max(0.0, float(ly.get("warp_k", 0.5) if ly.get("warp_k") is not None else 0.5)))
+                            loc = self._warp_image(loc, warp, wk)
+                    sx = min(3.0, max(0.4, float(ly.get("sx", 1.0) or 1.0)))
+                    if sx != 1.0:
+                        loc = loc.resize((max(1, int(round(loc.width * sx))), loc.height), Image.BICUBIC)
                 if ly.get("flipx"):
                     loc = loc.transpose(Image.FLIP_LEFT_RIGHT)
                 rot = float(ly.get("rot", 0))
@@ -845,6 +908,8 @@ class ZineGraphicEngine:
                 boxes.append((margin + i * (tw + gap), int(ch * 0.38), tw, int(ch * 0.24)))
         elif layout == "full_page":
             boxes.append((0, 0, cw, ch))
+        elif layout == "free":
+            return boxes  # кадров нет: лист собирается слоями
         else:
             return ZineGraphicEngine._layout_boxes("staggered", cw, ch, rows, ext, s)
         return boxes
@@ -1068,5 +1133,6 @@ class ZineGraphicEngine:
 
         out = self.add_paper(out, float(st["paper"]), seed + 21, s)
         final = self.add_wear(Image.fromarray(out), st, seed + 51, s)
+        final = self.add_mechanism(final, st, seed + 61, s)
         final = self.draw_layers(final, st, paper_rgb, ink_rgb, s)
         return final, Image.fromarray(bits)

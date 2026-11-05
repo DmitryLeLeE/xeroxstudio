@@ -487,3 +487,6 @@ ul.layers-list { list-style: none; margin: 0; padding: 0; }
 .layers-list .lrow .lbtn:hover, .layers-list .lrow .lbtn:focus-visible { background: #e0301e33; }
 .chk { display: flex; gap: 6px; align-items: center; font-size: 13px; padding: 2px 0; }
 @media (pointer: coarse) { .layers-list .lrow button { min-height: 40px; } .layers-list .lrow .lbtn { width: 40px; } }
+#layersBox .row { flex-wrap: wrap; } #layersBox .row .btn { min-width: 0; padding-left: 8px; padding-right: 8px; }
+#layersBox { min-width: 0; } .layers-list { min-width: 0; } .lrow { min-width: 0; }
+#layersBox select.sel { width: 100%; }

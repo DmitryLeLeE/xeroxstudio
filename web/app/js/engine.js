@@ -156,6 +156,33 @@ function applyStain(c, w, h, rng, cx, cy, r, grease, power) {
   c.putImageData(img, x0, y0);
 }
 
+
+/** Механика копира: эхо барабана, полосы тонера, заедание бумаги (аналог add_mechanism в engine.py). */
+function addMechanism(canvas, st, seed, s) {
+  const ghost = Number(st.ghost) || 0, bands = Number(st.bands) || 0, smear = Number(st.smear) || 0;
+  if (!(ghost > 0 || bands > 0 || smear > 0)) return;
+  const w = canvas.width, h = canvas.height, c = ctx2d(canvas);
+  if (smear > 0) { // бумага заела: одна строка тянется вниз полосой
+    const y0 = Math.floor((0.15 + 0.65 * hash01(seed, 97)) * h), hb = Math.max(3, Math.floor((0.02 + 0.07 * smear / 100) * h));
+    const row = makeCanvas(w, 1); ctx2d(row).drawImage(canvas, 0, y0, w, 1, 0, 0, w, 1);
+    c.drawImage(row, 0, 0, w, 1, 0, y0, w, Math.min(hb, h - y0));
+  }
+  if (ghost > 0) { // изображение повторяется через длину окружности барабана, бледнее
+    const tmp = makeCanvas(w, h); ctx2d(tmp).drawImage(canvas, 0, 0);
+    const dy = Math.floor(h * 0.31), dx = Math.floor(4 * s);
+    c.save(); c.globalCompositeOperation = "multiply"; c.globalAlpha = 0.38 * ghost / 100;
+    c.drawImage(tmp, dx, dy); c.drawImage(tmp, dx, dy - h);
+    c.restore();
+  }
+  if (bands > 0) { // периодические тёмные полосы поперёк листа
+    const P = h / (5 + 3 * hash01(seed, 98)), phase = hash01(seed, 99) * Math.PI * 2;
+    for (let y = 0; y < h; y++) {
+      const a = (bands / 100) * 0.2 * (0.5 + 0.5 * Math.sin((2 * Math.PI * y) / P + phase));
+      if (a > 0.004) { c.fillStyle = `rgba(0,0,0,${a.toFixed(4)})`; c.fillRect(0, y, w, 1); }
+    }
+  }
+}
+
 /** Износ листа поверх готового кадра: пятна, пыль и волоски, сгиб, дырки, штамп (аналог add_wear в engine.py). */
 function addWear(canvas, st, seed, s) {
   const stains = Number(st.stains), dust = Number(st.dust), fold = Number(st.fold), holes = Number(st.holes), stamp = String(st.stamp || "").replace(/\n/g, " ").trim();
@@ -331,6 +358,27 @@ export function makePhotoMask(canvas, { maxSide = 720, dot = 5, contrast = 1.6, 
   return res;
 }
 
+
+/** Искажение надписи по столбцам: арка, прогиб, волна, раздувание, наклон (аналог _warp_image в engine.py). */
+function warpCanvas(src, kind, k, bh) {
+  const W = src.width, H = src.height, out = makeCanvas(W, H), oc = ctx2d(out);
+  for (let x = 0; x < W; x++) {
+    const t = ((x + 0.5) / W) * 2 - 1;
+    if (kind === "bulge") {
+      const sy = 1 + k * 0.8 * (1 - t * t);
+      oc.drawImage(src, x, 0, 1, H, x, (H - H * sy) / 2, 1, H * sy);
+      continue;
+    }
+    let dy = 0;
+    if (kind === "arch") dy = -k * bh * 1.1 * (1 - t * t) + k * bh * 0.55;
+    else if (kind === "dip") dy = k * bh * 1.1 * (1 - t * t) - k * bh * 0.55;
+    else if (kind === "wave") dy = k * bh * 0.55 * Math.sin(t * Math.PI * 2);
+    else if (kind === "slant") dy = k * bh * 0.7 * t;
+    oc.drawImage(src, x, 0, 1, H, x, Math.round(dy), 1, H);
+  }
+  return out;
+}
+
 function drawLayers(canvas, st, paper, ink, masks = {}) {
   const layers = st.layers; if (!Array.isArray(layers) || !layers.length) return;
   const w = canvas.width, c = ctx2d(canvas), h = canvas.height;
@@ -355,15 +403,26 @@ function drawLayers(canvas, st, paper, ink, masks = {}) {
     else {
       const text = String(ly.text || "").trim(); if (!text) { c.restore(); continue; }
       const fpx = Math.max(8, Math.round(size * w * 0.5));
+      const sx = clamp(Number(ly.sx) || 1, 0.4, 3), warp = ly.warp && ly.warp !== "none" ? ly.warp : null, wk = clamp(ly.warp_k == null ? 0.5 : Number(ly.warp_k), 0, 1);
+      if (sx !== 1) c.scale(sx, 1);
       if (ly.style === "ransom") { drawRansom(c, text, fpx, color, cols.paper, cols.ink2); c.restore(); continue; }
       const lines = text.split("\n"), pad = fpx * 0.3, lh = fpx * 1.15;
       c.font = fontSpec(ly.font || "Arial Black", fpx); c.textBaseline = "top"; c.textAlign = "left";
       const tw = Math.max(...lines.map((l) => c.measureText(l).width)), th = lh * lines.length, bw = tw + 2 * pad, bh = th + 2 * pad;
       const style = ly.style || "box";
-      if (style === "box") { c.fillStyle = cols.paper; c.fillRect(-bw / 2, -bh / 2, bw, bh); c.fillStyle = color; }
-      else if (style === "tape") { c.fillStyle = color; c.fillRect(-bw / 2, -bh / 2, bw, bh); c.fillStyle = cols.paper; }
-      else { c.fillStyle = color; c.strokeStyle = cols.paper; c.lineWidth = Math.max(2, fpx * 0.16); c.lineJoin = "round"; }
-      lines.forEach((l, i) => { const y = -bh / 2 + pad + i * lh; if (style === "plain") c.strokeText(l, -bw / 2 + pad, y); c.fillText(l, -bw / 2 + pad, y); });
+      const paint = (cc) => {
+        cc.font = fontSpec(ly.font || "Arial Black", fpx); cc.textBaseline = "top"; cc.textAlign = "left";
+        if (style === "box") { cc.fillStyle = cols.paper; cc.fillRect(-bw / 2, -bh / 2, bw, bh); cc.fillStyle = color; }
+        else if (style === "tape") { cc.fillStyle = color; cc.fillRect(-bw / 2, -bh / 2, bw, bh); cc.fillStyle = cols.paper; }
+        else { cc.fillStyle = color; cc.strokeStyle = cols.paper; cc.lineWidth = Math.max(2, fpx * 0.16); cc.lineJoin = "round"; }
+        lines.forEach((l, i) => { const y = -bh / 2 + pad + i * lh; if (style === "plain") cc.strokeText(l, -bw / 2 + pad, y); cc.fillText(l, -bw / 2 + pad, y); });
+      };
+      if (!warp) paint(c);
+      else {
+        const m = Math.ceil(bh * (0.15 + wk * 0.9)), W = Math.ceil(bw) + 4, Hh = Math.ceil(bh) + 2 * m, off = makeCanvas(W, Hh), oc = ctx2d(off);
+        oc.translate(W / 2, Hh / 2); paint(oc);
+        c.drawImage(warpCanvas(off, warp, wk, bh), -W / 2, -Hh / 2);
+      }
     }
     c.restore();
   }
@@ -623,6 +682,8 @@ export function layoutBoxes(layout, cw, ch, rows, ext) {
     for (let i = 0; i < n; i++) boxes.push([margin + i * (tw + gap), Math.floor(ch * 0.38), tw, Math.floor(ch * 0.24)]);
   } else if (layout === "full_page") {
     boxes.push([0, 0, cw, ch]);
+  } else if (layout === "free") {
+    return boxes; // кадров нет: лист собирается слоями
   } else {
     const colW = Math.floor(cw * 0.58), rowH = Math.floor(ch / rows);
     for (let r = 0; r < rows; r++) boxes.push([r % 2 === 0 ? Math.floor(cw * 0.05) : Math.floor(cw * 0.37), r * rowH, colW, rowH + ext]);
@@ -1048,6 +1109,7 @@ export async function renderPage(source, state, opts = {}) {
   const result = makeCanvas(cw, ch);
   ctx2d(result).putImageData(out, 0, 0);
   addWear(result, st, seed + 51, s);
+  addMechanism(result, st, seed + 61, s);
   drawLayers(result, st, paper, ink, opts.masks || {});
   return { canvas: result, bits, plate2, extraPlates, inks: { paper, ink, ink2: plate2 ? st.ink2 : null }, width: cw, height: ch };
 }

@@ -169,11 +169,14 @@ const SECTIONS = () => [
     { t: "button", label: T("🎨 Палитра из фото", "🎨 Palette from photo"), act: () => paletteFromPhoto() },
     { k: "invert", adv: true, t: "check", label: T("Инвертировать цвета", "Invert colors") },
   ] },
-  { tab: "style", title: T("5. ИЗНОС ЛИСТА И ШТАМП", "5. SHEET WEAR & STAMP"), items: [
+  { tab: "style", title: T("5. ИЗНОС ЛИСТА, МЕХАНИКА КОПИРА И ШТАМП", "5. SHEET WEAR, COPIER MECHANICS & STAMP"), items: [
     { k: "fold", t: "range", label: T("Сгиб листа", "Fold crease"), min: 0, max: 100, step: 1 },
     { k: "holes", adv: true, t: "check", label: T("Дырки от дырокола", "Punch holes") },
     { k: "stains", t: "range", label: T("Пятна (кофе, жир)", "Stains (coffee, grease)"), min: 0, max: 100, step: 1 },
     { k: "dust", t: "range", label: T("Пыль и волоски", "Dust & hairs"), min: 0, max: 100, step: 1 },
+    { k: "ghost", t: "range", label: T("Эхо барабана (бледный повтор)", "Drum echo (faint repeat)"), min: 0, max: 100, step: 1 },
+    { k: "bands", t: "range", label: T("Полосы тонера", "Toner banding"), min: 0, max: 100, step: 1 },
+    { k: "smear", t: "range", label: T("Заедание бумаги", "Paper jam smear"), min: 0, max: 100, step: 1 },
     { k: "stamp", adv: true, t: "text", label: T("Штамп (пусто = нет)", "Stamp (empty = none)") },
     { k: "stamp_rot", adv: true, t: "range", label: T("Поворот штампа (°)", "Stamp rotation (°)"), min: -45, max: 45, step: 1 },
   ] },
@@ -306,6 +309,7 @@ function buildControl(it) {
       touch();
       if (it.k === "format") { fitView(); }
       if (it.k === "palette") updateSwatches();
+      if (it.k === "layout" && sel.value === "free") ensureFreeStart();
       commit(); requestRender();
     });
     wrap.append(sel);
@@ -810,7 +814,8 @@ const layerBox = (ly) => {
   if (ly.type === "sticker") return [ly.size, ly.size];
   if (ly.type === "bitmap") { const c = S.images.get(ly.img)?.canvas; return [ly.size, ly.size * (c ? c.height / c.width : 1)]; }
   const lines = String(ly.text || " ").split("\n"), fpx = ly.size * 0.5, n = Math.max(...lines.map((l) => l.length), 1);
-  return [n * fpx * 0.6 + 0.6 * fpx, 1.15 * fpx * lines.length + 0.6 * fpx];
+  const wp = ly.warp && ly.warp !== "none" ? 1 + 0.9 * (ly.warp_k == null ? 0.5 : ly.warp_k) : 1;
+  return [(n * fpx * 0.6 + 0.6 * fpx) * (ly.sx || 1), (1.15 * fpx * lines.length + 0.6 * fpx) * wp];
 };
 const layerSel = $("#layerSel");
 for (const [cls, label] of [["nw", "Scale"], ["ne", "Scale"], ["se", "Scale"], ["sw", "Scale"], ["rot", "Rotate"]]) {
@@ -856,6 +861,28 @@ function layerName(ly) {
   if (ly.type === "bitmap") return `▣ ${T("Фото", "Photo")}`;
   return `Aa “${String(ly.text || "").split("\n")[0].slice(0, 22) || T("пусто", "empty")}”`;
 }
+const photoLayer = (key, extra = {}) => ({ type: "bitmap", img: key, x: 0.5, y: 0.5, size: 0.8, rot: 0, color: "ink", opacity: 1, backing: true, torn: true, dot: 5, contrast: 1.6, cutout: false, ...extra });
+// Свободный лист без слоёв пуст: кладём на него фото страницы, чтобы было что двигать
+function ensureFreeStart() {
+  const st = page(); if (!st.img || layersOf().length) return;
+  layersOf().push(photoLayer(st.img)); LY.sel = 0; refreshLayersUI();
+  toast(T("Свободный лист: фото лежит слоем. Добавляй надписи, стикеры и другие фото, расставляй как хочешь.", "Free sheet: the photo is now a layer. Add texts, stickers and more photos and arrange them."), "ok", 5000);
+}
+function applyTemplate(name) {
+  const tpl = CFG.LAYER_TEMPLATES[name], st = page(); if (!tpl) return;
+  flushCommit();
+  const { rot: _r, ...textBase } = CFG.TEXT_DEFAULTS, L = [];
+  for (const t of tpl) {
+    const { photo, preset, text_en, ...rest } = t;
+    if (photo) { if (st.img) L.push(photoLayer(st.img, rest)); continue; }
+    if (rest.type === "sticker") { L.push({ opacity: 1, color: "ink", rot: 0, ...rest }); continue; }
+    L.push({ type: "text", sticker: "star", color: "ink", style: "box", font: "Arial Black", opacity: 1, rot: 0, ...textBase, ...(CFG.TEXT_PRESETS[preset] || {}), ...rest, text: LANG === "en" && text_en ? text_en : rest.text });
+  }
+  if (L.length && !st.img && tpl.some((t) => t.photo)) toast(T("Фото нет: шаблон собран без него. Загрузи фото и выбери шаблон ещё раз.", "No photo yet: the template was built without it. Load a photo and pick it again."), "ok", 4500);
+  st.layers = L; st.layout = "free"; st.txt_top = ""; st.txt_bottom = ""; LY.sel = -1;
+  syncUI(); commit(); requestRender(); refreshLayersUI();
+  toast(T(`Шаблон «${name}» собран. Ctrl+Z вернёт прежний лист.`, `Template “${name}” applied. Ctrl+Z restores the previous sheet.`), "ok", 3500);
+}
 function refreshLayersUI() {
   const box = $("#layersBox"); if (!box) return;
   const L = layersOf();
@@ -866,6 +893,12 @@ function refreshLayersUI() {
     const b = document.createElement("button"); b.className = "btn grow"; b.textContent = text; b.addEventListener("click", fn); row.append(b);
   }
   box.append(row);
+  const tpl = document.createElement("div"); tpl.className = "row gap";
+  const tsel = document.createElement("select"); tsel.className = "sel grow"; tsel.setAttribute("aria-label", T("Шаблон свободного листа", "Free-sheet template"));
+  tsel.append(new Option(T("Шаблон листа…", "Sheet template…"), ""));
+  for (const n of Object.keys(CFG.LAYER_TEMPLATES)) tsel.append(new Option(n, n));
+  tsel.addEventListener("change", () => { const n = tsel.value; tsel.value = ""; if (n) applyTemplate(n); });
+  tpl.append(tsel); box.append(tpl);
   const list = document.createElement("ul"); list.className = "layers-list"; list.setAttribute("aria-label", T("Слои (сверху вниз)", "Layers (top to bottom)"));
   for (let i = L.length - 1; i >= 0; i--) {
     const ly = L[i], li = document.createElement("li"); li.className = "lrow"; if (i === LY.sel) li.classList.add("sel"); if (ly.hidden) li.classList.add("off");
@@ -917,6 +950,10 @@ function refreshLayersUI() {
       w.append(ta); ed.append(w);
       ed.append(mkSelect(T("Подложка", "Backing"), [["box", T("Плашка", "Box")], ["tape", T("Лента", "Tape")], ["plain", T("Без подложки", "Plain")], ["ransom", T("Записка из газетных букв", "Ransom note")]], () => ly.style || "box", (v) => (ly.style = v)));
       ed.append(mkSelect(T("Шрифт", "Font"), Object.keys(CFG.FONTS).map((k) => [k, k]), () => ly.font || "Arial Black", (v) => (ly.font = v)));
+      ed.append(mkSelect(T("Готовый стиль надписи", "Text style preset"), [["", T("— выбрать —", "— pick —")], ...Object.keys(CFG.TEXT_PRESETS).map((k) => [k, k])], () => "", (v) => { if (v) { const { rot, ...base } = CFG.TEXT_DEFAULTS; Object.assign(ly, base, CFG.TEXT_PRESETS[v]); } }));
+      ed.append(mkSelect(T("Искажение", "Distortion"), CFG.WARPS.map(([ru, v]) => [v, ru]), () => ly.warp || "none", (v) => (ly.warp = v)));
+      if (ly.warp && ly.warp !== "none") ed.append(mkRange(T("Сила искажения", "Distortion strength"), 0.05, 1, 0.05, () => (ly.warp_k == null ? 0.5 : ly.warp_k), (v) => (ly.warp_k = v)));
+      ed.append(mkRange(T("Растяжение по ширине", "Horizontal stretch"), 0.4, 3, 0.05, () => ly.sx || 1, (v) => (ly.sx = v)));
     }
     ed.append(mkRange(T("Размер", "Size"), 0.04, 1, 0.01, () => ly.size, (v) => (ly.size = v)));
     ed.append(mkRange(T("Поворот (°)", "Rotation (°)"), -180, 180, 1, () => ly.rot || 0, (v) => (ly.rot = v)));
@@ -1053,7 +1090,7 @@ async function addPhotoObject(file) {
     addLayer({ type: "bitmap", img: key, size: 0.45, x: 0.5, y: 0.5, backing: true, torn: true, dot: 5, contrast: 1.6, cutout: false });
   } catch (e) { setBusy(false); console.warn(e); toast(T("Не удалось открыть файл.", "Could not open the file."), "err"); }
 }
-$("#fileObj").addEventListener("change", (e) => { const f = e.target.files[0]; e.target.value = ""; if (f) addPhotoObject(f); });
+$("#fileObj").addEventListener("change", async (e) => { const fs = [...e.target.files]; e.target.value = ""; for (const f of fs) await addPhotoObject(f); });
 $("#btnAddPhoto").addEventListener("click", () => { closeAdd(); $("#fileObj").click(); });
 
 // ---------------------------------------------------------------- фото страницы и кадрирование
