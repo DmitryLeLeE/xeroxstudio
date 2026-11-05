@@ -2,7 +2,7 @@ import json
 
 import pytest
 
-from conftest import wait_ready
+from conftest import WEB, wait_ready
 
 
 
@@ -302,12 +302,12 @@ def test_layers_add_drag_and_render(page_factory):
     pg = page_factory()
     wait_ready(pg)
     pg.evaluate("[...document.querySelectorAll('#layersBox button')].find(b => /Text|Надпись/.test(b.textContent)).click()")
-    assert pg.evaluate("document.querySelectorAll('.layers-list button').length") == 1
+    assert pg.evaluate("document.querySelectorAll('.layers-list .lname').length") == 1
     pg.evaluate("[...document.querySelectorAll('#layersBox button')].find(b => /Sticker|Стикер/.test(b.textContent)).click()")
     pg.wait_for_selector("#dlgStickers[open]")
     assert pg.evaluate("document.querySelectorAll('#stickerGrid button').length") >= 12
     pg.click("#stickerGrid button >> nth=0")
-    assert pg.evaluate("document.querySelectorAll('.layers-list button').length") == 2
+    assert pg.evaluate("document.querySelectorAll('.layers-list .lname').length") == 2
     # перетащить выбранный слой
     box = pg.evaluate("(() => { const r = document.querySelector('#layerSel').getBoundingClientRect(); return [r.x + r.width / 2, r.y + r.height / 2]; })()")
     pg.mouse.move(box[0], box[1]); pg.mouse.down(); pg.mouse.move(box[0] + 60, box[1] + 40, steps=5); pg.mouse.up()
@@ -316,7 +316,7 @@ def test_layers_add_drag_and_render(page_factory):
     assert abs(moved[0] - (box[0] + 60)) < 6 and abs(moved[1] - (box[1] + 40)) < 6
     # удалить
     pg.evaluate("[...document.querySelectorAll('.layer-ed button')].find(b => /Delete|Удалить/.test(b.textContent)).click()")
-    assert pg.evaluate("document.querySelectorAll('.layers-list button').length") == 1
+    assert pg.evaluate("document.querySelectorAll('.layers-list .lname').length") == 1
     assert pg.errors == []
 
 
@@ -408,7 +408,7 @@ def test_worker_pool_renders_in_parallel_and_matches(page_factory):
 def test_layer_quick_add_buttons_and_keyboard(page_factory):
     pg = page_factory()
     wait_ready(pg)
-    n = lambda: pg.evaluate("document.querySelectorAll('.layers-list button').length")
+    n = lambda: pg.evaluate("document.querySelectorAll('.layers-list .lname').length")
     pg.click("#btnAdd"); pg.click("#btnAddText")
     assert n() == 1
     assert pg.evaluate("document.activeElement && document.activeElement.tagName") == "TEXTAREA"  # сразу можно печатать
@@ -425,7 +425,7 @@ def test_layer_quick_add_buttons_and_keyboard(page_factory):
     pg.keyboard.press("Delete")
     assert n() == 1
     pg.keyboard.press("Escape")
-    assert pg.evaluate("document.querySelectorAll('.layers-list button[aria-pressed=true]').length") == 0
+    assert pg.evaluate("document.querySelectorAll('.layers-list .lname[aria-pressed=true]').length") == 0
     assert pg.errors == []
 
 
@@ -476,7 +476,7 @@ def test_layer_bar_and_export_size_labels_and_more_menu(page_factory):
     pg.wait_for_selector("#dlgStickers[open]"); pg.click("#stickerGrid button >> nth=0")
     assert pg.evaluate("!document.querySelector('#layerBar').hidden")
     pg.click("#layerBar [data-act=copy]")
-    assert pg.evaluate("document.querySelectorAll('.layers-list button').length") == 2
+    assert pg.evaluate("document.querySelectorAll('.layers-list .lname').length") == 2
     pg.click("#layerBar [data-act=del]"); pg.click("#layerBar [data-act=del]")
     assert pg.evaluate("document.querySelector('#layerBar').hidden")
     pg.click("#btnFile")
@@ -549,3 +549,37 @@ def test_tablet_portrait_uses_side_panel(page_factory):
     r = pg.evaluate("(() => { const d = document.querySelector('#drawer').getBoundingClientRect(), v = document.querySelector('#preview').getBoundingClientRect(); return [d.right, v.left, v.width]; })()")
     assert r[0] <= r[1] + 1 and r[2] > 300           # лист рядом с панелью, а не под ней
     assert pg.evaluate("document.documentElement.scrollWidth <= innerWidth")
+
+
+def test_photo_object_handles_snap_and_layer_rows(page_factory, tmp_path):
+    pg = page_factory()
+    wait_ready(pg)
+    pg.click("#btnAdd")
+    with pg.expect_file_chooser() as fc:
+        pg.click("#btnAddPhoto")
+    fc.value.set_files(str(WEB / "img" / "sample.jpg"))
+    pg.wait_for_function("window.__zine.page().layers.length === 1")
+    assert pg.evaluate("window.__zine.page().layers[0].type") == "bitmap"
+    # масштаб за угловую ручку
+    s0 = pg.evaluate("window.__zine.page().layers[0].size")
+    h = pg.locator(".lh-se").bounding_box()
+    pg.mouse.move(h["x"] + 7, h["y"] + 7); pg.mouse.down(); pg.mouse.move(h["x"] + 50, h["y"] + 50, steps=4); pg.mouse.up()
+    assert pg.evaluate("window.__zine.page().layers[0].size") > s0
+    # поворот за верхнюю ручку
+    r = pg.locator(".lh-rot").bounding_box()
+    pg.mouse.move(r["x"] + 7, r["y"] + 7); pg.mouse.down(); pg.mouse.move(r["x"] + 100, r["y"] + 30, steps=4); pg.mouse.up()
+    assert pg.evaluate("window.__zine.page().layers[0].rot") != 0
+    # привязка к центру: слой чуть сдвинут и должен прилипнуть к 0.5
+    box = pg.evaluate("(() => { const r = document.querySelector('#layerSel').getBoundingClientRect(); return [r.x + r.width / 2, r.y + r.height / 2]; })()")
+    pg.mouse.move(box[0], box[1]); pg.mouse.down(); pg.mouse.move(box[0] + 3, box[1] + 2, steps=3)
+    assert pg.evaluate("document.querySelector('.guide-v').hidden") is False
+    pg.mouse.up()
+    assert pg.evaluate("window.__zine.page().layers[0].x") == 0.5
+    # глаз, замок
+    pg.evaluate("document.querySelector('#layersBox .lrow .lbtn').click()")
+    assert pg.evaluate("window.__zine.page().layers[0].hidden") is True
+    pg.evaluate("document.querySelector('#layersBox .lrow .lbtn').click()")
+    pg.evaluate("document.querySelectorAll('#layersBox .lrow .lbtn')[1].click()")
+    assert pg.evaluate("window.__zine.page().layers[0].locked") is True
+    assert pg.evaluate("document.querySelector('#layerSel').classList.contains('locked')")
+    assert pg.errors == []

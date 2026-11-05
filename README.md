@@ -37,6 +37,7 @@ line, give it to someone. It comes in two versions with the same looks and the s
 - **Layers.** Any number of texts and 28 vector stickers per page (skull, anarchy, COPY, DIY, cassette…), draggable in both versions. A *ransom note* backing cuts every letter from a different paper scrap. Third and fourth ink for 3–4 colour prints.
 - **Underground fonts.** Rubik Dirt, Distressed, Wet Paint, Spray Paint and Glitch (all with Cyrillic), plus the older bundled set.
 - **Sheet-first layout.** The sheet fills the screen; a ribbon of icons opens one slide-out panel at a time (left on desktop, bottom on phones, same in the desktop app); Esc or ✕ closes it, *All* lists every setting.
+- **Real layers.** Texts, stickers and your own photos are free objects: drag, scale and rotate them with on-sheet handles, snap to centre and edges, hide, lock, reorder, set opacity.
 - **Style gallery.** Every preset rendered on your own photo, plus six random variations; click one to apply (browser).
 - **Sheet wear.** Fold crease, punch holes, stains, dust and a stamp with your own text. Remix has locks, Mutate nudges a look.
 - **Booklet.** Saddle-stitch PDF for any page count (A4 / Letter) and a printer calibration sheet (browser).

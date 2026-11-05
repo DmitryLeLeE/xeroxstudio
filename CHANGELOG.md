@@ -1,5 +1,15 @@
 # Changelog
 
+## 2.4.0
+
+Слои как в графических редакторах.
+
+- Фото-объекты: любое изображение можно положить на лист свободным слоем: полутон, бумажная подложка с рваным краем, по желанию вырезка фона. Размер точки и контраст настраиваются.
+- Ручки на самом листе: углы меняют размер, верхняя ручка крутит слой (с прилипанием к 0/45/90°, Alt отключает).
+- Привязка к центру и краям листа с направляющими при перетаскивании (Alt отключает).
+- Панель слоёв: глаз (скрыть), замок, порядок вверх/вниз, прозрачность, отражение, копия. Список идёт сверху вниз, как в редакторах.
+- Те же возможности в Python-движке и десктопном приложении; картинки фото-слоёв сохраняются в .zine.
+
 ## 2.3.0
 - **Polish pass across screen sizes.** Tablets in portrait now get the side panel (the sheet no longer shrinks under a bottom sheet), narrow desktop windows compact the page buttons and panel so nothing runs off the edge, short windows get smaller ribbon tiles, the floating buttons fit their English labels.
 - **Touch.** Header, floating and page buttons, selects and the panel handle all reach the 44 px target size on touch screens.

@@ -464,3 +464,26 @@ html:not([data-theme="paper"]) .top { background: #000; }
   .app { --tile: 46px; } .rail { gap: 5px; } .rail button { min-height: var(--tile); padding: 3px 2px 2px; }
   .rail button svg { width: 20px; height: 20px; }
 }
+
+/* слои: ручки, направляющие, панель */
+.layer-sel .lh { position: absolute; width: 14px; height: 14px; background: #fff; border: 2px solid #e0301e; border-radius: 3px; pointer-events: auto; touch-action: none; box-sizing: border-box; }
+.layer-sel .lh::after { content: ""; position: absolute; inset: -12px; }
+.lh-nw { left: -8px; top: -8px; cursor: nwse-resize; } .lh-ne { right: -8px; top: -8px; cursor: nesw-resize; }
+.lh-se { right: -8px; bottom: -8px; cursor: nwse-resize; } .lh-sw { left: -8px; bottom: -8px; cursor: nesw-resize; }
+.lh-rot { left: 50%; top: -30px; margin-left: -7px; border-radius: 50%; cursor: grab; }
+.lh-rot::before { content: ""; position: absolute; left: 4px; top: 12px; width: 2px; height: 18px; background: #e0301e; }
+.layer-sel.locked { border-style: solid; border-color: #888; } .layer-sel.locked .lh { display: none; }
+.layer-sel.off { opacity: .5; }
+@media (pointer: coarse) { .layer-sel .lh { width: 20px; height: 20px; } .lh-nw { left: -11px; top: -11px; } .lh-ne { right: -11px; top: -11px; } .lh-se { right: -11px; bottom: -11px; } .lh-sw { left: -11px; bottom: -11px; } .lh-rot { top: -40px; margin-left: -10px; } .lh-rot::before { left: 7px; top: 20px; } }
+.guide { position: absolute; z-index: 7; pointer-events: none; background: #e0301e; opacity: .85; }
+.guide-v { top: 0; bottom: 0; left: 0; width: 1px; } .guide-h { left: 0; right: 0; top: 0; height: 1px; }
+.guide[hidden] { display: none; }
+ul.layers-list { list-style: none; margin: 0; padding: 0; }
+.lrow { display: flex; align-items: stretch; gap: 3px; border: 1.5px solid #888; border-radius: 6px; padding: 2px; }
+.lrow.sel { border-color: #e0301e; background: #e0301e22; } .lrow.off .lname { opacity: .45; text-decoration: line-through; }
+.layers-list .lrow button { border: 0; padding: 4px 7px; min-height: 32px; }
+.layers-list .lrow .lname { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; background: transparent; }
+.layers-list .lrow .lbtn { width: 32px; text-align: center; background: transparent; }
+.layers-list .lrow .lbtn:hover, .layers-list .lrow .lbtn:focus-visible { background: #e0301e33; }
+.chk { display: flex; gap: 6px; align-items: center; font-size: 13px; padding: 2px 0; }
+@media (pointer: coarse) { .layers-list .lrow button { min-height: 40px; } .layers-list .lrow .lbtn { width: 40px; } }

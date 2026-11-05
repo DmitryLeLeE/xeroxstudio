@@ -808,17 +808,22 @@ const layersOf = () => (page().layers = Array.isArray(page().layers) ? page().la
 const layerBox = (ly) => {
   // размеры в долях ширины листа (как в движке)
   if (ly.type === "sticker") return [ly.size, ly.size];
+  if (ly.type === "bitmap") { const c = S.images.get(ly.img)?.canvas; return [ly.size, ly.size * (c ? c.height / c.width : 1)]; }
   const lines = String(ly.text || " ").split("\n"), fpx = ly.size * 0.5, n = Math.max(...lines.map((l) => l.length), 1);
   return [n * fpx * 0.6 + 0.6 * fpx, 1.15 * fpx * lines.length + 0.6 * fpx];
 };
+const layerSel = $("#layerSel");
+for (const [cls, label] of [["nw", "Scale"], ["ne", "Scale"], ["se", "Scale"], ["sw", "Scale"], ["rot", "Rotate"]]) {
+  const h = document.createElement("i"); h.className = `lh lh-${cls}`; h.dataset.h = cls === "rot" ? "rot" : "scale"; h.setAttribute("aria-hidden", "true"); layerSel.append(h);
+}
 function updateLayerSel() {
   if (!LY || !page()) return;
-  const el = $("#layerSel"), ly = layersOf()[LY.sel];
+  const el = layerSel, ly = layersOf()[LY.sel];
   $("#layerBar").hidden = !ly;
   if (ly) $("#lbEdit").hidden = ly.type !== "text";
   if (!ly) { el.hidden = true; return; }
   const [bw, bh] = baseSize(), pw = bw * V.zoom, ph = bh * V.zoom, [w, h] = layerBox(ly);
-  el.hidden = false;
+  el.hidden = false; el.classList.toggle("locked", !!ly.locked); el.classList.toggle("off", !!ly.hidden);
   el.style.width = `${w * pw}px`; el.style.height = `${h * pw}px`;
   el.style.transform = `translate(${V.tx + ly.x * pw - (w * pw) / 2}px, ${V.ty + ly.y * ph - (h * pw) / 2}px) rotate(${ly.rot || 0}deg)`;
 }
@@ -827,7 +832,8 @@ function hitLayer(clientX, clientY) {
   if (!L.length) return -1;
   const X = (clientX - r.left) / r.width, Y = (clientY - r.top) / r.width, ratio = r.height / r.width;
   for (let i = L.length - 1; i >= 0; i--) {
-    const ly = L[i], [w, h] = layerBox(ly), a = (-(ly.rot || 0) * Math.PI) / 180;
+    const ly = L[i]; if (ly.hidden || ly.locked) continue;
+    const [w, h] = layerBox(ly), a = (-(ly.rot || 0) * Math.PI) / 180;
     const dx = X - ly.x, dy = Y - ly.y * ratio, rx = dx * Math.cos(a) - dy * Math.sin(a), ry = dx * Math.sin(a) + dy * Math.cos(a);
     if (Math.abs(rx) <= w / 2 && Math.abs(ry) <= h / 2) return i;
   }
@@ -836,7 +842,7 @@ function hitLayer(clientX, clientY) {
 function addLayer(proto) {
   flushCommit();
   const L = layersOf();
-  L.push({ type: "text", text: "", sticker: "star", x: 0.5, y: 0.5, size: 0.2, rot: 0, color: "ink", style: "box", font: "Arial Black", ...proto });
+  L.push({ type: "text", text: "", sticker: "star", opacity: 1, x: 0.5, y: 0.5, size: 0.2, rot: 0, color: "ink", style: "box", font: "Arial Black", ...proto });
   LY.sel = L.length - 1;
   commit(); requestRender(); refreshLayersUI();
   if (proto && proto.type === "text" && !isPhone()) revealLayerText();
@@ -845,9 +851,10 @@ function addLayer(proto) {
     toast(T("Тяните слой по листу. Двойной клик по тексту — править, Delete — убрать.", "Drag the layer on the sheet. Double-click a text to edit, Delete to remove."), "ok", 5000);
   }
 }
-function layerName(ly, i) {
-  const base = ly.type === "sticker" ? `${lbl("", "")}${(CFG.STICKERS[ly.sticker] || {})[LANG === "ru" ? "ru" : "en"] || ly.sticker}` : `“${String(ly.text || "").split("\n")[0].slice(0, 22) || T("пусто", "empty")}”`;
-  return `${i + 1}. ${ly.type === "sticker" ? "✦" : "Aa"} ${base}`;
+function layerName(ly) {
+  if (ly.type === "sticker") return `✦ ${(CFG.STICKERS[ly.sticker] || {})[LANG === "ru" ? "ru" : "en"] || ly.sticker}`;
+  if (ly.type === "bitmap") return `▣ ${T("Фото", "Photo")}`;
+  return `Aa “${String(ly.text || "").split("\n")[0].slice(0, 22) || T("пусто", "empty")}”`;
 }
 function refreshLayersUI() {
   const box = $("#layersBox"); if (!box) return;
@@ -855,17 +862,30 @@ function refreshLayersUI() {
   if (LY.sel >= L.length) LY.sel = L.length - 1;
   box.textContent = "";
   const row = document.createElement("div"); row.className = "row gap";
-  for (const [text, fn] of [[T("＋ Надпись", "＋ Text"), () => addLayer({ type: "text", text: T("НОВАЯ НАДПИСЬ", "NEW TEXT") })], [T("＋ Стикер…", "＋ Sticker…"), openStickers]]) {
+  for (const [text, fn] of [[T("＋ Надпись", "＋ Text"), () => addLayer({ type: "text", text: T("НОВАЯ НАДПИСЬ", "NEW TEXT") })], [T("＋ Стикер", "＋ Sticker"), openStickers], [T("＋ Фото", "＋ Photo"), () => $("#fileObj").click()]]) {
     const b = document.createElement("button"); b.className = "btn grow"; b.textContent = text; b.addEventListener("click", fn); row.append(b);
   }
   box.append(row);
-  const list = document.createElement("div"); list.className = "layers-list";
-  L.forEach((ly, i) => {
-    const b = document.createElement("button"); b.type = "button"; b.textContent = layerName(ly, i); b.setAttribute("aria-pressed", String(i === LY.sel));
-    b.addEventListener("click", () => { LY.sel = i; refreshLayersUI(); });
-    list.append(b);
-  });
-  if (!L.length) { const p = document.createElement("p"); p.className = "muted small"; p.textContent = T("Слоёв нет. Добавь надпись или стикер, потом таскай их по листу.", "No layers yet. Add a text or a sticker, then drag it around the sheet."); box.append(p); }
+  const list = document.createElement("ul"); list.className = "layers-list"; list.setAttribute("aria-label", T("Слои (сверху вниз)", "Layers (top to bottom)"));
+  for (let i = L.length - 1; i >= 0; i--) {
+    const ly = L[i], li = document.createElement("li"); li.className = "lrow"; if (i === LY.sel) li.classList.add("sel"); if (ly.hidden) li.classList.add("off");
+    const mk = (cls, txt, title, fn, pressed) => {
+      const b = document.createElement("button"); b.type = "button"; b.className = cls; b.textContent = txt; b.title = title; b.setAttribute("aria-label", title);
+      if (pressed != null) b.setAttribute("aria-pressed", String(pressed));
+      b.addEventListener("click", (e) => { e.stopPropagation(); flushCommit(); fn(); }); return b;
+    };
+    const name = document.createElement("button"); name.type = "button"; name.className = "lname"; name.textContent = layerName(ly); name.setAttribute("aria-pressed", String(i === LY.sel));
+    name.addEventListener("click", () => { LY.sel = i; refreshLayersUI(); });
+    li.append(
+      mk("lbtn", ly.hidden ? "○" : "●", ly.hidden ? T("Показать слой", "Show layer") : T("Скрыть слой", "Hide layer"), () => { ly.hidden = !ly.hidden; touchLayers(); }, !ly.hidden),
+      name,
+      mk("lbtn", ly.locked ? "🔒" : "🔓", ly.locked ? T("Разблокировать", "Unlock") : T("Заблокировать (не двигается мышью)", "Lock (cannot be dragged)"), () => { ly.locked = !ly.locked; touchLayers(); }, !!ly.locked),
+      mk("lbtn", "↑", T("Выше", "Move up"), () => { if (i < L.length - 1) { [L[i], L[i + 1]] = [L[i + 1], L[i]]; if (LY.sel === i) LY.sel = i + 1; touchLayers(); } }),
+      mk("lbtn", "↓", T("Ниже", "Move down"), () => { if (i > 0) { [L[i], L[i - 1]] = [L[i - 1], L[i]]; if (LY.sel === i) LY.sel = i - 1; touchLayers(); } }),
+    );
+    list.append(li);
+  }
+  if (!L.length) { const p = document.createElement("p"); p.className = "muted small"; p.textContent = T("Слоёв нет. Добавь надпись, стикер или своё фото, потом таскай по листу.", "No layers yet. Add a text, a sticker or your own photo, then drag it around the sheet."); box.append(p); }
   box.append(list);
   const ly = L[LY.sel];
   if (ly) {
@@ -901,9 +921,22 @@ function refreshLayersUI() {
     ed.append(mkRange(T("Размер", "Size"), 0.04, 1, 0.01, () => ly.size, (v) => (ly.size = v)));
     ed.append(mkRange(T("Поворот (°)", "Rotation (°)"), -180, 180, 1, () => ly.rot || 0, (v) => (ly.rot = v)));
     ed.append(mkSelect(T("Цвет", "Colour"), [["ink", T("Краска", "Ink")], ["paper", T("Бумага", "Paper")], ["ink2", T("Вторая краска", "Second ink")], ["ink3", T("Третья краска", "Third ink")], ["ink4", T("Четвёртая краска", "Fourth ink")]], () => ly.color || "ink", (v) => (ly.color = v)));
+    ed.append(mkRange(T("Прозрачность", "Opacity"), 0.1, 1, 0.05, () => (ly.opacity == null ? 1 : ly.opacity), (v) => (ly.opacity = v)));
+    if (ly.type === "bitmap") {
+      ed.append(mkRange(T("Размер точки", "Dot size"), 2, 14, 1, () => ly.dot || 5, (v) => (ly.dot = v)));
+      ed.append(mkRange(T("Контраст", "Contrast"), 0.8, 3, 0.1, () => ly.contrast || 1.6, (v) => (ly.contrast = v)));
+      const mkChk = (label, get, set) => {
+        const w = document.createElement("label"); w.className = "chk"; const c = document.createElement("input"); c.type = "checkbox"; c.checked = get();
+        c.addEventListener("change", () => upd(() => set(c.checked))); w.append(c, document.createTextNode(" " + label)); return w;
+      };
+      ed.append(mkChk(T("Вырезать фон", "Cut out background"), () => !!ly.cutout, (v) => (ly.cutout = v)));
+      ed.append(mkChk(T("Бумажная подложка", "Paper backing"), () => ly.backing !== false, (v) => (ly.backing = v)));
+      ed.append(mkChk(T("Рваный край", "Torn edge"), () => ly.torn !== false, (v) => (ly.torn = v)));
+    }
     const br = document.createElement("div"); br.className = "row gap";
     for (const [text, fn] of [
-      [T("⧉ Копия", "⧉ Copy"), () => { const c = clone(ly); c.x = Math.min(0.95, c.x + 0.05); c.y = Math.min(0.95, c.y + 0.05); L.push(c); LY.sel = L.length - 1; }],
+      [T("⇋ Отразить", "⇋ Flip"), () => { ly.flipx = !ly.flipx; }],
+      [T("⧉ Копия", "⧉ Copy"), () => { const c = clone(ly); if (c.img) { const e = S.images.get(c.img); if (e) { c.img = newKey(); S.images.set(c.img, { canvas: e.canvas }); } } c.x = Math.min(0.95, c.x + 0.05); c.y = Math.min(0.95, c.y + 0.05); L.push(c); LY.sel = L.length - 1; }],
       [T("↑ Вперёд", "↑ Front"), () => { L.push(L.splice(LY.sel, 1)[0]); LY.sel = L.length - 1; }],
       [T("↓ Назад", "↓ Back"), () => { L.unshift(L.splice(LY.sel, 1)[0]); LY.sel = 0; }],
       [T("🗑 Удалить", "🗑 Delete"), () => { L.splice(LY.sel, 1); LY.sel = L.length - 1; }],
@@ -934,27 +967,94 @@ function openStickers() {
   }
   $("#dlgStickers").showModal();
 }
-// перетаскивание слоёв по листу
+// перетаскивание слоёв по листу: сдвиг с привязкой, масштаб и поворот за ручки
 let layerDrag = null;
+const guideV = document.createElement("div"), guideH = document.createElement("div");
+guideV.className = "guide guide-v"; guideH.className = "guide guide-h"; guideV.hidden = guideH.hidden = true;
+vp.append(guideV, guideH);
+const hideGuides = () => { guideV.hidden = guideH.hidden = true; };
+const SNAP = 0.012;
+function snapPos(ly, nx, ny, free) {
+  const [w, h] = layerBox(ly), r = preview.getBoundingClientRect(), ratio = r.height / r.width;
+  const hw = w / 2, hh = h / 2 / ratio; // половина высоты в долях высоты листа
+  let gx = null, gy = null;
+  if (!free) {
+    const th = SNAP, tv = SNAP / ratio;
+    for (const [v, g] of [[0.5, 0.5], [hw, 0], [1 - hw, 1]]) if (Math.abs(nx - v) < th) { nx = v; gx = g; break; }
+    for (const [v, g] of [[0.5, 0.5], [hh, 0], [1 - hh, 1]]) if (Math.abs(ny - v) < tv) { ny = v; gy = g; break; }
+  }
+  const [bw, bh] = baseSize(), pw = bw * V.zoom, ph = bh * V.zoom;
+  guideV.hidden = gx == null; guideH.hidden = gy == null;
+  if (gx != null) guideV.style.transform = `translateX(${V.tx + gx * pw}px)`;
+  if (gy != null) guideH.style.transform = `translateY(${V.ty + gy * ph}px)`;
+  return [clamp(nx, 0, 1), clamp(ny, 0, 1)];
+}
 vp.addEventListener("pointerdown", (e) => {
   if (e.shiftKey || textMode || ptrs.size > 1 || e.button > 0) return;
+  const h = e.target.closest && e.target.closest(".lh");
+  const cur = layersOf()[LY.sel];
+  if (h && cur && !cur.locked) {
+    flushCommit();
+    const r = preview.getBoundingClientRect(), cx = r.left + cur.x * r.width, cy = r.top + cur.y * r.height;
+    layerDrag = { i: LY.sel, kind: h.dataset.h, cx, cy, d0: Math.hypot(e.clientX - cx, e.clientY - cy) || 1, s0: cur.size, moved: false };
+    e.stopPropagation(); e.preventDefault(); try { vp.setPointerCapture(e.pointerId); } catch { /* ignore */ }
+    return;
+  }
   const i = hitLayer(e.clientX, e.clientY);
-  if (i < 0) { if (LY.sel >= 0 && ptrs.size === 1 && !gesture?.pinch) { /* клик мимо: снять выделение при отпускании без движения */ } return; }
+  if (i < 0) return;
   flushCommit();
   const ly = layersOf()[i], r = preview.getBoundingClientRect();
-  LY.sel = i; layerDrag = { i, ox: ly.x - (e.clientX - r.left) / r.width, oy: ly.y - (e.clientY - r.top) / r.height, moved: false };
+  LY.sel = i; layerDrag = { i, kind: "move", ox: ly.x - (e.clientX - r.left) / r.width, oy: ly.y - (e.clientY - r.top) / r.height, moved: false };
   refreshLayersUI();
 }, true);
 vp.addEventListener("pointermove", (e) => {
   if (!layerDrag) return;
   const r = preview.getBoundingClientRect(), ly = layersOf()[layerDrag.i]; if (!ly) return;
-  ly.x = clamp((e.clientX - r.left) / r.width + layerDrag.ox, 0, 1); ly.y = clamp((e.clientY - r.top) / r.height + layerDrag.oy, 0, 1);
+  if (layerDrag.kind === "scale") {
+    const d = Math.hypot(e.clientX - layerDrag.cx, e.clientY - layerDrag.cy);
+    ly.size = clamp(layerDrag.s0 * (d / layerDrag.d0), 0.03, 1.6);
+  } else if (layerDrag.kind === "rot") {
+    let a = (Math.atan2(e.clientY - layerDrag.cy, e.clientX - layerDrag.cx) * 180) / Math.PI + 90;
+    a = ((a + 540) % 360) - 180;
+    if (!e.altKey) for (const t of [-180, -135, -90, -45, 0, 45, 90, 135, 180]) if (Math.abs(a - t) < 4) { a = t; break; }
+    ly.rot = Math.round(a * 10) / 10;
+  } else {
+    const [nx, ny] = snapPos(ly, (e.clientX - r.left) / r.width + layerDrag.ox, (e.clientY - r.top) / r.height + layerDrag.oy, e.altKey);
+    ly.x = nx; ly.y = ny;
+  }
   layerDrag.moved = true; resetPresetLabel(); requestRender({ draft: true }); updateLayerSel();
 }, true);
 vp.addEventListener("dblclick", (e) => { const i = hitLayer(e.clientX, e.clientY); if (i >= 0) { LY.sel = i; refreshLayersUI(); revealLayerText(); } });
-const endLayerDrag = () => { if (layerDrag) { if (layerDrag.moved) { commit(); requestRender(); } layerDrag = null; } };
+const endLayerDrag = () => { hideGuides(); if (layerDrag) { const m = layerDrag.moved; layerDrag = null; if (m) { commit(); requestRender(); refreshLayersUI(); } } };
 vp.addEventListener("pointerup", endLayerDrag, true);
 vp.addEventListener("pointercancel", endLayerDrag, true);
+
+// фото-объект: любое изображение как свободный слой
+RC.setMaskLookup((() => {
+  const cache = new Map();
+  return (key) => {
+    const img = S.images.get(key); if (!img) return null;
+    let ly = null; for (const p of S.pages) { ly = (p.layers || []).find((l) => l && l.type === "bitmap" && l.img === key); if (ly) break; }
+    const dot = ly ? ly.dot || 5 : 5, contrast = ly ? ly.contrast || 1.6 : 1.6, cutout = !!(ly && ly.cutout), sig = `${dot}|${contrast}|${cutout}`;
+    const hit = cache.get(key);
+    if (hit && hit.sig === sig && hit.src === img.canvas) return hit.canvas;
+    const canvas = E.makePhotoMask(img.canvas, { dot, contrast, cutout });
+    cache.set(key, { sig, src: img.canvas, canvas });
+    return canvas;
+  };
+})());
+async function addPhotoObject(file) {
+  if (!file || !isImageFile(file)) { toast(T("Это не картинка. Нужны JPG, PNG, WebP…", "That is not an image. Use JPG, PNG, WebP…"), "err"); return; }
+  setBusy(true, T("Загружаю фото…", "Loading photo…"));
+  try {
+    const cv = await decodeFile(file), key = newKey();
+    S.images.set(key, { canvas: cv });
+    setBusy(false);
+    addLayer({ type: "bitmap", img: key, size: 0.45, x: 0.5, y: 0.5, backing: true, torn: true, dot: 5, contrast: 1.6, cutout: false });
+  } catch (e) { setBusy(false); console.warn(e); toast(T("Не удалось открыть файл.", "Could not open the file."), "err"); }
+}
+$("#fileObj").addEventListener("change", (e) => { const f = e.target.files[0]; e.target.value = ""; if (f) addPhotoObject(f); });
+$("#btnAddPhoto").addEventListener("click", () => { closeAdd(); $("#fileObj").click(); });
 
 // ---------------------------------------------------------------- фото страницы и кадрирование
 const srcCv = $("#srcCanvas");
@@ -1289,7 +1389,7 @@ function mutate() {
 
 // ---------------------------------------------------------------- проект .zine
 function buildManifest() {
-  const used = [...new Set(S.pages.map((p) => p.img).filter((k) => k && S.images.has(k)))].sort();
+  const used = [...new Set(S.pages.flatMap((p) => [p.img, ...(p.layers || []).map((l) => l && l.img)]).filter((k) => k && S.images.has(k)))].sort();
   return { version: 2, pages: S.pages, cur: S.cur, images: used };
 }
 async function pngOf(key) {
@@ -2019,7 +2119,7 @@ document.addEventListener("keydown", (e) => {
   const Ls = layersOf(), sel = Ls[LY.sel];
   if (sel && /^(Delete|Backspace)$/.test(e.key)) { e.preventDefault(); flushCommit(); Ls.splice(LY.sel, 1); LY.sel = Ls.length - 1; touchLayers(); return; }
   if (sel && e.key === "Escape") { LY.sel = -1; refreshLayersUI(); return; }
-  if (sel && /^Arrow(Left|Right|Up|Down)$/.test(e.key) && document.activeElement && !/^(select|button)$/i.test(document.activeElement.tagName)) {
+  if (sel && !sel.locked && /^Arrow(Left|Right|Up|Down)$/.test(e.key) && document.activeElement && !/^(select|button)$/i.test(document.activeElement.tagName)) {
     e.preventDefault();
     const d = e.shiftKey ? 0.02 : 0.004;
     sel.x = clamp(sel.x + (e.key === "ArrowRight" ? d : e.key === "ArrowLeft" ? -d : 0), 0, 1);
@@ -2101,7 +2201,7 @@ $("#layerBar").addEventListener("click", (e) => {
   const L = layersOf(), ly = L[LY.sel]; if (!ly) return;
   flushCommit();
   if (b.dataset.act === "edit") { revealLayerText(); return; }
-  if (b.dataset.act === "copy") { const c = clone(ly); c.x = Math.min(0.95, c.x + 0.05); c.y = Math.min(0.95, c.y + 0.05); L.push(c); LY.sel = L.length - 1; }
+  if (b.dataset.act === "copy") { const c = clone(ly); if (c.img) { const e = S.images.get(c.img); if (e) { c.img = newKey(); S.images.set(c.img, { canvas: e.canvas }); } } c.x = Math.min(0.95, c.x + 0.05); c.y = Math.min(0.95, c.y + 0.05); L.push(c); LY.sel = L.length - 1; }
   else if (b.dataset.act === "front") { L.push(L.splice(LY.sel, 1)[0]); LY.sel = L.length - 1; }
   else if (b.dataset.act === "del") { L.splice(LY.sel, 1); LY.sel = L.length - 1; }
   touchLayers();

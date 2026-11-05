@@ -600,6 +600,54 @@ class ZineGraphicEngine:
         arr[..., 3] *= 1.0 - np.asarray(mask, dtype=np.float32) / 255.0
         return Image.fromarray(arr.astype(np.uint8), "RGBA")
 
+    def photo_mask(self, key, dot=5, contrast=1.6, cutout=False, max_side=720):
+        """Фото-объект -> маска краски (L, 255 = краска): контраст, растр и (по желанию) вырезка фона. Кэшируется."""
+        imgs = getattr(self, "layer_images", None) or {}
+        src = imgs.get(key)
+        if src is None:
+            return None
+        cache = self.__dict__.setdefault("_mask_cache", {})
+        sig = (key, int(dot), round(float(contrast), 2), bool(cutout), id(src))
+        if sig in cache:
+            return cache[sig]
+        arr = np.asarray(src)
+        rgb = cv2.cvtColor(arr, cv2.COLOR_BGR2RGB) if arr.ndim == 3 else cv2.cvtColor(arr, cv2.COLOR_GRAY2RGB)
+        h0, w0 = rgb.shape[:2]
+        k = min(1.0, max_side / max(h0, w0))
+        if k < 1.0:
+            rgb = cv2.resize(rgb, (max(8, round(w0 * k)), max(8, round(h0 * k))), interpolation=cv2.INTER_AREA)
+        keep = None
+        if cutout:
+            keep = np.asarray(self.create_sticker_cutout(Image.fromarray(rgb)))[..., 3] > 0
+        pivot = float(np.floor((rgb[..., 0] * 0.299 + rgb[..., 1] * 0.587 + rgb[..., 2] * 0.114).mean() + 0.5))
+        f = np.clip((rgb.astype(np.float32) - pivot) * float(contrast) + pivot, 0, 255)
+        gray = (0.299 * f[..., 0] + 0.587 * f[..., 1] + 0.114 * f[..., 2]).astype(np.uint8)
+        bits = self.apply_halftone_dots(Image.fromarray(gray), dot_size=float(dot), angle=45)
+        ink = ~bits
+        if keep is not None:
+            ink &= keep
+        mask = Image.fromarray((ink * 255).astype(np.uint8), "L")
+        if len(cache) > 24:
+            cache.clear()
+        cache[sig] = mask
+        return mask
+
+    def _bitmap_layer(self, ly, wpx, color, paper, li):
+        mask = self.photo_mask(ly.get("img"), ly.get("dot", 5) or 5, ly.get("contrast", 1.6) or 1.6, ly.get("cutout", False))
+        if mask is None:
+            return None
+        wpx = max(8, int(wpx))
+        hpx = max(4, round(wpx * mask.height / mask.width))
+        m = mask.resize((wpx, hpx), Image.BILINEAR)
+        backed = ly.get("backing", True) is not False
+        out = Image.new("RGBA", (wpx, hpx), tuple(paper) + (255,) if backed else (0, 0, 0, 0))
+        out.paste(Image.new("RGBA", (wpx, hpx), tuple(color) + (255,)), (0, 0), m)
+        if backed and ly.get("torn", True) is not False:
+            torn = self.create_organic_torn_mask(wpx, hpx, 7, 7, seed=700 + li)
+            a = np.asarray(out.getchannel("A"), dtype=np.float32) * np.asarray(torn, dtype=np.float32) / 255.0
+            out.putalpha(Image.fromarray(a.astype(np.uint8)))
+        return self._wear_sticker(out, li + 1)
+
     def draw_layers(self, img, st, paper_rgb, ink_rgb, s=1.0):
         """Свободные слои: стикеры и надписи поверх готового листа. Координаты - доли листа."""
         layers = st.get("layers") or []
@@ -611,11 +659,17 @@ class ZineGraphicEngine:
                 "ink3": tuple(st.get("ink3", (0, 120, 190))), "ink4": tuple(st.get("ink4", (255, 200, 0)))}
         for li, ly in enumerate(layers):
             try:
+                if ly.get("hidden"):
+                    continue
                 color = cols.get(ly.get("color", "ink"), cols["ink"])
                 size = max(0.02, float(ly.get("size", 0.2)))
                 if ly.get("type") == "sticker":
                     loc = self._sticker_image(ly.get("sticker", "star"), size * w, color, paper_rgb)
                     loc = self._wear_sticker(loc, li + 1)
+                elif ly.get("type") == "bitmap":
+                    loc = self._bitmap_layer(ly, size * w, color, paper_rgb, li)
+                    if loc is None:
+                        continue
                 else:
                     text = str(ly.get("text", "")).strip()
                     if not text:
@@ -626,9 +680,15 @@ class ZineGraphicEngine:
                         loc = self._ransom_image(text, fpx, color, paper_rgb, cols["ink2"])
                     else:
                         loc = self._text_layer_image(text, fpx, style, ly.get("font", "Arial Black"), color, paper_rgb)
+                if ly.get("flipx"):
+                    loc = loc.transpose(Image.FLIP_LEFT_RIGHT)
                 rot = float(ly.get("rot", 0))
                 if rot:
                     loc = loc.rotate(-rot, expand=True, resample=Image.BICUBIC)
+                opacity = min(1.0, max(0.0, float(ly.get("opacity", 1.0) if ly.get("opacity") is not None else 1.0)))
+                if opacity < 1.0:
+                    loc = loc.copy()
+                    loc.putalpha(loc.getchannel("A").point(lambda v: int(v * opacity)))
                 px = int(float(ly.get("x", 0.5)) * w - loc.width / 2)
                 py = int(float(ly.get("y", 0.5)) * h - loc.height / 2)
                 layer = Image.new("RGBA", (w, h), (0, 0, 0, 0))

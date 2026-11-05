@@ -53,7 +53,9 @@ self.onmessage = async (ev) => {
       if (m.state && m.state.censor) await initFaces(faceUrl);
       const src = m.src != null ? sources.get(m.src) || null : null;
       if (m.src != null && !src) throw new Error("source missing");
-      const r = await renderPage(src, m.state, m.opts || {});
+      const masks = {};
+      for (const k in m.masks || {}) { const e = sources.get(m.masks[k]); if (e) masks[k] = e.canvas; }
+      const r = await renderPage(src, m.state, { ...(m.opts || {}), masks });
       const bitmap = r.canvas.transferToImageBitmap ? r.canvas.transferToImageBitmap() : await createImageBitmap(r.canvas);
       const out = { type: "done", id: m.id, bitmap, bits: r.bits, plate2: r.plate2 || null, extraPlates: r.extraPlates || null, inks: r.inks, width: r.width, height: r.height };
       const tr = [bitmap], seen = new Set();

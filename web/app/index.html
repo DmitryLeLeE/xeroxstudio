@@ -57,6 +57,7 @@
         <button type="button" data-act="del" data-ru-title="Удалить (Delete)" data-en-title="Delete (Delete key)">🗑</button>
       </div>
       <div class="layer-sel" id="layerSel" hidden></div>
+      <input type="file" id="fileObj" accept="image/*" hidden>
       <canvas id="preview" role="img" aria-label="Zine page preview"></canvas>
       <div class="scanbar" id="scanbar" aria-hidden="true"></div>
       <div class="busy" id="busy" hidden><i></i><span id="busyTxt"></span></div>
@@ -70,6 +71,7 @@
         <div class="menu menu-sm" id="menuAdd" hidden>
           <button type="button" id="btnAddText"><span data-ru="Надпись (слой)" data-en="Text (layer)"></span></button>
           <button type="button" id="btnAddSticker"><span data-ru="Стикер…" data-en="Sticker…"></span></button>
+          <button type="button" id="btnAddPhoto"><span data-ru="Фото-объект…" data-en="Photo object…"></span></button>
           <button type="button" class="toggle" id="btnTextMode" aria-pressed="false" data-ru-title="Тап/клик по листу ставит подпись (на ПК — Shift+клик)" data-en-title="Tap/click on the sheet places the caption (desktop: Shift+click)"><span data-ru="✎ Подпись: режим размещения" data-en="✎ Caption: placing mode"></span></button>
         </div>
       </div>

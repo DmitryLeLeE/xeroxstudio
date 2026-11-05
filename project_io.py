@@ -24,7 +24,7 @@ def _json_default(obj):
 
 
 def write_project(path, pages, images, cur):
-    used = sorted({p.get("img") for p in pages if p.get("img") in images})
+    used = sorted({k for p in pages for k in [p.get("img"), *[ly.get("img") for ly in (p.get("layers") or []) if isinstance(ly, dict)]] if k in images})
     manifest = {"version": FORMAT_VERSION, "pages": pages, "cur": cur, "images": used}
     tmp = f"{path}.tmp"
     try:

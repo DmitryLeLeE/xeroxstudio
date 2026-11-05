@@ -296,19 +296,61 @@ function wearSticker(off, px, seed) {
   c.globalCompositeOperation = "source-over";
 }
 
-function drawLayers(canvas, st, paper, ink) {
+// Фото-объект: растр из фото, вырезанный как маска краски (alpha = краска). Подложка из бумаги с рваным краем, как приклеенная ксерокопия.
+function bitmapLayer(m, wpx, ly, color, paper, li) {
+  const hpx = Math.max(4, Math.round((wpx * m.height) / m.width)), off = makeCanvas(wpx, hpx), oc = ctx2d(off);
+  const backed = ly.backing !== false;
+  if (backed) { oc.fillStyle = paper; oc.fillRect(0, 0, wpx, hpx); }
+  const tint = makeCanvas(wpx, hpx), tc = ctx2d(tint);
+  tc.drawImage(m, 0, 0, wpx, hpx); tc.globalCompositeOperation = "source-in"; tc.fillStyle = color; tc.fillRect(0, 0, wpx, hpx);
+  oc.drawImage(tint, 0, 0);
+  if (backed && ly.torn !== false) {
+    const al = tornAlpha(wpx, hpx, 7, 7, 700 + li), id = oc.getImageData(0, 0, wpx, hpx), d = id.data;
+    for (let i = 0, p = 3; i < al.length; i++, p += 4) d[p] = (d[p] * al[i]) / 255;
+    oc.putImageData(id, 0, 0);
+  }
+  wearSticker(off, wpx, li + 1);
+  return off;
+}
+
+/** Превращает фото в маску краски для фото-объекта: полутон + (по желанию) вырезка фона. alpha 255 = краска. */
+export function makePhotoMask(canvas, { maxSide = 720, dot = 5, contrast = 1.6, cutout = false } = {}) {
+  const k = Math.min(1, maxSide / Math.max(canvas.width, canvas.height)), w = Math.max(8, Math.round(canvas.width * k)), h = Math.max(8, Math.round(canvas.height * k));
+  let src = makeCanvas(w, h); ctx2d(src).drawImage(canvas, 0, 0, w, h);
+  let keep = null;
+  if (cutout) {
+    const cut = stickerCutout(src), cd = ctx2d(cut).getImageData(0, 0, w, h).data;
+    keep = new Uint8Array(w * h); for (let i = 0, p = 3; i < keep.length; i++, p += 4) keep[i] = cd[p] ? 1 : 0;
+    // контур вырезки превращаем в серый фон: за краями пусто
+  }
+  const id = ctx2d(src).getImageData(0, 0, w, h); contrastRGB(id.data, contrast);
+  const gray = grayOf(id.data, w * h), bits = halftoneBits(gray, w, h, dot, 45);
+  const out = new ImageData(w, h), o = out.data;
+  for (let i = 0, p = 0; i < bits.length; i++, p += 4) { o[p + 3] = bits[i] === 0 && (!keep || keep[i]) ? 255 : 0; }
+  const res = makeCanvas(w, h); ctx2d(res).putImageData(out, 0, 0);
+  return res;
+}
+
+function drawLayers(canvas, st, paper, ink, masks = {}) {
   const layers = st.layers; if (!Array.isArray(layers) || !layers.length) return;
   const w = canvas.width, c = ctx2d(canvas), h = canvas.height;
   const cols = { ink: rgbCss(ink), paper: rgbCss(paper), ink2: rgbCss(st.ink2 || [255, 60, 140]), ink3: rgbCss(st.ink3 || [0, 120, 190]), ink4: rgbCss(st.ink4 || [255, 200, 0]) };
   let li = -1;
   for (const ly of layers) {
     li++;
+    if (ly.hidden) continue;
     const color = cols[ly.color] || cols.ink, size = Math.max(0.02, Number(ly.size) || 0.2);
     c.save(); c.translate((Number(ly.x) || 0.5) * w, (Number(ly.y) || 0.5) * h); c.rotate(((Number(ly.rot) || 0) * Math.PI) / 180);
+    if (ly.flipx) c.scale(-1, 1);
+    c.globalAlpha = clamp(ly.opacity == null ? 1 : Number(ly.opacity), 0, 1);
     if (ly.type === "sticker") {
       const px = Math.max(8, Math.floor(size * w)), off = makeCanvas(px, px), oc = ctx2d(off);
       oc.translate(px / 2, px / 2); drawSticker(oc, ly.sticker, px, color, cols.paper); wearSticker(off, px, li + 1);
       c.drawImage(off, -px / 2, -px / 2);
+    } else if (ly.type === "bitmap") {
+      const m = masks[ly.img]; if (!m) { c.restore(); continue; }
+      const px = Math.max(8, Math.floor(size * w)), off = bitmapLayer(m, px, ly, color, cols.paper, li);
+      c.drawImage(off, -off.width / 2, -off.height / 2);
     }
     else {
       const text = String(ly.text || "").trim(); if (!text) { c.restore(); continue; }
@@ -1006,6 +1048,6 @@ export async function renderPage(source, state, opts = {}) {
   const result = makeCanvas(cw, ch);
   ctx2d(result).putImageData(out, 0, 0);
   addWear(result, st, seed + 51, s);
-  drawLayers(result, st, paper, ink);
+  drawLayers(result, st, paper, ink, opts.masks || {});
   return { canvas: result, bits, plate2, extraPlates, inks: { paper, ink, ink2: plate2 ? st.ink2 : null }, width: cw, height: ch };
 }

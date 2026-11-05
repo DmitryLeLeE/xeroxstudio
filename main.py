@@ -560,10 +560,13 @@ class XeroxZineStudioApp:
         rowl.pack(fill=tk.X)
         make_button(rowl, "＋ Надпись", self._add_text_layer).pack(side=tk.LEFT, padx=(0, 3))
         make_button(rowl, "＋ Стикер…", self._add_sticker_layer).pack(side=tk.LEFT, padx=3)
-        make_button(rowl, "Копия", lambda: self._layer_action("copy")).pack(side=tk.LEFT, padx=3)
-        make_button(rowl, "Удалить", lambda: self._layer_action("delete")).pack(side=tk.LEFT, padx=3)
-        self.ly_vars = {"x": tk.DoubleVar(value=50), "y": tk.DoubleVar(value=50), "size": tk.DoubleVar(value=20), "rot": tk.DoubleVar(value=0)}
-        for key, text, lo, hi in (("x", "Позиция X (%)", 0, 100), ("y", "Позиция Y (%)", 0, 100), ("size", "Размер (% ширины)", 4, 100), ("rot", "Поворот (°)", -180, 180)):
+        make_button(rowl, "＋ Фото…", self._add_photo_layer).pack(side=tk.LEFT, padx=3)
+        rowl2 = tk.Frame(c, bg=PANEL2)
+        rowl2.pack(fill=tk.X, pady=(3, 0))
+        for text, what in (("Копия", "copy"), ("Удалить", "delete"), ("👁 Скрыть", "hide"), ("⇋ Отразить", "flip"), ("↑", "up"), ("↓", "down")):
+            make_button(rowl2, text, lambda w=what: self._layer_action(w)).pack(side=tk.LEFT, padx=(0, 3))
+        self.ly_vars = {"x": tk.DoubleVar(value=50), "y": tk.DoubleVar(value=50), "size": tk.DoubleVar(value=20), "rot": tk.DoubleVar(value=0), "opacity": tk.DoubleVar(value=100)}
+        for key, text, lo, hi in (("x", "Позиция X (%)", 0, 100), ("y", "Позиция Y (%)", 0, 100), ("size", "Размер (% ширины)", 4, 100), ("rot", "Поворот (°)", -180, 180), ("opacity", "Прозрачность слоя (% непрозрачности)", 10, 100)):
             self.ly_vars[key].trace_add("write", lambda *a, k=key: self._layer_var_changed(k))
             LabeledSlider(c, text, self.ly_vars[key], lo, hi, res=1, default=self.ly_vars[key].get()).pack(fill=tk.X, pady=1)
         self.ly_text = tk.StringVar()
@@ -763,6 +766,15 @@ class XeroxZineStudioApp:
         self.sw_ink2.config(bg="#%02x%02x%02x" % self.ink2)
         self.schedule_render()
 
+    @property
+    def images(self):
+        return self._images
+
+    @images.setter
+    def images(self, value):
+        self._images = value
+        self.engine.layer_images = value  # фото-объекты берут картинки отсюда
+
     # ------------------------------------------------------------------ слои
     def _refresh_layers_ui(self, select=None):
         lb = getattr(self, "layer_list", None)
@@ -771,11 +783,14 @@ class XeroxZineStudioApp:
         import stickers
         lb.delete(0, tk.END)
         for i, ly in enumerate(self.layers):
+            off = "○ " if ly.get("hidden") else ""
             if ly.get("type") == "sticker":
                 name = stickers.STICKERS.get(ly.get("sticker"), ("?",))[0]
-                lb.insert(tk.END, f"{i + 1}. ✦ {name}")
+                lb.insert(tk.END, f"{i + 1}. {off}✦ {name}")
+            elif ly.get("type") == "bitmap":
+                lb.insert(tk.END, f"{i + 1}. {off}▣ Фото")
             else:
-                lb.insert(tk.END, f"{i + 1}. Aa «{str(ly.get('text', '')).splitlines()[0][:22] if ly.get('text') else 'пусто'}»")
+                lb.insert(tk.END, f"{i + 1}. {off}Aa «{str(ly.get('text', '')).splitlines()[0][:22] if ly.get('text') else 'пусто'}»")
         if self.layers:
             idx = len(self.layers) - 1 if select is None else max(0, min(select, len(self.layers) - 1))
             lb.selection_clear(0, tk.END)
@@ -789,6 +804,10 @@ class XeroxZineStudioApp:
         size = max(0.02, float(ly.get("size", 0.2)))
         if ly.get("type") == "sticker":
             bw, bh = size * W, size * W
+        elif ly.get("type") == "bitmap":
+            src = self.images.get(ly.get("img"))
+            bw = size * W
+            bh = bw * (src.shape[0] / src.shape[1]) if src is not None else bw
         else:
             lines = str(ly.get("text", "")).strip().splitlines() or [""]
             fpx = max(8, size * W * 0.5)
@@ -804,6 +823,8 @@ class XeroxZineStudioApp:
         if img is None or not self.layers:
             return None
         for i in range(len(self.layers) - 1, -1, -1):  # верхний слой первым
+            if self.layers[i].get("hidden"):
+                continue
             cx, cy, bw, bh = self._layer_box(self.layers[i], img.width, img.height)
             if abs(fx - cx) <= bw / 2 and abs(fy - cy) <= bh / 2:
                 return i
@@ -847,6 +868,7 @@ class XeroxZineStudioApp:
                 self.ly_vars["y"].set(round(float(ly.get("y", 0.5)) * 100))
                 self.ly_vars["size"].set(round(float(ly.get("size", 0.2)) * 100))
                 self.ly_vars["rot"].set(round(float(ly.get("rot", 0))))
+                self.ly_vars["opacity"].set(round(float(ly.get("opacity", 1.0) if ly.get("opacity") is not None else 1.0) * 100))
                 self.ly_text.set(ly.get("text", ""))
                 self.ly_color.set(ly.get("color", "ink"))
                 self.ly_style.set(ly.get("style", "box"))
@@ -863,6 +885,8 @@ class XeroxZineStudioApp:
             ly[key] = float(self.ly_vars[key].get()) / 100.0
         elif key == "rot":
             ly["rot"] = float(self.ly_vars["rot"].get())
+        elif key == "opacity":
+            ly["opacity"] = float(self.ly_vars["opacity"].get()) / 100.0
         elif key == "text":
             ly["text"] = self.ly_text.get()
         elif key == "color":
@@ -909,6 +933,21 @@ class XeroxZineStudioApp:
         make_button(dlg, "Добавить", ok, kind="primary").pack(pady=(0, 10))
         dlg.grab_set()
 
+    def _add_photo_layer(self):
+        path = filedialog.askopenfilename(
+            parent=self.root, initialdir=self._dir("images"), title="Фото для слоя",
+            filetypes=[("Изображения", "*.jpg *.jpeg *.png *.webp *.bmp *.tif *.tiff"), ("Все файлы", "*.*")])
+        if not path:
+            return
+        try:
+            img = read_image_bgr(path)
+        except Exception:
+            messagebox.showerror("Ошибка", "Не удалось открыть файл.", parent=self.root)
+            return
+        key = self._new_img_key()
+        self.images[key] = img
+        self._new_layer(type="bitmap", img=key, size=0.45, backing=True, torn=True, dot=5, contrast=1.6, cutout=False, opacity=1.0)
+
     def _layer_action(self, what):
         sel = self.layer_list.curselection()
         if not sel:
@@ -917,8 +956,21 @@ class XeroxZineStudioApp:
         if what == "delete":
             del self.layers[i]
             self._refresh_layers_ui()
+        elif what in ("hide", "flip"):
+            ly = self.layers[i]
+            ly["hidden" if what == "hide" else "flipx"] = not ly.get("hidden" if what == "hide" else "flipx")
+            self._refresh_layers_ui(select=i)
+        elif what in ("up", "down"):
+            j = i + 1 if what == "up" else i - 1
+            if 0 <= j < len(self.layers):
+                self.layers[i], self.layers[j] = self.layers[j], self.layers[i]
+                self._refresh_layers_ui(select=j)
         elif what == "copy":
             c = copy.deepcopy(self.layers[i])
+            if c.get("img") in self.images:
+                nk = self._new_img_key()
+                self.images[nk] = self.images[c["img"]]
+                c["img"] = nk
             c["x"] = min(0.95, c.get("x", 0.5) + 0.05)
             c["y"] = min(0.95, c.get("y", 0.5) + 0.05)
             self.layers.append(c)
@@ -1043,9 +1095,11 @@ class XeroxZineStudioApp:
         self._mark_dirty(immediate=True)
 
     def _garbage_collect_images(self):
-        used = {p.get("img") for p in self.pages} | {self.cur_img_key}
+        def keys(pages):
+            return {p.get("img") for p in pages} | {ly.get("img") for p in pages for ly in (p.get("layers") or []) if isinstance(ly, dict)}
+        used = keys(self.pages) | {self.cur_img_key} | {ly.get("img") for ly in self.layers}
         for doc in self.hist:  # фото из истории нужны для «Отменить»
-            used |= {p.get("img") for p in doc["pages"]}
+            used |= keys(doc["pages"])
         for k in [k for k in self.images if k not in used]:
             del self.images[k]
 

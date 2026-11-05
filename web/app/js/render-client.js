@@ -95,19 +95,28 @@ async function shipSource(slot, source) {
   return id;
 }
 
+// Холсты фото-объектов: приложение регистрирует функцию key → canvas, клиент отправляет их воркерам один раз.
+let maskLookup = () => null;
+export const setMaskLookup = (fn) => { maskLookup = fn; };
+const maskKeys = (st) => (Array.isArray(st && st.layers) ? [...new Set(st.layers.filter((l) => l && l.type === "bitmap" && !l.hidden && l.img).map((l) => l.img))] : []);
+
 export async function renderPage(source, state_, opts = {}) {
   if (state === "idle" || state === "starting") await start();
-  if (state !== "ready" || !pool.length) return E.renderPage(source, state_, opts);
+  const keys = maskKeys(state_), local = {};
+  for (const k of keys) { const c = maskLookup(k); if (c) local[k] = c; }
+  if (state !== "ready" || !pool.length) return E.renderPage(source, state_, { ...opts, masks: local });
   const slot = pool.reduce((a, b) => (b.busy < a.busy ? b : a));
   slot.busy++;
   try {
     const src = source && source.canvas ? await shipSource(slot, source) : null;
     const id = nextId++;
     const res = new Promise((resolve, reject) => pending.set(id, { resolve, reject, slot }));
-    slot.w.postMessage({ type: "render", id, src, state: state_, opts });
+    const masks = {};
+    for (const k in local) masks[k] = await shipSource(slot, { canvas: local[k] });
+    slot.w.postMessage({ type: "render", id, src, masks, state: state_, opts });
     return await res;
   } catch (e) {
-    if (e && e.workerDown) return E.renderPage(source, state_, opts);
+    if (e && e.workerDown) return E.renderPage(source, state_, { ...opts, masks: local });
     throw e;
   }
 }
