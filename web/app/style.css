@@ -430,3 +430,13 @@ html:not([data-theme="paper"]) .drawer, html:not([data-theme="paper"]) .strip { 
 html:not([data-theme="paper"]) .drawer-head { background-color: #000; }
 html:not([data-theme="paper"]) .th { border-color: #666; box-shadow: 2px 2px 0 #000; }
 html:not([data-theme="paper"]) .top { background: #000; }
+
+/* ---------- галерея стилей */
+.gal-tabs { display: flex; gap: 8px; padding: 10px 14px 0; flex-wrap: wrap; }
+.gal-tabs button { background: var(--field); border: 2px solid var(--fg); color: var(--fg); font: inherit; font-weight: 800; padding: 6px 12px; border-radius: var(--r); cursor: pointer; min-height: 38px; box-shadow: 2px 2px 0 var(--fg); }
+.gal-tabs button[aria-pressed="true"] { background: var(--accent); color: var(--on-accent); }
+.gal-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 14px; }
+.gal-tile { display: grid; gap: 6px; align-content: start; background: var(--panel2); border: 2px solid var(--fg); border-radius: var(--r); padding: 6px; cursor: pointer; color: var(--fg); font: inherit; font-size: 12px; font-weight: 800; text-align: center; box-shadow: 3px 3px 0 var(--fg); transition: transform .12s, box-shadow .12s; }
+.gal-tile:nth-child(odd) { transform: rotate(-.7deg); } .gal-tile:nth-child(even) { transform: rotate(.6deg); }
+.gal-tile:hover, .gal-tile:focus-visible { transform: translate(-1px,-3px) rotate(0); box-shadow: 5px 6px 0 var(--accent); border-color: var(--accent); }
+.gal-tile canvas { width: 100%; height: auto; display: block; background: #ddd; border: 1px solid #0003; }
