@@ -656,14 +656,29 @@ class ZineGraphicEngine:
             out.paste(col, (x, int(round(dy))))
         return out
 
-    def photo_mask(self, key, dot=5, contrast=1.6, cutout=False, max_side=720):
+    @staticmethod
+    def _auto_levels(rgb, bright=1.0):
+        """2% самых тёмных тонов -> чёрный, 2% самых светлых -> белый; затем гамма яркости. Как autoLevels в engine.js."""
+        f = rgb.astype(np.float32)
+        g = (f[..., 0] * 299 + f[..., 1] * 587 + f[..., 2] * 114) / 1000
+        hist = np.bincount(np.floor(g).astype(np.int64).ravel(), minlength=256)
+        cum, n = np.cumsum(hist), g.size
+        lo, hi = int(np.argmax(cum >= 0.02 * n)), int(np.argmax(cum >= 0.98 * n))
+        out = rgb.astype(np.float32)
+        if hi - lo >= 16:
+            out = np.clip((out - lo) * (255.0 / (hi - lo)), 0, 255)
+        if bright != 1.0:
+            out = np.round(255.0 * np.power(out.round() / 255.0, 1.0 / bright))
+        return out.astype(np.uint8)
+
+    def photo_mask(self, key, dot=5, contrast=1.6, cutout=False, max_side=720, bright=1.0):
         """Фото-объект -> маска краски (L, 255 = краска): контраст, растр и (по желанию) вырезка фона. Кэшируется."""
         imgs = getattr(self, "layer_images", None) or {}
         src = imgs.get(key)
         if src is None:
             return None
         cache = self.__dict__.setdefault("_mask_cache", {})
-        sig = (key, int(dot), round(float(contrast), 2), bool(cutout), id(src))
+        sig = (key, int(dot), round(float(contrast), 2), bool(cutout), round(float(bright), 2), id(src))
         if sig in cache:
             return cache[sig]
         arr = np.asarray(src)
@@ -675,6 +690,7 @@ class ZineGraphicEngine:
         keep = None
         if cutout:
             keep = np.asarray(self.create_sticker_cutout(Image.fromarray(rgb)))[..., 3] > 0
+        rgb = self._auto_levels(rgb, bright)
         pivot = float(np.floor((rgb[..., 0] * 0.299 + rgb[..., 1] * 0.587 + rgb[..., 2] * 0.114).mean() + 0.5))
         f = np.clip((rgb.astype(np.float32) - pivot) * float(contrast) + pivot, 0, 255)
         gray = (0.299 * f[..., 0] + 0.587 * f[..., 1] + 0.114 * f[..., 2]).astype(np.uint8)
@@ -689,7 +705,7 @@ class ZineGraphicEngine:
         return mask
 
     def _bitmap_layer(self, ly, wpx, color, paper, li):
-        mask = self.photo_mask(ly.get("img"), ly.get("dot", 5) or 5, ly.get("contrast", 1.6) or 1.6, ly.get("cutout", False))
+        mask = self.photo_mask(ly.get("img"), ly.get("dot", 5) or 5, ly.get("contrast", 1.6) or 1.6, ly.get("cutout", False), bright=float(ly.get("bright", 1.0) or 1.0))
         if mask is None:
             return None
         wpx = max(8, int(wpx))
@@ -755,7 +771,16 @@ class ZineGraphicEngine:
                 px = int(float(ly.get("x", 0.5)) * w - loc.width / 2)
                 py = int(float(ly.get("y", 0.5)) * h - loc.height / 2)
                 layer = Image.new("RGBA", (w, h), (0, 0, 0, 0))
-                layer.paste(loc, (px, py), loc)
+                shd = min(1.0, max(0.0, float(ly.get("shadow", 0) or 0)))
+                if shd > 0:  # жёсткая тень без размытия: тот же сдвиг, что shadowOffset в engine.js
+                    d = int(round(shd * 0.035 * w))
+                    scol = cols.get(ly.get("shadow_c", "ink"), cols["ink"])
+                    sh = Image.new("RGBA", loc.size, tuple(scol) + (255,))
+                    sh.putalpha(loc.getchannel("A"))
+                    layer.paste(sh, (px + d, py + d), sh)
+                top = Image.new("RGBA", (w, h), (0, 0, 0, 0))
+                top.paste(loc, (px, py), loc)
+                layer = Image.alpha_composite(layer, top)
                 base = Image.alpha_composite(base, layer)
             except Exception:
                 continue

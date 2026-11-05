@@ -7,11 +7,11 @@ from conftest import WEB, wait_ready
 
 
 
-def test_app_loads_clean_with_paper_theme_and_landmarks(page_factory):
+def test_app_loads_clean_with_usa_theme_and_landmarks(page_factory):
     pg = page_factory()
     wait_ready(pg)
     assert pg.errors == []
-    assert pg.evaluate("document.documentElement.dataset.theme") == "paper"
+    assert pg.evaluate("document.documentElement.dataset.theme") == "usa"
     assert pg.evaluate("document.querySelectorAll('h1').length") == 1
     assert pg.evaluate("document.querySelector('canvas#preview').getAttribute('role')") == "img"
 
@@ -19,6 +19,8 @@ def test_app_loads_clean_with_paper_theme_and_landmarks(page_factory):
 def test_theme_toggle_persists(page_factory):
     pg = page_factory()
     wait_ready(pg)
+    pg.click("#btnTheme")
+    assert pg.evaluate("document.documentElement.dataset.theme") == "paper"
     pg.click("#btnTheme")
     assert pg.evaluate("document.documentElement.dataset.theme") == "dark"
     assert pg.evaluate("localStorage.getItem('zine.theme')") == '"dark"'
@@ -645,4 +647,26 @@ def test_layers_mode_splits_sheet_and_everything_moves(page_factory):
     assert pg.evaluate("window.__zine.page().layers[0].type + window.__zine.page().layers[0].x") != first
     pg.keyboard.press("l")
     assert pg.evaluate("document.querySelectorAll('.ghost').length") == 0
+    assert pg.errors == []
+
+
+def test_shadow_align_and_new_layer_library(page_factory):
+    pg = page_factory()
+    wait_ready(pg)
+    assert pg.evaluate("Object.keys(window.__zine.CFG ? window.__zine.CFG.STICKERS : {}).length") >= 0
+    pg.click("#rail button[data-fly=s5]")
+    pg.select_option("#layersBox select >> nth=0", "Route 66")
+    pg.wait_for_function("window.__zine.page().layers.length >= 3")
+    pg.evaluate("document.querySelector('.layers-list .lname').click()")  # верхний слой
+    pg.wait_for_selector(".align-row button")
+    pg.evaluate("document.querySelectorAll('.align-row button')[0].click()")  # к левому краю
+    x = pg.evaluate("window.__zine.page().layers[window.__zine.page().layers.length - 1].x")
+    assert x < 0.5
+    pg.evaluate("document.querySelectorAll('.align-row button')[1].click()")  # по центру
+    assert pg.evaluate("window.__zine.page().layers[window.__zine.page().layers.length - 1].x") == 0.5
+    pg.evaluate("""(() => { const r = [...document.querySelectorAll('#layersBox .layer-ed input[type=range]')].find(i => i.closest('.ctl').textContent.match(/Тень|shadow/i)); r.value = 0.6; r.dispatchEvent(new Event('input')); r.dispatchEvent(new Event('change')); })()""")
+    assert pg.evaluate("window.__zine.page().layers.some(l => l.shadow === 0.6)")
+    # новые шаблоны есть в списке
+    opts = pg.evaluate("[...document.querySelectorAll('#layersBox select')][0].options.length")
+    assert opts >= 16
     assert pg.errors == []

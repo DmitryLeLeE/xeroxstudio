@@ -567,14 +567,19 @@ class XeroxZineStudioApp:
         make_button(rowl, "＋ Стикер…", self._add_sticker_layer).pack(side=tk.LEFT, padx=3)
         make_button(rowl, "＋ Фото…", self._add_photo_layer).pack(side=tk.LEFT, padx=3)
         make_button(c, "⤢ Разобрать лист на слои", self._explode_to_layers, kind="primary").pack(fill=tk.X, pady=(3, 0))
+        rowa = tk.Frame(c, bg=PANEL2)
+        rowa.pack(fill=tk.X, pady=(3, 0))
+        for sym, what in (("⇤", "al_l"), ("↔", "al_h"), ("⇥", "al_r"), ("⤒", "al_t"), ("↕", "al_v"), ("⤓", "al_b")):
+            make_button(rowa, sym, lambda w=what: self._layer_action(w)).pack(side=tk.LEFT, padx=(0, 3))
+        tk.Label(rowa, text="выровнять по листу", bg=PANEL2, fg=MUTED, font=FONT_SMALL).pack(side=tk.LEFT, padx=4)
         rowl2 = tk.Frame(c, bg=PANEL2)
         rowl2.pack(fill=tk.X, pady=(3, 0))
         for text, what in (("Копия", "copy"), ("Удалить", "delete"), ("👁 Скрыть", "hide"), ("⇋ Отразить", "flip"), ("↑", "up"), ("↓", "down")):
             make_button(rowl2, text, lambda w=what: self._layer_action(w)).pack(side=tk.LEFT, padx=(0, 3))
         self.ly_vars = {"x": tk.DoubleVar(value=50), "y": tk.DoubleVar(value=50), "size": tk.DoubleVar(value=20), "rot": tk.DoubleVar(value=0), "opacity": tk.DoubleVar(value=100),
-                        "warp_k": tk.DoubleVar(value=50), "sx": tk.DoubleVar(value=100)}
+                        "warp_k": tk.DoubleVar(value=50), "sx": tk.DoubleVar(value=100), "shadow": tk.DoubleVar(value=0)}
         for key, text, lo, hi in (("x", "Позиция X (%)", 0, 100), ("y", "Позиция Y (%)", 0, 100), ("size", "Размер (% ширины)", 4, 100), ("rot", "Поворот (°)", -180, 180), ("opacity", "Непрозрачность слоя (%)", 10, 100),
-                                ("warp_k", "Сила искажения (%)", 5, 100), ("sx", "Растяжение текста (%)", 40, 300)):
+                                ("warp_k", "Сила искажения (%)", 5, 100), ("sx", "Растяжение текста (%)", 40, 300), ("shadow", "Жёсткая тень (%)", 0, 100)):
             self.ly_vars[key].trace_add("write", lambda *a, k=key: self._layer_var_changed(k))
             LabeledSlider(c, text, self.ly_vars[key], lo, hi, res=1, default=self.ly_vars[key].get()).pack(fill=tk.X, pady=1)
         self.ly_text = tk.StringVar()
@@ -898,6 +903,7 @@ class XeroxZineStudioApp:
                 self.ly_warp.set(ly.get("warp") or "none")
                 self.ly_vars["warp_k"].set(round(float(ly.get("warp_k", 0.5) if ly.get("warp_k") is not None else 0.5) * 100))
                 self.ly_vars["sx"].set(round(float(ly.get("sx", 1.0) or 1.0) * 100))
+                self.ly_vars["shadow"].set(round(float(ly.get("shadow", 0) or 0) * 100))
                 self.ly_vars["opacity"].set(round(float(ly.get("opacity", 1.0) if ly.get("opacity") is not None else 1.0) * 100))
                 self.ly_text.set(ly.get("text", ""))
                 self.ly_color.set(ly.get("color", "ink"))
@@ -919,6 +925,8 @@ class XeroxZineStudioApp:
             ly["warp"] = self.ly_warp.get()
         elif key == "warp_k":
             ly["warp_k"] = float(self.ly_vars["warp_k"].get()) / 100.0
+        elif key == "shadow":
+            ly["shadow"] = float(self.ly_vars["shadow"].get()) / 100.0
         elif key == "sx":
             ly["sx"] = float(self.ly_vars["sx"].get()) / 100.0
         elif key == "opacity":
@@ -1086,6 +1094,24 @@ class XeroxZineStudioApp:
         if what == "delete":
             del self.layers[i]
             self._refresh_layers_ui()
+        elif what.startswith("al_"):
+            ly = self.layers[i]
+            cw, ch = config.CANVAS_FORMATS.get(self.vars["format"].get(), (1000, 1500))
+            _cx, _cy, ew, eh = self._layer_box(ly, cw, ch)
+            how = what[3]
+            if how == "l":
+                ly["x"] = ew / 2
+            elif how == "r":
+                ly["x"] = 1 - ew / 2
+            elif how == "h":
+                ly["x"] = 0.5
+            elif how == "t":
+                ly["y"] = eh / 2
+            elif how == "b":
+                ly["y"] = 1 - eh / 2
+            else:
+                ly["y"] = 0.5
+            self._refresh_layers_ui(select=i)
         elif what in ("hide", "flip"):
             ly = self.layers[i]
             ly["hidden" if what == "hide" else "flipx"] = not ly.get("hidden" if what == "hide" else "flipx")

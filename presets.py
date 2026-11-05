@@ -179,6 +179,56 @@ BUILTIN = {
         "dot_size": 6, "contrast": 2.3, "noise": 20, "streaks": 25, "misreg": 6, "loss": 40, "copier_edge": 30,
         "ghost": 70, "bands": 30,
     },
+    "Route 66 постер": {
+        "layout": "center_hero", "rows": 4, "palette": config.CUSTOM_PALETTE, "custom_colors": ((250, 240, 215), (200, 30, 40)), "dither": "halftone",
+        "dot_size": 8, "contrast": 2.3, "noise": 22, "streaks": 20, "misreg": 3, "loss": 30, "tilt": 1.5, "paper": 60, "tape": 40,
+        "font": "Impact", "font_size": 48, "tstyle": "white_box",
+    },
+    "Дайнер-меню": {
+        "layout": "two_columns", "rows": 3, "palette": config.CUSTOM_PALETTE, "custom_colors": ((255, 244, 214), (20, 50, 150)), "dither": "halftone",
+        "dot_size": 6, "angle": 15, "contrast": 2.0, "noise": 26, "streaks": 12, "misreg": 2, "loss": 20, "paper": 55, "stains": 35,
+        "font": "Special Elite", "font_size": 34, "tstyle": "white_box",
+    },
+    "Хакер-терминал": {
+        "layout": "column", "rows": 5, "palette": "Nightvision (Muted Green / Phosphor)", "dither": "floyd",
+        "dot_size": 5, "contrast": 2.2, "noise": 30, "streaks": 35, "misreg": 2, "loss": 40, "copier_edge": 20,
+        "font": "Courier New Bold", "font_size": 30, "tstyle": "dymo_tape", "bands": 45, "ghost": 20,
+    },
+    "Кремниевая долина": {
+        "layout": "mosaic", "rows": 5, "palette": config.CUSTOM_PALETTE, "custom_colors": ((240, 245, 255), (20, 60, 230)), "dither": "halftone",
+        "dot_size": 5, "angle": 45, "contrast": 2.0, "noise": 10, "streaks": 6, "misreg": 1, "loss": 10, "edge_x": 6, "edge_y": 4,
+        "font": "Consolas Bold", "font_size": 30, "tstyle": "white_box",
+    },
+    "Дикий Запад": {
+        "layout": "diagonal", "rows": 4, "palette": config.CUSTOM_PALETTE, "custom_colors": ((240, 222, 178), (90, 40, 20)), "dither": "halftone",
+        "dot_size": 7, "angle": 15, "contrast": 2.1, "noise": 40, "streaks": 25, "misreg": 2, "loss": 45, "tilt": 2.5, "paper": 80,
+        "stains": 50, "fold": 60, "font": "Special Elite", "font_size": 36, "tstyle": "white_box",
+    },
+    "Бейсбольная карточка": {
+        "layout": "duo", "rows": 2, "palette": config.CUSTOM_PALETTE, "custom_colors": ((255, 248, 230), (190, 25, 45)), "dither": "halftone",
+        "dot_size": 7, "contrast": 2.2, "noise": 20, "streaks": 14, "misreg": 5, "loss": 25, "paper": 45, "overprint": 60, "ink2": (30, 60, 200),
+        "font": "Impact", "font_size": 46, "tstyle": "white_box",
+    },
+    "Гараж-рок": {
+        "layout": "pile", "rows": 5, "palette": "Safety Orange (Blaze Orange / Charcoal)", "dither": "halftone",
+        "dot_size": 9, "contrast": 2.7, "noise": 38, "streaks": 40, "misreg": 4, "loss": 60, "tilt": 3.0, "tape": 70, "paper": 50,
+        "font": "Permanent Marker", "font_size": 44, "tstyle": "white_box",
+    },
+    "Неон-Вегас": {
+        "layout": "ribbon", "rows": 4, "palette": config.CUSTOM_PALETTE, "custom_colors": ((22, 12, 52), (255, 70, 190)), "dither": "halftone",
+        "dot_size": 7, "contrast": 2.4, "noise": 18, "streaks": 20, "misreg": 6, "loss": 30, "ghost": 40,
+        "font": "Rubik Mono One", "font_size": 30, "tstyle": "dymo_tape",
+    },
+    "Кибер-Америка": {
+        "layout": "staggered", "rows": 4, "palette": config.CUSTOM_PALETTE, "custom_colors": ((245, 240, 225), (20, 40, 160)), "dither": "halftone",
+        "dot_size": 7, "angle": 30, "contrast": 2.3, "noise": 16, "streaks": 14, "misreg": 7, "loss": 25, "tilt": 1.5, "paper": 40,
+        "overprint": 80, "ink2": (235, 30, 50), "font": "Impact", "font_size": 46, "tstyle": "white_box",
+    },
+    "Космо-NASA": {
+        "layout": "center_hero", "rows": 4, "palette": config.CUSTOM_PALETTE, "custom_colors": ((240, 240, 236), (220, 60, 30)), "dither": "halftone",
+        "dot_size": 6, "contrast": 2.0, "noise": 15, "streaks": 10, "misreg": 2, "loss": 20, "ghost": 20,
+        "font": "Courier New Bold", "font_size": 30, "tstyle": "white_box",
+    },
 }
 
 

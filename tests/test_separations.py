@@ -128,3 +128,22 @@ def test_free_sheet_with_layers_renders_in_python():
     out, _ = g.render_zine_page(None, st, scale=0.4)
     blank, _ = g.render_zine_page(None, dict(st, layers=[]), scale=0.4)
     assert out.tobytes() != blank.tobytes()
+
+
+def test_layer_shadow_and_new_stickers_python():
+    import config
+    import engine
+    import stickers
+    from PIL import Image
+    g = engine.ZineGraphicEngine()
+    img = Image.new("RGB", (600, 900), (240, 235, 220))
+    st = dict(config.DEFAULT_STATE)
+    base = {"type": "sticker", "sticker": "rocket", "x": 0.5, "y": 0.5, "size": 0.3, "color": "ink"}
+    plain = g.draw_layers(img, dict(st, layers=[base]), (240, 235, 220), (10, 10, 10)).tobytes()
+    shadowed = g.draw_layers(img, dict(st, layers=[dict(base, shadow=0.8)]), (240, 235, 220), (10, 10, 10)).tobytes()
+    assert shadowed != plain
+    assert len(stickers.STICKERS) >= 50
+    for name in ("terminal", "floppy", "route66", "sheriff", "rocket", "e404", "cursor", "coffee"):
+        assert name in stickers.STICKERS
+        loc = g._sticker_image(name, 80, (10, 10, 10), (240, 235, 220))
+        assert loc.getbbox() is not None, name

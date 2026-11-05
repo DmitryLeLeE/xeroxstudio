@@ -878,7 +878,8 @@ function explodeToLayers({ quiet = false } = {}) {
   if (src && st.layout !== "free") {
     const pa = src.canvas.width / src.canvas.height, ext = Math.floor(st.edge_y * 0.4);
     for (const [bx, by, bw, bh] of E.layoutBoxes(st.layout, cw, ch, st.rows, ext)) {
-      L.push(photoLayer(st.img, { x: (bx + bw / 2) / cw, y: (by + bh / 2) / ch, size: Math.max(0.1, Math.min(bw, bh * pa) / cw), rot: 0 }));
+      const size = Math.max(0.1, Math.min(bw, bh * pa) / cw), maskW = Math.min(720, Math.max(src.canvas.width, src.canvas.height));
+      L.push(photoLayer(st.img, { x: (bx + bw / 2) / cw, y: (by + bh / 2) / ch, size, rot: 0, dot: clamp(Math.round((st.dot_size * maskW) / (size * cw)), 2, 14) }));
     }
   } else if (src && st.layout === "free") { /* фото уже слои */ }
   const styleOf = { white_box: "box", dymo_tape: "tape", outline: "plain" }[st.tstyle] || "box";
@@ -940,6 +941,12 @@ function moveLayer(dir) {
   const L = layersOf(), i = LY.sel, j = i + dir; if (!L[i] || j < 0 || j >= L.length) return;
   flushCommit(); [L[i], L[j]] = [L[j], L[i]]; LY.sel = j; touchLayers();
 }
+function alignLayer(ly, how) {
+  const [cw, ch] = CFG.CANVAS_FORMATS[page().format] || [1000, 1500], ratio = ch / cw, [w, h] = layerBox(ly), r = ((ly.rot || 0) * Math.PI) / 180;
+  const ew = Math.abs(w * Math.cos(r)) + Math.abs(h * Math.sin(r)), eh = (Math.abs(w * Math.sin(r)) + Math.abs(h * Math.cos(r))) / ratio;
+  if (how === "l") ly.x = ew / 2; else if (how === "r") ly.x = 1 - ew / 2; else if (how === "h") ly.x = 0.5;
+  else if (how === "t") ly.y = eh / 2; else if (how === "b") ly.y = 1 - eh / 2; else if (how === "v") ly.y = 0.5;
+}
 function applyTemplate(name) {
   const tpl = CFG.LAYER_TEMPLATES[name], st = page(); if (!tpl) return;
   flushCommit();
@@ -955,6 +962,13 @@ function applyTemplate(name) {
   syncUI(); commit(); requestRender(); refreshLayersUI();
   toast(T(`Шаблон «${name}» собран. Ctrl+Z вернёт прежний лист.`, `Template “${name}” applied. Ctrl+Z restores the previous sheet.`), "ok", 3500);
 }
+function surpriseMe() {
+  const pick = (o) => { const k = Object.keys(o); return k[Math.floor(Math.random() * k.length)]; };
+  applyTemplate(pick(CFG.LAYER_TEMPLATES));
+  const names = Object.keys(CFG.BUILTIN_PRESETS).filter((n) => !/^(Без|Чист|Plain|Clean)/.test(n));
+  const pr = names[Math.floor(Math.random() * names.length)];
+  if (pr) { const keep = page().layers, lay = page().layout; applyPreset(pr); const s = page(); s.layers = keep; s.layout = lay; syncUI(); commit(); requestRender(); refreshLayersUI(); toast(T(`Шаблон + стиль «${pr}». Не нравится — жми ещё.`, `Template + “${pr}” style. Not feeling it? Hit it again.`), "ok", 3500); }
+}
 function refreshLayersUI() {
   const box = $("#layersBox"); if (!box) return;
   const L = layersOf();
@@ -965,6 +979,9 @@ function refreshLayersUI() {
     const b = document.createElement("button"); b.className = "btn grow"; b.textContent = text; b.addEventListener("click", fn); row.append(b);
   }
   box.append(row);
+  const wow = document.createElement("button"); wow.className = "btn pink wide"; wow.id = "btnSurprise";
+  wow.textContent = T("🎲 Удиви меня: случайный шаблон + стиль", "🎲 Surprise me: random template + style");
+  wow.addEventListener("click", surpriseMe); box.append(wow);
   const tpl = document.createElement("div"); tpl.className = "row gap";
   const tsel = document.createElement("select"); tsel.className = "sel grow"; tsel.setAttribute("aria-label", T("Шаблон свободного листа", "Free-sheet template"));
   tsel.append(new Option(T("Шаблон листа…", "Sheet template…"), ""));
@@ -1049,6 +1066,7 @@ function refreshLayersUI() {
     if (ly.type === "bitmap") {
       ed.append(mkRange(T("Размер точки", "Dot size"), 2, 14, 1, () => ly.dot || 5, (v) => (ly.dot = v)));
       ed.append(mkRange(T("Контраст", "Contrast"), 0.8, 3, 0.1, () => ly.contrast || 1.6, (v) => (ly.contrast = v)));
+      ed.append(mkRange(T("Яркость", "Brightness"), 0.5, 2, 0.05, () => ly.bright || 1, (v) => (ly.bright = v)));
       const mkChk = (label, get, set) => {
         const w = document.createElement("label"); w.className = "chk"; const c = document.createElement("input"); c.type = "checkbox"; c.checked = get();
         c.addEventListener("change", () => upd(() => set(c.checked))); w.append(c, document.createTextNode(" " + label)); return w;
@@ -1057,6 +1075,14 @@ function refreshLayersUI() {
       ed.append(mkChk(T("Бумажная подложка", "Paper backing"), () => ly.backing !== false, (v) => (ly.backing = v)));
       ed.append(mkChk(T("Рваный край", "Torn edge"), () => ly.torn !== false, (v) => (ly.torn = v)));
     }
+    ed.append(mkRange(T("Тень (жёсткая)", "Hard shadow"), 0, 1, 0.05, () => ly.shadow || 0, (v) => (ly.shadow = v)));
+    if (ly.shadow > 0) ed.append(mkSelect(T("Цвет тени", "Shadow colour"), [["ink", T("Краска", "Ink")], ["paper", T("Бумага", "Paper")], ["ink2", T("Вторая краска", "Second ink")], ["ink3", T("Третья краска", "Third ink")], ["ink4", T("Четвёртая краска", "Fourth ink")]], () => ly.shadow_c || "ink", (v) => (ly.shadow_c = v)));
+    const al = document.createElement("div"); al.className = "row gap align-row"; al.setAttribute("role", "group"); al.setAttribute("aria-label", T("Выровнять по листу", "Align to the sheet"));
+    for (const [sym, how, ru, en] of [["⇤", "l", "К левому краю", "Left edge"], ["↔", "h", "По центру листа (горизонталь)", "Centre horizontally"], ["⇥", "r", "К правому краю", "Right edge"], ["⤒", "t", "К верхнему краю", "Top edge"], ["↕", "v", "По центру листа (вертикаль)", "Centre vertically"], ["⤓", "b", "К нижнему краю", "Bottom edge"]]) {
+      const b = document.createElement("button"); b.type = "button"; b.className = "btn grow"; b.textContent = sym; b.title = T(ru, en); b.setAttribute("aria-label", T(ru, en));
+      b.addEventListener("click", () => { flushCommit(); alignLayer(ly, how); touchLayers(); }); al.append(b);
+    }
+    ed.append(al);
     const br = document.createElement("div"); br.className = "row gap";
     for (const [text, fn] of [
       [T("⇋ Отразить", "⇋ Flip"), () => { ly.flipx = !ly.flipx; }],
@@ -1159,10 +1185,10 @@ RC.setMaskLookup((() => {
   return (key) => {
     const img = S.images.get(key); if (!img) return null;
     let ly = null; for (const p of S.pages) { ly = (p.layers || []).find((l) => l && l.type === "bitmap" && l.img === key); if (ly) break; }
-    const dot = ly ? ly.dot || 5 : 5, contrast = ly ? ly.contrast || 1.6 : 1.6, cutout = !!(ly && ly.cutout), sig = `${dot}|${contrast}|${cutout}`;
+    const dot = ly ? ly.dot || 5 : 5, contrast = ly ? ly.contrast || 1.6 : 1.6, cutout = !!(ly && ly.cutout), bright = ly ? ly.bright || 1 : 1, sig = `${dot}|${contrast}|${cutout}|${bright}`;
     const hit = cache.get(key);
     if (hit && hit.sig === sig && hit.src === img.canvas) return hit.canvas;
-    const canvas = E.makePhotoMask(img.canvas, { dot, contrast, cutout });
+    const canvas = E.makePhotoMask(img.canvas, { dot, contrast, cutout, bright });
     cache.set(key, { sig, src: img.canvas, canvas });
     return canvas;
   };
@@ -2294,9 +2320,10 @@ $("#wCam").addEventListener("click", () => { closeWelcome(); $("#fileCam").click
 $("#wSample").addEventListener("click", closeWelcome);
 if (!TOUCH) $("#wCam").hidden = true;
 $("#btnTheme").addEventListener("click", () => {
-  const next = document.documentElement.dataset.theme === "paper" ? "dark" : "paper";
+  const order = ["usa", "paper", "dark"], cur = document.documentElement.dataset.theme, next = order[(order.indexOf(cur) + 1) % order.length];
   document.documentElement.dataset.theme = next; ls.set("zine.theme", next);
-  document.querySelector('meta[name="theme-color"]').setAttribute("content", next === "paper" ? "#f1ece0" : "#121212");
+  document.querySelector('meta[name="theme-color"]').setAttribute("content", next === "paper" ? "#f1ece0" : next === "usa" ? "#081040" : "#121212");
+  toast(T({ usa: "Тема: Америка × терминал", paper: "Тема: бумага", dark: "Тема: тёмная" }[next], { usa: "Theme: Americana × terminal", paper: "Theme: paper", dark: "Theme: dark" }[next]), "ok", 1200);
 });
 $("#fileProj").addEventListener("change", (e) => { const f = e.target.files[0]; e.target.value = ""; if (f) openProjectFile(f); });
 

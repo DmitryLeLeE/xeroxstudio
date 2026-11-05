@@ -340,8 +340,24 @@ function bitmapLayer(m, wpx, ly, color, paper, li) {
   return off;
 }
 
+/** Растягивает тона так, чтобы 2% самых тёмных стали чёрными, 2% самых светлых белыми: слишком светлое или тёмное фото не пропадает. */
+function autoLevels(d, n) {
+  const hist = new Uint32Array(256);
+  for (let p = 0; p < d.length; p += 4) hist[Math.floor((d[p] * 299 + d[p + 1] * 587 + d[p + 2] * 114) / 1000)]++;
+  let acc = 0, lo = 0, hi = 255;
+  for (let i = 0; i < 256; i++) { acc += hist[i]; if (acc >= 0.02 * n) { lo = i; break; } }
+  acc = 0; for (let i = 0; i < 256; i++) { acc += hist[i]; if (acc >= 0.98 * n) { hi = i; break; } }
+  if (hi - lo < 16) return;
+  const k = 255 / (hi - lo);
+  for (let p = 0; p < d.length; p += 4) for (let c = 0; c < 3; c++) d[p + c] = Math.max(0, Math.min(255, (d[p + c] - lo) * k));
+}
+function brightGamma(d, b) {
+  const lut = new Uint8Array(256); for (let i = 0; i < 256; i++) lut[i] = Math.round(255 * Math.pow(i / 255, 1 / b));
+  for (let p = 0; p < d.length; p += 4) for (let c = 0; c < 3; c++) d[p + c] = lut[d[p + c]];
+}
+
 /** Превращает фото в маску краски для фото-объекта: полутон + (по желанию) вырезка фона. alpha 255 = краска. */
-export function makePhotoMask(canvas, { maxSide = 720, dot = 5, contrast = 1.6, cutout = false } = {}) {
+export function makePhotoMask(canvas, { maxSide = 720, dot = 5, contrast = 1.6, cutout = false, bright = 1 } = {}) {
   const k = Math.min(1, maxSide / Math.max(canvas.width, canvas.height)), w = Math.max(8, Math.round(canvas.width * k)), h = Math.max(8, Math.round(canvas.height * k));
   let src = makeCanvas(w, h); ctx2d(src).drawImage(canvas, 0, 0, w, h);
   let keep = null;
@@ -350,7 +366,9 @@ export function makePhotoMask(canvas, { maxSide = 720, dot = 5, contrast = 1.6, 
     keep = new Uint8Array(w * h); for (let i = 0, p = 3; i < keep.length; i++, p += 4) keep[i] = cd[p] ? 1 : 0;
     // контур вырезки превращаем в серый фон: за краями пусто
   }
-  const id = ctx2d(src).getImageData(0, 0, w, h); contrastRGB(id.data, contrast);
+  const id = ctx2d(src).getImageData(0, 0, w, h);
+  autoLevels(id.data, w * h); if (bright !== 1) brightGamma(id.data, bright);
+  contrastRGB(id.data, contrast);
   const gray = grayOf(id.data, w * h), bits = halftoneBits(gray, w, h, dot, 45);
   const out = new ImageData(w, h), o = out.data;
   for (let i = 0, p = 0; i < bits.length; i++, p += 4) { o[p + 3] = bits[i] === 0 && (!keep || keep[i]) ? 255 : 0; }
@@ -391,6 +409,8 @@ function drawLayers(canvas, st, paper, ink, masks = {}) {
     c.save(); c.translate((Number(ly.x) || 0.5) * w, (Number(ly.y) || 0.5) * h); c.rotate(((Number(ly.rot) || 0) * Math.PI) / 180);
     if (ly.flipx) c.scale(-1, 1);
     c.globalAlpha = clamp(ly.opacity == null ? 1 : Number(ly.opacity), 0, 1);
+    const shd = clamp(Number(ly.shadow) || 0, 0, 1);
+    if (shd > 0) { c.shadowColor = cols[ly.shadow_c] || cols.ink; c.shadowOffsetX = c.shadowOffsetY = Math.round(shd * 0.035 * w); c.shadowBlur = 0; }
     if (ly.type === "sticker") {
       const px = Math.max(8, Math.floor(size * w)), off = makeCanvas(px, px), oc = ctx2d(off);
       oc.translate(px / 2, px / 2); drawSticker(oc, ly.sticker, px, color, cols.paper); wearSticker(off, px, li + 1);

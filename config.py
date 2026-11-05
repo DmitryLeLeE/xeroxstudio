@@ -6,7 +6,7 @@ import os
 import sys
 
 APP_NAME = "Xerox Zine Studio"
-APP_VERSION = "2.6.0"
+APP_VERSION = "2.7.0"
 
 
 def resource_path(name):
@@ -236,7 +236,7 @@ WARPS = {
     "Раздувание": "bulge",
     "Наклон": "slant",
 }
-TEXT_DEFAULTS = {"warp": "none", "warp_k": 0.5, "sx": 1.0, "rot": 0}
+TEXT_DEFAULTS = {"warp": "none", "warp_k": 0.5, "sx": 1.0, "rot": 0, "color": "ink"}
 # Свойства слоя-надписи, которые накладывает готовый стиль (всё остальное остаётся как было)
 TEXT_PRESETS = {
     "Панк-плашка": {"style": "box", "font": "Impact", "rot": -3},
@@ -251,6 +251,16 @@ TEXT_PRESETS = {
     "Растянутый плакат": {"style": "tape", "font": "Impact", "sx": 1.9},
     "Узкий столбик": {"style": "box", "font": "Impact", "sx": 0.55},
     "Баллончик": {"style": "plain", "font": "Rubik Spray Paint", "warp": "wave", "warp_k": 0.3, "rot": -6},
+    "Неон-вывеска": {"style": "tape", "font": "Rubik Mono One", "warp": "arch", "warp_k": 0.4, "color": "ink2"},
+    "Терминал": {"style": "tape", "font": "Courier New Bold"},
+    "Розыск (вестерн)": {"style": "box", "font": "Special Elite", "warp": "arch", "warp_k": 0.25, "rot": -2},
+    "Бейсбольный гимн": {"style": "plain", "font": "Impact", "warp": "arch", "warp_k": 0.6},
+    "Пиксель-игра": {"style": "box", "font": "Press Start 2P"},
+    "Рукописный": {"style": "plain", "font": "Marck Script", "warp": "wave", "warp_k": 0.2},
+    "Маркер из гаража": {"style": "plain", "font": "Permanent Marker", "warp": "slant", "warp_k": 0.3, "rot": -5},
+    "Мем-капс": {"style": "plain", "font": "Impact", "warp": "bulge", "warp_k": 0.35, "sx": 1.1},
+    "Грязный принт": {"style": "box", "font": "Rubik Dirt"},
+    "Шёпот": {"style": "plain", "font": "Rubik Distressed", "warp": "dip", "warp_k": 0.3},
 }
 # Шаблоны свободного листа. photo=True: фото страницы как слой. Координаты и размер - доли ширины листа.
 LAYER_TEMPLATES = {
@@ -286,4 +296,78 @@ LAYER_TEMPLATES = {
         {"type": "text", "text": "ГРОМЧЕ", "text_en": "LOUDER", "preset": "Растянутый плакат", "x": 0.5, "y": 0.12, "size": 0.2},
         {"type": "text", "text": "ГРОМЧЕ", "text_en": "LOUDER", "preset": "Глитч-крик", "x": 0.5, "y": 0.92, "size": 0.2},
     ],
+    "Route 66": [
+        {"type": "bitmap", "photo": True, "x": 0.5, "y": 0.46, "size": 0.86, "rot": -1.5},
+        {"type": "sticker", "sticker": "route66", "x": 0.84, "y": 0.72, "size": 0.26, "rot": -8, "shadow": 0.6},
+        {"type": "text", "text": "ТРАССА ИЛИ НИЧЕГО", "text_en": "ROUTE 66 OR BUST", "preset": "Бейсбольный гимн", "x": 0.5, "y": 0.1, "size": 0.2},
+        {"type": "text", "text": "ОТ ЧИКАГО ДО ЛОС-АНДЖЕЛЕСА", "text_en": "CHICAGO TO LOS ANGELES", "preset": "Лента Dymo", "x": 0.5, "y": 0.92, "size": 0.09},
+    ],
+    "Розыск": [
+        {"type": "text", "text": "РАЗЫСКИВАЕТСЯ", "text_en": "WANTED", "preset": "Розыск (вестерн)", "x": 0.5, "y": 0.1, "size": 0.2},
+        {"type": "bitmap", "photo": True, "x": 0.5, "y": 0.47, "size": 0.7, "rot": 0},
+        {"type": "sticker", "sticker": "sheriff", "x": 0.84, "y": 0.2, "size": 0.18, "rot": 12},
+        {"type": "text", "text": "ЖИВЫМ ИЛИ ПЕРЕПЕЧАТАННЫМ\nНАГРАДА $500", "text_en": "DEAD OR PHOTOCOPIED\nREWARD $500", "preset": "Машинопись", "x": 0.5, "y": 0.88, "size": 0.14},
+    ],
+    "Хакер-терминал": [
+        {"type": "sticker", "sticker": "terminal", "x": 0.5, "y": 0.2, "size": 0.5, "rot": 0},
+        {"type": "text", "text": "> ДОСТУП РАЗРЕШЁН", "text_en": "> ACCESS GRANTED", "preset": "Терминал", "x": 0.5, "y": 0.4, "size": 0.14},
+        {"type": "bitmap", "photo": True, "x": 0.5, "y": 0.68, "size": 0.62, "rot": 0},
+        {"type": "text", "text": "ВЗЛОМАЙ ВСЁ", "text_en": "HACK THE PLANET", "preset": "Пиксель-игра", "x": 0.5, "y": 0.94, "size": 0.12},
+    ],
+    "Закусочная": [
+        {"type": "sticker", "sticker": "open_sign", "x": 0.5, "y": 0.1, "size": 0.5, "rot": -3, "shadow": 0.7},
+        {"type": "bitmap", "photo": True, "x": 0.5, "y": 0.5, "size": 0.74, "rot": 2},
+        {"type": "sticker", "sticker": "coffee", "x": 0.82, "y": 0.78, "size": 0.2, "rot": 8},
+        {"type": "text", "text": "КОФЕ · ПИРОГ · ПАНК", "text_en": "COFFEE · PIE · PUNK", "preset": "Неон-вывеска", "x": 0.5, "y": 0.92, "size": 0.085},
+    ],
+    "Релиз-ноутс": [
+        {"type": "text", "text": "ВЕРСИЯ 6.6.6", "text_en": "VERSION 6.6.6", "preset": "Терминал", "x": 0.5, "y": 0.08, "size": 0.2},
+        {"type": "bitmap", "photo": True, "x": 0.5, "y": 0.44, "size": 0.7, "rot": 0},
+        {"type": "text", "text": "ИСПРАВЛЕНО: ВСЁ\nСЛОМАНО: НИЧЕГО\nДОБАВЛЕНО: ПАНК", "text_en": "FIXED: EVERYTHING\nBROKEN: NOTHING\nADDED: PUNK", "preset": "Машинопись", "x": 0.5, "y": 0.82, "size": 0.12},
+        {"type": "sticker", "sticker": "bug", "x": 0.86, "y": 0.1, "size": 0.14, "rot": 20},
+    ],
+    "Ошибка 404": [
+        {"type": "sticker", "sticker": "e404", "x": 0.5, "y": 0.16, "size": 0.6, "rot": -2, "shadow": 0.6},
+        {"type": "bitmap", "photo": True, "x": 0.5, "y": 0.52, "size": 0.66, "rot": 3},
+        {"type": "sticker", "sticker": "error_window", "x": 0.78, "y": 0.62, "size": 0.32, "rot": -6, "shadow": 0.5},
+        {"type": "text", "text": "СТРАНИЦА НЕ НАЙДЕНА", "text_en": "PAGE NOT FOUND", "preset": "Глитч-крик", "x": 0.5, "y": 0.92, "size": 0.14},
+    ],
+    "Микстейп": [
+        {"type": "sticker", "sticker": "cassette", "x": 0.5, "y": 0.26, "size": 0.7, "rot": -4},
+        {"type": "text", "text": "МИКСТЕЙП ТОМ 1", "text_en": "MIXTAPE VOL.1", "preset": "Баллончик", "x": 0.5, "y": 0.5, "size": 0.2},
+        {"type": "bitmap", "photo": True, "x": 0.5, "y": 0.78, "size": 0.5, "rot": 2},
+    ],
+    "Бейсбольная карточка": [
+        {"type": "sticker", "sticker": "stripes", "x": 0.5, "y": 0.06, "size": 0.9, "rot": 0},
+        {"type": "bitmap", "photo": True, "x": 0.5, "y": 0.46, "size": 0.78, "rot": 0},
+        {"type": "sticker", "sticker": "usa_badge", "x": 0.2, "y": 0.8, "size": 0.2, "rot": -10},
+        {"type": "text", "text": "ИГРОК №7", "text_en": "PLAYER #7", "preset": "Бейсбольный гимн", "x": 0.58, "y": 0.9, "size": 0.2},
+    ],
+    "Питч стартапа": [
+        {"type": "text", "text": "МЫ ПОСТРОИМ ВСЁ", "text_en": "WE WILL BUILD IT ALL", "preset": "Мем-капс", "x": 0.5, "y": 0.12, "size": 0.2},
+        {"type": "sticker", "sticker": "rocket", "x": 0.74, "y": 0.5, "size": 0.4, "rot": 20, "shadow": 0.6},
+        {"type": "bitmap", "photo": True, "x": 0.34, "y": 0.52, "size": 0.5, "rot": -4},
+        {"type": "sticker", "sticker": "dollar", "x": 0.22, "y": 0.84, "size": 0.18, "rot": -8},
+        {"type": "text", "text": "РАУНД A · ПОЧТИ", "text_en": "SERIES A · ALMOST", "preset": "Пиксель-игра", "x": 0.6, "y": 0.9, "size": 0.07},
+    ],
+    "Баг-репорт": [
+        {"type": "text", "text": "БАГ-РЕПОРТ", "text_en": "BUG REPORT", "preset": "Терминал", "x": 0.5, "y": 0.08, "size": 0.18},
+        {"type": "sticker", "sticker": "bug", "x": 0.2, "y": 0.26, "size": 0.26, "rot": -10},
+        {"type": "bitmap", "photo": True, "x": 0.56, "y": 0.5, "size": 0.7, "rot": 2},
+        {"type": "text", "text": "ШАГИ: 1. ВКЛЮЧИТЬ  2. ВЗОРВАТЬСЯ", "text_en": "STEPS: 1. TURN ON  2. EXPLODE", "preset": "Машинопись", "x": 0.5, "y": 0.9, "size": 0.09},
+    ],
 }
+
+
+def _fit_template_texts():
+    """Подгоняет размер надписей шаблонов так, чтобы самая длинная строка помещалась в лист (с запасом на широкие шрифты)."""
+    for tpl in LAYER_TEMPLATES.values():
+        for t in tpl:
+            if t.get("type") != "text":
+                continue
+            longest = max(max(len(x) for x in str(t.get(k, "")).split("\n")) for k in ("text", "text_en"))
+            sx = float(TEXT_PRESETS.get(t.get("preset"), {}).get("sx", 1.0))
+            t["size"] = round(min(t["size"], 0.9 / ((0.375 * longest + 0.3) * sx)), 3)
+
+
+_fit_template_texts()

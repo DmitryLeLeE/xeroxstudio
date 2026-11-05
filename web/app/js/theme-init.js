@@ -1,9 +1,9 @@
-// Применяет тему до отрисовки, чтобы не было вспышки. По умолчанию бумажная.
+// Применяет тему до отрисовки, чтобы не было вспышки. По умолчанию «Америка × терминал» (usa).
 (function () {
-  var t = "paper";
-  try { t = JSON.parse(localStorage.getItem("zine.theme")) || "paper"; } catch (e) {}
-  if (t !== "dark") t = "paper";
+  var t = "usa";
+  try { t = JSON.parse(localStorage.getItem("zine.theme")) || "usa"; } catch (e) {}
+  if (t !== "dark" && t !== "paper") t = "usa";
   document.documentElement.setAttribute("data-theme", t);
   var m = document.querySelector('meta[name="theme-color"]');
-  if (m) m.setAttribute("content", t === "paper" ? "#f1ece0" : "#121212");
+  if (m) m.setAttribute("content", t === "paper" ? "#f1ece0" : t === "usa" ? "#081040" : "#121212");
 })();
