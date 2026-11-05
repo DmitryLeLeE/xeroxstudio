@@ -433,6 +433,7 @@ class CollapsibleSection(tk.Frame):
     def __init__(self, parent, title="", is_open=True, **kwargs):
         super().__init__(parent, bg=PANEL, **kwargs)
         self.is_open = is_open
+        self.single = False
         self.title = title
         self.header = tk.Label(
             self, text="", bg="#242424", fg=ACCENT, font=FONT_BOLD, anchor="w", padx=8, pady=5, cursor="hand2"
@@ -454,6 +455,80 @@ class CollapsibleSection(tk.Frame):
     def toggle(self):
         self.is_open = not self.is_open
         self._refresh()
+
+    def set_single(self, single):
+        """Режим «одна секция в панели»: заголовок прячется, содержимое всегда раскрыто."""
+        self.single = single
+        if single:
+            self.header.pack_forget()
+            self.content.pack(fill=tk.X)
+        else:
+            self.content.pack_forget()
+            self.header.pack(fill=tk.X)
+            self._refresh()
+
+
+# ---------------------------------------------------------------- лента значков
+_RIBBON_ICONS = {  # фигуры в сетке 24x24: те же значки, что в браузерной версии
+    "styles": [("poly", [(12, 3), (14, 9), (20, 11), (14, 13), (12, 19), (10, 13), (4, 11), (10, 9)]), ("poly", [(19, 16), (20, 19), (23, 20), (20, 21), (19, 24), (18, 21), (15, 20), (18, 19)])],
+    "photo": [("rect", 3, 5, 21, 19), ("oval", 7, 9, 11, 13), ("line", [(21, 17), (16, 12), (7, 19)])],
+    "s0": [("rect", 3, 3, 11, 11), ("rect", 13, 3, 21, 11), ("rect", 3, 13, 11, 21), ("rect", 13, 13, 21, 21)],
+    "s1": [("line", [(6, 2), (6, 16), (8, 18), (22, 18)]), ("line", [(2, 6), (16, 6), (18, 8), (18, 22)])],
+    "s2": [("oval", 3.4, 3.4, 8.6, 8.6), ("oval", 13.4, 4.4, 16.6, 7.6), ("oval", 4.4, 13.4, 7.6, 16.6), ("oval", 12.4, 12.4, 17.6, 17.6), ("oval", 19, 19, 21, 21)],
+    "s3": [("line", [(12, 3), (15, 7), (18, 12), (18, 15), (16, 19), (12, 20), (8, 19), (6, 15), (6, 12), (9, 7), (12, 3)])],
+    "s4": [("line", [(5, 3), (15, 3), (19, 7), (19, 21), (5, 21), (5, 3)]), ("line", [(8, 14), (10, 16), (13, 12), (16, 15)])],
+    "s5": [("line", [(12, 3), (21, 8), (12, 13), (3, 8), (12, 3)]), ("line", [(3, 13), (12, 18), (21, 13)])],
+    "s6": [("text", 12, 12, "Aa")],
+    "all": [("line", [(4, 6), (20, 6)]), ("line", [(4, 12), (20, 12)]), ("line", [(4, 18), (20, 18)])],
+}
+
+
+def draw_ribbon_icon(cv, name, color, k):
+    cv.delete("all")
+    for sh in _RIBBON_ICONS.get(name, []):
+        if sh[0] == "poly":
+            cv.create_polygon([c * k for xy in sh[1] for c in xy], fill=color, outline=color)
+        elif sh[0] == "line":
+            cv.create_line([c * k for xy in sh[1] for c in xy], fill=color, width=max(2, round(1.8 * k)), capstyle="round", joinstyle="round")
+        elif sh[0] == "rect":
+            cv.create_rectangle(sh[1] * k, sh[2] * k, sh[3] * k, sh[4] * k, outline=color, width=max(2, round(1.8 * k)))
+        elif sh[0] == "oval":
+            cv.create_oval(sh[1] * k, sh[2] * k, sh[3] * k, sh[4] * k, outline=color, fill=color if sh[3] - sh[1] < 7 else "", width=max(2, round(1.8 * k)))
+        elif sh[0] == "text":
+            cv.create_text(sh[1] * k, sh[2] * k, text=sh[3], fill=color, font=("Segoe UI", max(9, round(11 * k)), "bold"))
+
+
+class RibbonTile(tk.Frame):
+    """Плитка ленты: значок и подпись. Активная заливается акцентом."""
+    def __init__(self, parent, icon, label, command, tip="", scale=1.0, accent=None, **kw):
+        super().__init__(parent, bg="#1f1f1f", highlightthickness=2, highlightbackground="#555", cursor="hand2", **kw)
+        self.icon, self.command, self.active, self.k = icon, command, False, 1.15 * scale
+        self.accent = accent or ACCENT
+        size = int(24 * self.k)
+        self.cv = tk.Canvas(self, width=size, height=size, bg="#1f1f1f", highlightthickness=0, cursor="hand2")
+        self.cv.pack(pady=(5, 0))
+        self.lbl = tk.Label(self, text=label.upper(), bg="#1f1f1f", fg=FG, font=("Segoe UI", 7, "bold"), cursor="hand2")
+        self.lbl.pack(pady=(0, 4))
+        for w in (self, self.cv, self.lbl):
+            w.bind("<Button-1>", lambda e: self.command())
+            w.bind("<Enter>", lambda e: self._paint(hover=True))
+            w.bind("<Leave>", lambda e: self._paint())
+        self.tip = tip
+        self._paint()
+
+    def set_active(self, on):
+        self.active = on
+        self._paint()
+
+    def _paint(self, hover=False):
+        if self.active:
+            bg, fg, edge = self.accent, "#0a0a0a", "#0a0a0a"
+        else:
+            bg, fg, edge = ("#2e2e2e" if hover else "#1f1f1f"), FG, ("#999" if hover else "#555")
+        self.config(bg=bg, highlightbackground=edge)
+        self.cv.config(bg=bg)
+        self.lbl.config(bg=bg, fg=fg)
+        draw_ribbon_icon(self.cv, self.icon, fg, self.k)
 
 
 class ToastNotification:

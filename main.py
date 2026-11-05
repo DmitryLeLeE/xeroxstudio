@@ -31,7 +31,7 @@ from engine import ZineGraphicEngine
 from manifest_dialog import ManifestoDialog
 from ui_components import (
     ACCENT, BG, FG, FIELD, FONT, FONT_BOLD, FONT_SMALL, LINE, MUTED, PANEL, PANEL2, VIEW_BG,
-    CollapsibleSection, CropCanvas, InteractivePanZoomCanvas, LabeledSlider, ProgressDialog,
+    CollapsibleSection, CropCanvas, RibbonTile, InteractivePanZoomCanvas, LabeledSlider, ProgressDialog,
     ToastNotification, enable_mousewheel_scroll, make_button, setup_ttk_style,
 )
 
@@ -284,12 +284,82 @@ class XeroxZineStudioApp:
         self.status_var = tk.StringVar(value="")
         tk.Label(status, textvariable=self.status_var, bg="#0e0e0e", fg=ACCENT, font=FONT_SMALL, anchor="e", padx=8).pack(side=tk.RIGHT)
 
-        paned = tk.PanedWindow(self.root, orient=tk.HORIZONTAL, bg=BG, sashwidth=6, sashrelief="flat", bd=0)
-        paned.pack(fill=tk.BOTH, expand=True, padx=4, pady=4)
+        body = tk.Frame(self.root, bg=BG)
+        body.pack(fill=tk.BOTH, expand=True)
+        self._sections = []
+        self.stage = tk.Frame(body, bg=VIEW_BG)
+        self._build_ribbon(body)
+        # выезжающая панель: шапка с названием и крестиком, ниже одна из двух колонок
+        self.drawer = tk.Frame(body, bg=PANEL, width=self.px(410), highlightthickness=2, highlightbackground="#555")
+        self.drawer.pack_propagate(False)
+        head = tk.Frame(self.drawer, bg="#000")
+        head.pack(fill=tk.X)
+        self.drawer_title = tk.Label(head, text="", bg="#000", fg=ACCENT, font=("Segoe UI", 11, "bold"), anchor="w", padx=10, pady=6)
+        self.drawer_title.pack(side=tk.LEFT, fill=tk.X, expand=True)
+        make_button(head, "✕", lambda: self._set_fly(""), kind="secondary", padx=8, pady=1).pack(side=tk.RIGHT, padx=6, pady=4)
+        self.drawer_body = tk.Frame(self.drawer, bg=PANEL)
+        self.drawer_body.pack(fill=tk.BOTH, expand=True)
+        self.col_source = self._build_source_column(self.drawer_body)
+        self.col_settings = self._build_settings_column(self.drawer_body)
+        self.stage.pack(side=tk.LEFT, fill=tk.BOTH, expand=True, padx=(0, 4), pady=4)
+        self._build_viewport_column(self.stage)
+        self._fly = ""
+        self._set_fly(self.settings.get("ui_fly", ""), remember=False)
 
-        self._build_source_column(paned)
-        self._build_settings_column(paned)
-        self._build_viewport_column(paned)
+    RIBBON = (("styles", "Стили"), ("photo", "Фото"), ("s0", "Сетка"), ("s1", "Кадры"), ("s2", "Растр"), ("s3", "Цвет"), ("s4", "Износ"), ("s5", "Слои"), ("s6", "Текст"))
+    RIBBON_TITLES = {"photo": "ФОТО СТРАНИЦЫ", "s0": "ФОРМАТ И СЕТКА", "s1": "ФОТО И КАДРЫ", "s2": "РАСТР И ТОНЕР", "s3": "ПАЛИТРА", "s4": "ИЗНОС И ШТАМП", "s5": "СЛОИ: СТИКЕРЫ И НАДПИСИ", "s6": "ТЕКСТ И ШРИФТЫ", "all": "ВСЕ НАСТРОЙКИ"}
+
+    def _build_ribbon(self, parent):
+        rail = tk.Frame(parent, bg=BG, width=self.px(74))
+        rail.pack(side=tk.LEFT, fill=tk.Y, padx=(6, 6), pady=6)
+        rail.pack_propagate(False)
+        self.ribbon = {}
+        for key, label in self.RIBBON:
+            cmd = self._styles_popup if key == "styles" else (lambda k=key: self._set_fly("" if self._fly == k else k))
+            t = RibbonTile(rail, key, label, cmd, scale=self.px(100) / 100.0, accent=(ACCENT if key != "styles" else "#ffe14a"))
+            if key == "styles":
+                t.config(highlightbackground="#ffe14a")
+            t.pack(fill=tk.X, pady=3)
+            self.ribbon[key] = t
+        all_tile = RibbonTile(rail, "all", "Всё", lambda: self._set_fly("" if self._fly == "all" else "all"), scale=self.px(100) / 100.0)
+        all_tile.pack(side=tk.BOTTOM, fill=tk.X, pady=3)
+        self.ribbon["all"] = all_tile
+
+    def _styles_popup(self):
+        t = self.ribbon["styles"]
+        self._style_menu.tk_popup(t.winfo_rootx() + t.winfo_width(), t.winfo_rooty())
+
+    def _set_fly(self, fly, remember=True):
+        """Открывает панель: 'photo', 's0'..'s6' (одна секция), 'all' (все настройки) или '' (лист на весь экран)."""
+        self._fly = fly
+        if remember:
+            self.settings.set("ui_fly", fly)
+        for k, t in self.ribbon.items():
+            t.set_active(k == fly)
+        for w in (self.col_source, self.col_settings):
+            w.pack_forget()
+        if not fly:
+            self.drawer.pack_forget()
+            return
+        self.drawer_title.config(text="▮ " + self.RIBBON_TITLES.get(fly, ""))
+        if self.drawer.winfo_manager() == "":
+            self.drawer.pack(side=tk.LEFT, fill=tk.Y, before=self.stage, padx=(0, 6), pady=6)
+        if fly == "photo":
+            self.col_source.pack(fill=tk.BOTH, expand=True)
+            return
+        self.col_settings.pack(fill=tk.BOTH, expand=True)
+        single = fly != "all"
+        for s in self._sections:
+            s.pack_forget()
+        for i, s in enumerate(self._sections):
+            s.set_single(single)
+            if not single or fly == f"s{i}":
+                s.pack(fill=tk.X, padx=6, pady=3)
+        if single:
+            self.preset_row.pack_forget()
+        else:
+            self.preset_row.pack(fill=tk.X, padx=6, pady=(6, 2), before=self._sections[0])
+        self.c_settings.yview_moveto(0)
 
     def _build_menu(self):
         menu_bar = tk.Menu(self.root)
@@ -348,16 +418,14 @@ class XeroxZineStudioApp:
         menu_bar.add_cascade(label="Справка", menu=h)
         self.root.config(menu=menu_bar)
 
-    def _build_source_column(self, paned):
-        col = tk.Frame(paned, bg=PANEL)
-        paned.add(col, width=self.px(270), minsize=self.px(220), stretch="never")
-        tk.Label(col, text="ФОТО СТРАНИЦЫ", bg=PANEL, fg=MUTED, font=FONT_BOLD, anchor="w").pack(fill=tk.X, padx=8, pady=(8, 2))
-        make_button(col, "📂  Загрузить фото", self.load_image, kind="primary").pack(fill=tk.X, padx=8, pady=4)
+    def _build_source_column(self, parent):
+        col = tk.Frame(parent, bg=PANEL)
+        make_button(col, "📂  Загрузить фото", self.load_image, kind="primary").pack(fill=tk.X, padx=8, pady=(8, 4))
         tools = tk.Frame(col, bg=PANEL)
         tools.pack(fill=tk.X, padx=8)
         for text, kind in (("↺ 90°", "ccw"), ("↻ 90°", "cw"), ("⇋ Зеркало", "flip")):
             make_button(tools, text, lambda k=kind: self.transform_photo(k)).pack(side=tk.LEFT, padx=(0, 4), pady=2)
-        self.src_info = tk.Label(col, text="", bg=PANEL, fg=MUTED, font=FONT_SMALL, anchor="w", justify="left", wraplength=self.px(240))
+        self.src_info = tk.Label(col, text="", bg=PANEL, fg=MUTED, font=FONT_SMALL, anchor="w", justify="left", wraplength=self.px(360))
         self.src_info.pack(fill=tk.X, padx=8)
         self.canvas_crop = CropCanvas(col)
         self.canvas_crop.pack(fill=tk.BOTH, expand=True, padx=8, pady=6)
@@ -366,10 +434,10 @@ class XeroxZineStudioApp:
             col, text="Потяните мышью по фото — выделить кадр.\nДвойной клик — сбросить.", bg=PANEL, fg=MUTED,
             font=FONT_SMALL, justify="left", anchor="w",
         ).pack(fill=tk.X, padx=8, pady=(0, 8))
+        return col
 
-    def _build_settings_column(self, paned):
-        col = tk.Frame(paned, bg=PANEL)
-        paned.add(col, width=self.px(440), minsize=self.px(380), stretch="never")
+    def _build_settings_column(self, parent):
+        col = tk.Frame(parent, bg=PANEL)
         self.c_settings = tk.Canvas(col, bg=PANEL, highlightthickness=0)
         sb = ttk.Scrollbar(col, orient="vertical", style="Dark.Vertical.TScrollbar", command=self.c_settings.yview)
         self.f_settings = tk.Frame(self.c_settings, bg=PANEL)
@@ -383,15 +451,16 @@ class XeroxZineStudioApp:
         self._build_settings_controls(self.f_settings)
         enable_mousewheel_scroll(self.f_settings, self.c_settings)
         enable_mousewheel_scroll(self.c_settings, self.c_settings)
+        return col
 
     def _section(self, parent, title):
         s = CollapsibleSection(parent, title=title)
-        s.pack(fill=tk.X, padx=6, pady=3)
+        self._sections.append(s)
         return s.content
 
     def _build_settings_controls(self, p):
         row = tk.Frame(p, bg=PANEL)
-        row.pack(fill=tk.X, padx=6, pady=(6, 2))
+        self.preset_row = row
         tk.Label(row, text="СТИЛЬ", bg=PANEL, fg=MUTED, font=FONT_BOLD).pack(side=tk.LEFT, padx=(2, 6))
         self.preset_var = tk.StringVar(value=PRESET_HINT)
         self.preset_combo = ttk.Combobox(row, textvariable=self.preset_var, state="readonly", font=FONT)
@@ -529,36 +598,24 @@ class XeroxZineStudioApp:
         self._slider(c, "txt_y2", "Нижняя надпись Y (%)", 30, 95)
         self._slider(c, "text_rot", "Поворот надписи (°)", -45.0, 45.0, 1.0)
 
-    def _build_viewport_column(self, paned):
-        col = tk.Frame(paned, bg=VIEW_BG)
-        paned.add(col, minsize=self.px(520), stretch="always")
-
-        hud = tk.Frame(col, bg="#141414")
-        hud.pack(fill=tk.X, padx=4, pady=(4, 2))
-        make_button(hud, "⛶  Вписать", lambda: self.viewport.fit_to_view(), kind="secondary").pack(side=tk.LEFT, padx=2, pady=3)
-        make_button(hud, "1:1", lambda: self.viewport.reset_100_percent(), kind="secondary").pack(side=tk.LEFT, padx=2)
-        self.zoom_lbl = tk.Label(hud, text="100%", bg="#141414", fg=MUTED, font=FONT_SMALL, width=6)
-        self.zoom_lbl.pack(side=tk.LEFT)
-        make_button(hud, "🎲  Remix", self.apply_surprise, kind="pink").pack(side=tk.LEFT, padx=6)
-
-        make_button(hud, "💾  Сохранить PNG", self.export_png, kind="primary").pack(side=tk.RIGHT, padx=4)
-        self.export_scale = tk.StringVar(value=self.settings.get("export_scale", "2×"))
-        self.export_scale.trace_add("write", lambda *a: self.settings.set("export_scale", self.export_scale.get()))
-        ttk.Combobox(hud, textvariable=self.export_scale, values=["1×", "2×", "3×"], width=4, state="readonly", font=FONT).pack(side=tk.RIGHT, padx=2)
-        tk.Label(hud, text="Экспорт:", bg="#141414", fg=MUTED, font=FONT_SMALL).pack(side=tk.RIGHT, padx=(6, 2))
-
+    def _build_viewport_column(self, col):
+        # страницы внизу полосой, лист занимает всё остальное, кнопки плавают поверх листа
+        self.viewport_host = col
         self.viewport = InteractivePanZoomCanvas(col)
-        self.viewport.pack(fill=tk.BOTH, expand=True, padx=4, pady=2)
+        self.viewport.pack(fill=tk.BOTH, expand=True, padx=4, pady=(4, 2))
         self.viewport.on_text_click_relocate = self._on_canvas_text_relocate
         self.viewport.layer_hit = self._layer_hit
         self.viewport.on_layer_press = self._layer_press
         self.viewport.on_layer_move = self._layer_move
         self.viewport.on_transform_changed = lambda z: self.zoom_lbl.config(text=f"{z * 100:.0f}%")
         self.toast = ToastNotification(self.viewport)
+        self._build_floating_hud(col)
 
         strip = tk.Frame(col, bg="#141414")
         strip.pack(fill=tk.X, padx=4, pady=2)
-        tk.Label(strip, text="СТРАНИЦЫ", bg="#141414", fg=MUTED, font=FONT_BOLD, anchor="w").pack(fill=tk.X, padx=6, pady=(3, 0))
+        ctl = tk.Frame(strip, bg="#141414")
+        ctl.pack(fill=tk.X, padx=4, pady=(2, 0))
+        tk.Label(ctl, text="СТРАНИЦЫ", bg="#141414", fg=MUTED, font=FONT_BOLD, anchor="w").pack(side=tk.LEFT, padx=(2, 12))
         self.strip_canvas = tk.Canvas(strip, bg="#141414", highlightthickness=0, height=self.thumb_box[1] + self.px(40))
         self.strip_scroll = ttk.Scrollbar(strip, orient="horizontal", style="Dark.Horizontal.TScrollbar", command=self.strip_canvas.xview)
         self.strip_canvas.configure(xscrollcommand=self.strip_scroll.set)
@@ -568,13 +625,32 @@ class XeroxZineStudioApp:
         self.strip_canvas.create_window((0, 0), window=self.f_page_btns, anchor="nw")
         self.f_page_btns.bind("<Configure>", lambda e: self.strip_canvas.configure(scrollregion=self.strip_canvas.bbox("all")))
 
-        ctl = tk.Frame(col, bg="#141414")
-        ctl.pack(fill=tk.X, padx=4, pady=(0, 4))
         make_button(ctl, "+ Новая", self.add_page, kind="primary").pack(side=tk.LEFT, padx=3, pady=4)
         make_button(ctl, "Дублировать", self.duplicate_page).pack(side=tk.LEFT, padx=2)
         make_button(ctl, "◀", lambda: self.move_page(-1)).pack(side=tk.LEFT, padx=(8, 1))
         make_button(ctl, "▶", lambda: self.move_page(1)).pack(side=tk.LEFT, padx=1)
         make_button(ctl, "Удалить", self.delete_page, kind="danger").pack(side=tk.LEFT, padx=(8, 2))
+
+    def _build_floating_hud(self, col):
+        """Плавающие кнопки над листом (справа сверху), как в браузерной версии."""
+        hud = tk.Frame(col, bg=VIEW_BG, highlightthickness=0)
+        hud.place(relx=1.0, x=-self.px(14), y=self.px(12), anchor="ne")
+        make_button(hud, "💾  PNG", self.export_png, kind="primary").pack(fill=tk.X, pady=2)
+        make_button(hud, "🎲  Remix", self.apply_surprise, kind="pink").pack(fill=tk.X, pady=2)
+        make_button(hud, "⛶  Вписать", lambda: self.viewport.fit_to_view(), kind="secondary").pack(fill=tk.X, pady=2)
+        zoom = tk.Frame(hud, bg=VIEW_BG)
+        zoom.pack(fill=tk.X, pady=2)
+        make_button(zoom, "1:1", lambda: self.viewport.reset_100_percent(), kind="secondary", padx=8).pack(side=tk.LEFT)
+        self.zoom_lbl = tk.Label(zoom, text="100%", bg=VIEW_BG, fg=MUTED, font=FONT_SMALL, width=6)
+        self.zoom_lbl.pack(side=tk.LEFT)
+        ex = tk.Frame(hud, bg=VIEW_BG)
+        ex.pack(fill=tk.X, pady=(4, 0))
+        tk.Label(ex, text="Экспорт", bg=VIEW_BG, fg=MUTED, font=FONT_SMALL).pack(side=tk.LEFT)
+        self.export_scale = tk.StringVar(value=self.settings.get("export_scale", "2×"))
+        self.export_scale.trace_add("write", lambda *a: self.settings.set("export_scale", self.export_scale.get()))
+        ttk.Combobox(ex, textvariable=self.export_scale, values=["1×", "2×", "3×"], width=4, state="readonly", font=FONT).pack(side=tk.RIGHT)
+        self.hud = hud
+        hud.lift()
 
     def _bind_hotkeys(self):
         r = self.root
@@ -800,6 +876,8 @@ class XeroxZineStudioApp:
         ly = {"type": "text", "text": "", "sticker": "star", "x": 0.5, "y": 0.5, "size": 0.2, "rot": 0, "color": "ink", "style": "box", "font": "Arial Black"}
         ly.update(kw)
         self.layers.append(ly)
+        if self._fly not in ("all", "s5"):
+            self._set_fly("s5")
         self._refresh_layers_ui()
         self.schedule_render()
 

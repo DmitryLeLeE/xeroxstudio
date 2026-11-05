@@ -1,5 +1,8 @@
 # Changelog
 
+## 2.2.0
+- **Desktop app redesign, same layout as the browser.** A ribbon of icon tiles on the left (Styles, Photo, Grid, Frames, Toner, Colour, Wear, Layers, Text, All) opens one slide-out panel with a single settings section; the ✕ or a second click closes it and the sheet gets the whole window. *All* shows every setting in one list as before, *Styles* drops down the preset menu. Save PNG, Remix, Fit, 1:1 and export scale now float over the sheet, and the page controls moved into the page strip header. The last open panel is remembered. Adding a layer opens the Layers panel.
+
 ## 2.1.1
 - **Worn stickers.** Stickers no longer look cleaner than the rest of the sheet: toner dropouts, faded patches and scratches are eroded into them (browser and desktop use the same formulas).
 
