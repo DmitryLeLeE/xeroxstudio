@@ -87,10 +87,14 @@ def test_phone_has_no_horizontal_overflow(page_factory, width, height):
     pg = page_factory(mobile=True, width=width, height=height)
     wait_ready(pg)
     assert pg.evaluate("document.documentElement.scrollWidth") <= width
-    for tab in ("photo", "style", "text", "view"):
-        pg.tap(f"#tabbar [data-go={tab}]")
+    for fly in ("photo", "s2", "s6", "s0", "all"):
+        if fly == "all":
+            pg.tap("#rail .rail-all")
+        else:
+            pg.tap(f"#rail button[data-fly={fly}]")
         pg.wait_for_timeout(150)
         assert pg.evaluate("document.documentElement.scrollWidth") <= width
+        assert pg.evaluate("document.querySelector('#drawer').getBoundingClientRect().right") <= width + 1
 
 
 def test_zine_roundtrip_through_page_state(page_factory):
@@ -430,6 +434,8 @@ def test_icon_rail_mode_and_detailed_mode(page_factory):
     wait_ready(pg)
     vis = lambda sel: pg.evaluate(f"(() => {{ const e = document.querySelector('{sel}'); return !!e && e.offsetParent !== null; }})()")
     assert pg.evaluate("document.querySelectorAll('#rail button[data-fly]').length") == 9
+    assert not vis("#drawer") and not vis("#c_dither")                       # лист на весь экран: панель закрыта
+    pg.click("#rail button[data-fly=s2]")
     assert vis("#c_dither") and not vis("#c_angle") and not vis("#c_layout")   # открыта одна секция, редкое спрятано
     pg.click("#rail button[data-fly=s0]")
     assert vis("#c_layout") and not vis("#c_dither")
@@ -438,7 +444,7 @@ def test_icon_rail_mode_and_detailed_mode(page_factory):
     pg.click("#rail button[data-fly=s2]")
     pg.click("#sections .fly-on .more-btn")
     assert vis("#c_angle") and vis("#c_overprint3")
-    pg.click("#rail button:last-child")                                      # «Всё»: подробный режим
+    pg.click("#rail .rail-all")                                              # «Всё»: подробный режим
     assert pg.evaluate("document.documentElement.dataset.mode") == "pro"
     assert vis("#c_layout") and vis("#c_angle") and vis("#presetRow select")
     assert pg.evaluate("JSON.parse(localStorage.getItem('zine.mode'))") == "pro"   # выбор помнится
@@ -506,13 +512,18 @@ def test_ransom_layer_new_fonts_and_page_reorder(page_factory):
 
 
 def test_phone_sheet_handle_and_hidden_strip(page_factory):
-    pg = page_factory(mobile=True, width=390, height=844)
+    pg = page_factory(mobile=True, width=390, height=844, mode="icons")
     wait_ready(pg)
-    pg.click("#tabbar button[data-go=style]")
-    assert pg.evaluate("getComputedStyle(document.querySelector('#colView .strip')).display") == "none"
-    h0 = pg.evaluate("document.querySelector('#colSettings').getBoundingClientRect().height")
+    assert pg.evaluate("getComputedStyle(document.querySelector('#strip')).display") == "flex"
+    assert pg.evaluate("getComputedStyle(document.querySelector('#drawer')).display") == "none"
+    pg.tap("#rail button[data-fly=s2]")
+    assert pg.evaluate("getComputedStyle(document.querySelector('#strip')).display") == "none"
+    h0 = pg.evaluate("document.querySelector('#drawer').getBoundingClientRect().height")
     pg.click("#sheetHandle")
-    h1 = pg.evaluate("document.querySelector('#colSettings').getBoundingClientRect().height")
+    h1 = pg.evaluate("document.querySelector('#drawer').getBoundingClientRect().height")
     assert h1 > h0 * 1.4
+    pg.click("#drawerClose")                                                 # крестик возвращает лист на весь экран
+    assert pg.evaluate("getComputedStyle(document.querySelector('#drawer')).display") == "none"
+    assert pg.evaluate("getComputedStyle(document.querySelector('#strip')).display") == "flex"
     assert pg.evaluate("document.documentElement.scrollWidth <= innerWidth")
     assert pg.errors == []

@@ -1,5 +1,11 @@
 # Changelog
 
+## 2.1.0
+- **Browser app redesign: the sheet fills the whole screen.** Tools float over it instead of sitting in columns. A ribbon of icon "stickers" opens one slide-out panel at a time (left side on desktop, bottom on phones, same behaviour everywhere); the ✕ or a second tap on the icon puts the sheet back on the full screen. The All icon shows every setting in one list. Add / Before-after / Fit / PNG float over the sheet, pages live in a bottom strip, and the sheet always re-fits to the free space.
+- **New look.** Black header with an acid underline, halftone stage, paper panels with hard shadows and dotted title bars, tilted ribbon tiles, lifted active page. Both the paper and dark themes.
+- **Phone.** Landscape phones get a compact side ribbon; portrait phones get a bottom ribbon, a drag handle on the panel and one row of floating buttons above the sheet.
+- The desktop (Tkinter) app is unchanged; it will follow the same section order later.
+
 ## 2.0.0
 - **Underground kit.** 12 new stickers (skull, anarchy, COPY, DIY, safety pin, no sign, crown, dead face, cassette, peace, warning, vinyl); a *ransom note* text backing where each letter sits on its own paper scrap in its own font, size and tilt (browser and desktop draw it the same way); five underground fonts with Cyrillic (Rubik Dirt, Distressed, Wet Paint, Spray Paint, Glitch); five new presets (Dirty Punk, Spray Wall, Glitch Tape, Wet Paint, Copy of a Copy of a Copy). Layer fonts are now loaded before rendering, so a chosen font no longer falls back on first use.
 - **Phone layout.** The settings panel has a drag handle to make it taller, the page strip hides while a panel is open (more room for the sheet), theme and language moved into the File menu on phones.

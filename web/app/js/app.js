@@ -197,24 +197,17 @@ const SECTIONS = () => [
   ] },
 ];
 
-// Режимы панели: «иконки» (боковая лента значков, настройки выезжают по одной секции, редкие спрятаны под «Ещё») и «подробно» (все настройки списком).
+// Панель: лента значков открывает по одной секции («иконки») или все сразу («подробно», значок «Всё»).
 let MODE = ls.get("zine.mode", "icons") === "pro" ? "pro" : "icons";
-const isPhone = () => innerWidth <= 860;
+const PHONE_MQ = matchMedia("(max-width: 860px) and (min-height: 521px)"); // узкий портрет: лента внизу
+const isPhone = () => PHONE_MQ.matches;
 function setMode(m) {
   MODE = m; ls.set("zine.mode", m);
   document.documentElement.dataset.mode = m;
-  $$("#modeRow button").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.mode === m)));
-  $$("#sections details.sect").forEach((d, i) => { d.open = m === "pro" || !isPhone() ? true : i === 0; });
-  if (m === "icons") setFly(ls.get("zine.fly", "s2"));
+  $$("#sections details.sect").forEach((d, i) => { d.open = m === "pro" && isPhone() ? i === 0 : true; });
+  if (m === "pro") setFly("all", false); else if (app.dataset.fly === "all") setFly("", false);
 }
-function buildModeRow() {
-  const row = $("#modeRow"); row.textContent = "";
-  for (const [m, t, tip] of [["icons", T("▣ Иконки", "▣ Icons"), T("Компактно: значки сбоку, настройки по одной секции", "Compact: icons on the side, one settings section at a time")], ["pro", T("☰ Подробно", "☰ Detailed"), T("Все настройки списком", "All settings in one list")]]) {
-    const b = document.createElement("button"); b.type = "button"; b.dataset.mode = m; b.textContent = t; b.title = tip;
-    b.addEventListener("click", () => setMode(m)); row.append(b);
-  }
-}
-// Лента значков (только ПК, режим «иконки»)
+// Лента значков
 const ICONS = {
   gallery: '<path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8z"/><path d="M19 16l.7 2 2 .7-2 .7-.7 2-.7-2-2-.7 2-.7z"/>',
   photo: '<rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="9" cy="11" r="2"/><path d="M21 17l-5-5-9 7"/>',
@@ -227,27 +220,40 @@ const ICONS = {
   s6: '<text x="12" y="17" text-anchor="middle" font-size="14" font-weight="800" fill="currentColor" stroke="none">Aa</text>',
   list: '<path d="M4 6h16M4 12h16M4 18h16"/>',
 };
+let RAIL_TITLES = {};
 function buildRail() {
-  const rail = $("#rail"); rail.textContent = "";
+  const rail = $("#rail"); rail.textContent = ""; RAIL_TITLES = {};
   const names = [T("Фото", "Photo"), T("Сетка", "Grid"), T("Кадры", "Frames"), T("Растр", "Toner"), T("Цвет", "Colour"), T("Износ", "Wear"), T("Слои", "Layers"), T("Текст", "Text")];
   const items = [["gallery", T("Стили", "Styles"), T("Галерея стилей и случайных вариантов", "Gallery of styles and random variations")],
     ["photo", names[0], T("Фото страницы", "Page photo")], ...[0, 1, 2, 3, 4, 5, 6].map((i) => [`s${i}`, names[i + 1], SECTIONS()[i].title.replace(/^\d+\.\s*/, "")])];
+  const svg = (id) => `<svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ICONS[id]}</svg>`;
   for (const [id, label, tip] of items) {
+    RAIL_TITLES[id] = label;
     const b = document.createElement("button"); b.type = "button"; b.dataset.fly = id; b.title = tip; b.setAttribute("aria-label", tip);
-    b.innerHTML = `<svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ICONS[id]}</svg><span>${label}</span>`;
-    b.addEventListener("click", () => (id === "gallery" ? openGallery("presets") : setFly(app.dataset.fly === id ? "" : id)));
+    b.innerHTML = `${svg(id)}<span>${label}</span>`;
+    b.addEventListener("click", () => {
+      if (id === "gallery") { openGallery("presets"); return; }
+      if (MODE === "pro") setMode("icons");
+      setFly(app.dataset.fly === id ? "" : id);
+    });
     rail.append(b);
   }
-  const sp = document.createElement("span"); sp.className = "spacer"; rail.append(sp);
-  const m = document.createElement("button"); m.type = "button"; m.title = T("Все настройки списком", "All settings in one list");
-  m.innerHTML = `<svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true">${ICONS.list}</svg><span>${T("Всё", "All")}</span>`;
-  m.addEventListener("click", () => setMode("pro")); rail.append(m);
+  RAIL_TITLES.all = T("Все настройки", "All settings");
+  const m = document.createElement("button"); m.type = "button"; m.className = "rail-all"; m.title = T("Все настройки списком", "All settings in one list");
+  m.setAttribute("aria-label", m.title);
+  m.innerHTML = `${svg("list")}<span>${T("Всё", "All")}</span>`;
+  m.addEventListener("click", () => { if (MODE === "pro") { setMode("icons"); setFly(""); } else setMode("pro"); });
+  rail.append(m);
 }
-function setFly(id) {
-  ls.set("zine.fly", id || "");
+function setFly(id, remember = true) {
+  if (remember && id !== "all") ls.set("zine.fly", id || "");
   app.dataset.fly = id || "";
   $$("#rail button[data-fly]").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.fly === id)));
+  $(".rail-all")?.setAttribute("aria-pressed", String(id === "all"));
   $$("#sections details.sect").forEach((d) => { d.classList.toggle("fly-on", d.dataset.sec === id); if (d.dataset.sec === id) d.open = true; });
+  $("#drawerTitle").textContent = RAIL_TITLES[id] || "";
+  if (!id) app.dataset.size = "";
+  requestAnimationFrame(() => { drawSrc(); });
 }
 document.documentElement.dataset.mode = MODE;
 const ctlEls = {}; // k -> {el, out}
@@ -274,11 +280,12 @@ function buildSettings() {
       upd(); mb.addEventListener("click", () => { det.classList.toggle("more"); upd(); });
       body.append(mb);
     }
-    det.addEventListener("toggle", () => { if (det.open && MODE === "icons" && isPhone()) for (const o of $$("#sections details.sect")) if (o !== det && o.dataset.tab === det.dataset.tab) o.open = false; });
+    det.addEventListener("toggle", () => { if (det.open && MODE === "pro" && isPhone()) for (const o of $$("#sections details.sect")) if (o !== det) o.open = false; });
     host.append(det);
   }
-  buildModeRow(); buildRail();
+  buildRail();
   setMode(MODE);
+  if (MODE === "icons") setFly(isPhone() ? "" : ls.get("zine.fly", ""), false);
   syncUI();
 }
 
@@ -822,7 +829,7 @@ function addLayer(proto) {
   L.push({ type: "text", text: "", sticker: "star", x: 0.5, y: 0.5, size: 0.2, rot: 0, color: "ink", style: "box", font: "Arial Black", ...proto });
   LY.sel = L.length - 1;
   commit(); requestRender(); refreshLayersUI();
-  if (proto && proto.type === "text" && innerWidth > 860) revealLayerText();
+  if (proto && proto.type === "text" && !isPhone()) revealLayerText();
   if (!ls.get("zine.hint.layers", false)) {
     ls.set("zine.hint.layers", true);
     toast(T("Тяните слой по листу. Двойной клик по тексту — править, Delete — убрать.", "Drag the layer on the sheet. Double-click a text to edit, Delete to remove."), "ok", 5000);
@@ -898,7 +905,7 @@ function refreshLayersUI() {
 // Открывает правку текста выбранного слоя: на ПК фокус в поле, на телефоне переходит на вкладку со стилем.
 function revealLayerText() {
   const ly = layersOf()[LY.sel]; if (!ly || ly.type !== "text") return;
-  if (innerWidth <= 860) { app.dataset.tab = "style"; syncTabbar(); }
+  if (MODE === "icons") setFly("s5");
   const det = $("#layersBox").closest("details"); if (det) det.open = true;
   const ta = $("#layersBox textarea"); if (!ta) return;
   ta.scrollIntoView({ block: "nearest" }); ta.focus(); ta.select();
@@ -2091,15 +2098,7 @@ $("#layerBar").addEventListener("click", (e) => {
 });
 const app = $("#app");
 $("#sheetHandle").addEventListener("click", () => { const t = app.dataset.size === "tall"; app.dataset.size = t ? "" : "tall"; $("#sheetHandle").setAttribute("aria-pressed", String(!t)); requestAnimationFrame(() => { if (V.fitted) fitView(); }); });
-app.dataset.tab = innerWidth <= 860 ? "view" : "style"; // на телефоне сначала большой лист
-$$("#tabbar button").forEach((b) => b.addEventListener("click", () => {
-  const go = b.dataset.go;
-  app.dataset.tab = app.dataset.tab === go && go !== "view" ? "view" : go;
-  syncTabbar();
-  requestAnimationFrame(() => { drawSrc(); if (V.fitted) fitView(); });
-}));
-const syncTabbar = () => $$("#tabbar button").forEach((x) => x.classList.toggle("on", x.dataset.go === app.dataset.tab));
-syncTabbar();
+$("#drawerClose").addEventListener("click", () => { if (MODE === "pro") setMode("icons"); setFly(""); });
 new ResizeObserver(() => requestAnimationFrame(drawSrc)).observe($("#srcWrap"));
 
 // ---------------------------------------------------------------- запуск

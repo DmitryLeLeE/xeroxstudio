@@ -46,55 +46,9 @@
 </div>
 
 <h1 class="sr-only">Xerox Zine Studio — xerox zine generator</h1>
-<main class="app" id="app" data-tab="style" data-fly="" data-size="">
-  <nav class="rail" id="rail" aria-label="Tools"></nav>
-  <button type="button" class="sheet-handle" id="sheetHandle" aria-pressed="false" data-ru-title="Растянуть / свернуть панель" data-en-title="Expand / collapse the panel" aria-label="Expand panel"><i></i></button>
-  <!-- Фото -->
-  <section class="panel col-source" id="colSource" data-tab="photo" aria-labelledby="hSource">
-    <h2 id="hSource" class="cap" data-ru="ФОТО СТРАНИЦЫ" data-en="PAGE PHOTO"></h2>
-    <button class="btn primary wide" id="btnPhoto"><span data-ru="＋ Загрузить фото" data-en="＋ Add photos"></span></button>
-    <div class="src-wrap" id="srcWrap">
-      <canvas id="srcCanvas" aria-label="Фото и кадрирование"></canvas>
-      <div class="src-empty" id="srcEmpty"><span data-ru="Перетащите фото сюда,<br>вставьте из буфера (Ctrl+V)<br>или нажмите кнопку выше" data-en="Drop a photo here,<br>paste it (Ctrl+V)<br>or use the button above"></span></div>
-    </div>
-    <p class="muted small" id="srcInfo"></p>
-    <div class="row gap">
-      <button class="btn grow" id="btnRotL" data-ru-title="Повернуть влево" data-en-title="Rotate left">↺</button>
-      <button class="btn grow" id="btnRotR" data-ru-title="Повернуть вправо" data-en-title="Rotate right">↻</button>
-      <button class="btn grow" id="btnFlip" data-ru-title="Зеркало" data-en-title="Mirror">⇋</button>
-      <button class="btn grow" id="btnCropReset" data-ru="Кадр ⟲" data-en="Crop ⟲" data-ru-title="Сбросить кадр (двойной клик)" data-en-title="Reset crop (double-click)"></button>
-    </div>
-    <p class="muted small" data-ru="Потяните по фото — выделить кадр. Двойной клик — сбросить." data-en="Drag over the photo to select a frame. Double-click resets."></p>
-    <p class="privacy small" data-ru="🔒 Фото обрабатываются прямо в браузере и никуда не отправляются." data-en="🔒 Photos are processed in your browser and never uploaded."></p>
-  </section>
-
-  <!-- Настройки -->
-  <section class="panel col-settings" id="colSettings" aria-label="Настройки">
-    <div id="modeRow" class="mode-row" data-tab="style" role="group" aria-label="Mode"></div>
-    <div id="presetRow" class="preset-row" data-tab="style"></div>
-    <div id="sections"></div>
-  </section>
-
-  <!-- Предпросмотр -->
-  <section class="col-view" id="colView" data-tab="view" aria-label="Предпросмотр">
-    <div class="hud">
-      <button class="btn sm" id="btnFit" data-ru="⛶ Вписать" data-en="⛶ Fit"></button>
-      <button class="btn sm hide-xs" id="btn100">1:1</button>
-      <span class="zoom hide-xs" id="zoomLbl" aria-live="off">100%</span>
-      <div class="menu-wrap">
-        <button class="btn sm" id="btnAdd" aria-haspopup="true" aria-expanded="false" aria-controls="menuAdd" data-ru-title="Добавить на лист надпись, стикер или подпись" data-en-title="Add a text, a sticker or a caption to the sheet">＋ <span class="hide-xs" data-ru="Добавить" data-en="Add"></span> ▾</button>
-        <div class="menu menu-sm" id="menuAdd" hidden>
-          <button type="button" id="btnAddText"><span data-ru="Надпись (слой)" data-en="Text (layer)"></span></button>
-          <button type="button" id="btnAddSticker"><span data-ru="Стикер…" data-en="Sticker…"></span></button>
-          <button type="button" class="toggle" id="btnTextMode" aria-pressed="false" data-ru-title="Тап/клик по листу ставит подпись (на ПК — Shift+клик)" data-en-title="Tap/click on the sheet places the caption (desktop: Shift+click)"><span data-ru="✎ Подпись: режим размещения" data-en="✎ Caption: placing mode"></span></button>
-        </div>
-      </div>
-      <button class="btn sm toggle" id="btnCompare" aria-pressed="false" data-ru="⇔ <i class='hide-sm'>До/после</i>" data-en="⇔ <i class='hide-sm'>Before/after</i>" data-ru-title="Сравнить с исходным фото: тяните разделитель по листу" data-en-title="Compare with the original photo: drag the divider across the sheet"></button>
-      <span class="spacer"></span>
-      <label class="hide-xs"><span class="muted small" data-ru="Экспорт:" data-en="Export:"></span>
-        <select id="expScale" class="sel sm" aria-label="Export scale"><option value="1">1×</option><option value="2" selected>2×</option><option value="3">3×</option></select></label>
-      <button class="btn primary sm" id="btnSavePng"><span data-ru="💾 PNG" data-en="💾 PNG"></span></button>
-    </div>
+<main class="app" id="app" data-fly="" data-size="">
+  <!-- Сцена: лист занимает весь экран, всё остальное плавает поверх -->
+  <section class="col-view" id="colView" aria-label="Предпросмотр">
     <div class="viewport" id="viewport" tabindex="0" aria-label="Предпросмотр страницы">
       <div class="layer-bar" id="layerBar" hidden role="toolbar" aria-label="Layer">
         <button type="button" data-act="edit" id="lbEdit" data-ru-title="Править текст (двойной клик по слою)" data-en-title="Edit text (double-click the layer)">✎</button>
@@ -107,7 +61,30 @@
       <div class="scanbar" id="scanbar" aria-hidden="true"></div>
       <div class="busy" id="busy" hidden><i></i><span id="busyTxt"></span></div>
     </div>
-    <div class="strip">
+
+    <!-- плавающие кнопки над листом -->
+    <div class="hud" id="hud">
+      <button class="btn primary sm" id="btnSavePng" data-ru-title="Сохранить PNG" data-en-title="Save PNG"><b class="ico">⤓</b><span class="lbl" data-ru="PNG" data-en="PNG"></span></button>
+      <div class="menu-wrap">
+        <button class="btn sm" id="btnAdd" aria-haspopup="true" aria-expanded="false" aria-controls="menuAdd" data-ru-title="Добавить на лист надпись, стикер или подпись" data-en-title="Add a text, a sticker or a caption to the sheet"><b class="ico">＋</b><span class="lbl" data-ru="Добавить" data-en="Add"></span></button>
+        <div class="menu menu-sm" id="menuAdd" hidden>
+          <button type="button" id="btnAddText"><span data-ru="Надпись (слой)" data-en="Text (layer)"></span></button>
+          <button type="button" id="btnAddSticker"><span data-ru="Стикер…" data-en="Sticker…"></span></button>
+          <button type="button" class="toggle" id="btnTextMode" aria-pressed="false" data-ru-title="Тап/клик по листу ставит подпись (на ПК — Shift+клик)" data-en-title="Tap/click on the sheet places the caption (desktop: Shift+click)"><span data-ru="✎ Подпись: режим размещения" data-en="✎ Caption: placing mode"></span></button>
+        </div>
+      </div>
+      <button class="btn sm toggle" id="btnCompare" aria-pressed="false" data-ru="<b class='ico'>⇔</b><span class='lbl'>До/после</span>" data-en="<b class='ico'>⇔</b><span class='lbl'>Before/after</span>" data-ru-title="Сравнить с исходным фото: тяните разделитель по листу" data-en-title="Compare with the original photo: drag the divider across the sheet"></button>
+      <button class="btn sm" id="btnFit" data-ru="<b class='ico'>⛶</b><span class='lbl'>Вписать</span>" data-en="<b class='ico'>⛶</b><span class='lbl'>Fit</span>" data-ru-title="Вписать лист в экран" data-en-title="Fit the sheet to the screen"></button>
+      <div class="hud-zoom hide-xs">
+        <button class="btn sm" id="btn100" data-ru-title="Масштаб 1:1" data-en-title="Zoom 1:1">1:1</button>
+        <span class="zoom" id="zoomLbl" aria-live="off">100%</span>
+      </div>
+      <label class="hud-scale hide-xs"><span class="muted small" data-ru="Экспорт" data-en="Export"></span>
+        <select id="expScale" class="sel sm" aria-label="Export scale"><option value="1">1×</option><option value="2" selected>2×</option><option value="3">3×</option></select></label>
+    </div>
+
+    <!-- страницы: плавающая полоса внизу -->
+    <div class="strip" id="strip">
       <div class="strip-head"><span class="cap" data-ru="СТРАНИЦЫ" data-en="PAGES"></span><span class="muted small" id="pageInfo"></span></div>
       <div class="thumbs" id="thumbs" role="tablist"></div>
       <div class="row gap pctl">
@@ -119,14 +96,39 @@
       </div>
     </div>
   </section>
-</main>
 
-<nav class="tabbar" id="tabbar" aria-label="Разделы">
-  <button data-go="photo"><b>🖼</b><span data-ru="Фото" data-en="Photo"></span></button>
-  <button data-go="style" class="on"><b>🎛</b><span data-ru="Стиль" data-en="Style"></span></button>
-  <button data-go="text"><b>Aa</b><span data-ru="Текст" data-en="Text"></span></button>
-  <button data-go="view"><b>◫</b><span data-ru="Лист" data-en="Sheet"></span></button>
-</nav>
+  <!-- лента значков: слева на ПК, снизу на телефоне -->
+  <nav class="rail" id="rail" aria-label="Tools"></nav>
+
+  <!-- выезжающая панель -->
+  <aside class="drawer" id="drawer" aria-label="Panel">
+    <button type="button" class="sheet-handle" id="sheetHandle" aria-pressed="false" data-ru-title="Растянуть / свернуть панель" data-en-title="Expand / collapse the panel" aria-label="Expand panel"><i></i></button>
+    <header class="drawer-head"><h2 id="drawerTitle"></h2><button type="button" class="btn icon sm" id="drawerClose" data-ru-title="Закрыть панель" data-en-title="Close the panel" aria-label="Close panel">✕</button></header>
+    <!-- Фото -->
+    <section class="panel col-source" id="colSource" aria-labelledby="drawerTitle">
+      <button class="btn primary wide" id="btnPhoto"><span data-ru="＋ Загрузить фото" data-en="＋ Add photos"></span></button>
+      <div class="src-wrap" id="srcWrap">
+        <canvas id="srcCanvas" aria-label="Фото и кадрирование"></canvas>
+        <div class="src-empty" id="srcEmpty"><span data-ru="Перетащите фото сюда,<br>вставьте из буфера (Ctrl+V)<br>или нажмите кнопку выше" data-en="Drop a photo here,<br>paste it (Ctrl+V)<br>or use the button above"></span></div>
+      </div>
+      <p class="muted small" id="srcInfo"></p>
+      <div class="row gap">
+        <button class="btn grow" id="btnRotL" data-ru-title="Повернуть влево" data-en-title="Rotate left">↺</button>
+        <button class="btn grow" id="btnRotR" data-ru-title="Повернуть вправо" data-en-title="Rotate right">↻</button>
+        <button class="btn grow" id="btnFlip" data-ru-title="Зеркало" data-en-title="Mirror">⇋</button>
+        <button class="btn grow" id="btnCropReset" data-ru="Кадр ⟲" data-en="Crop ⟲" data-ru-title="Сбросить кадр (двойной клик)" data-en-title="Reset crop (double-click)"></button>
+      </div>
+      <p class="muted small" data-ru="Потяните по фото — выделить кадр. Двойной клик — сбросить." data-en="Drag over the photo to select a frame. Double-click resets."></p>
+      <p class="privacy small" data-ru="🔒 Фото обрабатываются прямо в браузере и никуда не отправляются." data-en="🔒 Photos are processed in your browser and never uploaded."></p>
+    </section>
+
+    <!-- Настройки -->
+    <section class="panel col-settings" id="colSettings" aria-labelledby="drawerTitle">
+      <div id="presetRow" class="preset-row"></div>
+      <div id="sections"></div>
+    </section>
+  </aside>
+</main>
 
 <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
 
