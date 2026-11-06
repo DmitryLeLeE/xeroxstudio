@@ -82,6 +82,10 @@ def _h01(cx, cy):
     h = h ^ (h >> 16)
     return (h & 0xFFFF) / 65536.0
 
+# Шрифты без кириллицы -> замена, когда в надписи русский текст (браузер делает это сам).
+LATIN_ONLY_FONTS = {"Special Elite": "Courier New Bold", "Permanent Marker": "Rubik Spray Paint"}
+
+
 class ZineGraphicEngine:
 
     @staticmethod
@@ -496,10 +500,12 @@ class ZineGraphicEngine:
                     d.text((pr["c"][0] * k - 20, pr["c"][1] * k - 10), pr["s"], fill=pap, font=f)
         return img.resize((D // 2, D // 2), Image.LANCZOS)
 
-    def _text_layer_image(self, text, fpx, style, font_name, color, paper_rgb):
-        """Надпись-слой: плашка, лента или обводка."""
+    def _text_layer_image(self, text, fpx, style, font_name, color, paper_rgb, track=0.0, lead=None):
+        """Надпись-слой: плашка, лента или обводка. track - добавка между буквами (доля кегля), lead - множитель интервала строк."""
         font = self.get_font(font_name, fpx)
         probe = ImageDraw.Draw(Image.new("L", (1, 1)))
+        if track or lead:
+            return self._text_layer_spaced(text, fpx, style, font, color, paper_rgb, float(track or 0.0), float(lead or 1.0))
         tb = probe.multiline_textbbox((0, 0), text, font=font, spacing=int(fpx * 0.15))
         pad = int(fpx * 0.3)
         tw, th = tb[2] - tb[0], tb[3] - tb[1]
@@ -515,6 +521,37 @@ class ZineGraphicEngine:
             fill, stroke = tuple(color) + (255,), tuple(paper_rgb) + (255,)
         d.multiline_text((pad - tb[0], pad - tb[1]), text, font=font, fill=fill, spacing=int(fpx * 0.15),
                          stroke_width=max(2, int(fpx * 0.08)) if stroke else 0, stroke_fill=stroke)
+        return loc
+
+    @staticmethod
+    def _text_layer_spaced(text, fpx, style, font, color, paper_rgb, track, lead):
+        """Надпись с ручным трекингом и межстрочным интервалом (как paint() в engine.js)."""
+        lines = text.split("\n")
+        pad, lh, tr = fpx * 0.3, fpx * 1.15 * lead, fpx * track
+
+        def width(l):
+            return sum(font.getlength(ch) for ch in l) + tr * max(0, len(l) - 1) if tr else font.getlength(l)
+        tw = max([width(l) for l in lines] + [1])
+        bw, bh = int(tw + 2 * pad), int(lh * len(lines) + 2 * pad)
+        loc = Image.new("RGBA", (max(bw, 4), max(bh, 4)), (0, 0, 0, 0))
+        d = ImageDraw.Draw(loc)
+        if style == "box":
+            d.rectangle([0, 0, loc.width, loc.height], fill=tuple(paper_rgb) + (255,))
+            fill, stroke = tuple(color) + (255,), None
+        elif style == "tape":
+            d.rectangle([0, 0, loc.width, loc.height], fill=tuple(color) + (255,))
+            fill, stroke = tuple(paper_rgb) + (255,), None
+        else:
+            fill, stroke = tuple(color) + (255,), tuple(paper_rgb) + (255,)
+        sw = max(2, int(fpx * 0.08)) if stroke else 0
+        for i, l in enumerate(lines):
+            y, x = pad + i * lh, pad
+            if not tr:
+                d.text((x, y), l, font=font, fill=fill, stroke_width=sw, stroke_fill=stroke)
+                continue
+            for ch in l:
+                d.text((x, y), ch, font=font, fill=fill, stroke_width=sw, stroke_fill=stroke)
+                x += font.getlength(ch) + tr
         return loc
 
     def _ransom_image(self, text, fpx, color, paper_rgb, accent):
@@ -771,7 +808,12 @@ class ZineGraphicEngine:
                     if style == "ransom":
                         loc = self._ransom_image(text, fpx, color, paper_rgb, cols["ink2"])
                     else:
-                        loc = self._text_layer_image(text, fpx, style, ly.get("font", "Arial Black"), color, paper_rgb)
+                        fname = ly.get("font", "Arial Black")
+                        if fname in LATIN_ONLY_FONTS and any("\u0400" <= ch <= "\u04ff" for ch in text):
+                            fname = LATIN_ONLY_FONTS[fname]  # в шрифте нет кириллицы: иначе буквы пропадут
+                        loc = self._text_layer_image(text, fpx, style, fname, color, paper_rgb,
+                                                     track=max(-0.2, min(1.0, float(ly.get("track", 0) or 0))),
+                                                     lead=max(0.6, min(2.5, float(ly.get("lead")))) if ly.get("lead") and abs(float(ly.get("lead")) - 1) > 1e-6 else None)
                         warp = ly.get("warp") or "none"
                         if warp != "none":
                             wk = min(1.0, max(0.0, float(ly.get("warp_k", 0.5) if ly.get("warp_k") is not None else 0.5)))
@@ -797,9 +839,9 @@ class ZineGraphicEngine:
                     scol = cols.get(ly.get("shadow_c", "ink"), cols["ink"])
                     sh = Image.new("RGBA", loc.size, tuple(scol) + (255,))
                     sh.putalpha(loc.getchannel("A"))
-                    layer.paste(sh, (px + d, py + d), sh)
+                    layer.paste(sh, (px + d, py + d))  # без маски: иначе альфа возводится в квадрат на полупрозрачных краях
                 top = Image.new("RGBA", (w, h), (0, 0, 0, 0))
-                top.paste(loc, (px, py), loc)
+                top.paste(loc, (px, py))
                 layer = Image.alpha_composite(layer, top)
                 blend = ly.get("blend", "normal")
                 base = self._blend_over(base, layer, blend) if blend in ("multiply", "screen", "difference") else Image.alpha_composite(base, layer)
@@ -824,7 +866,7 @@ class ZineGraphicEngine:
 
     @staticmethod
     def _shape_image(ly, wpx, color):
-        """Фигура-слой: rect / ellipse / triangle; заливка solid, outline, stripes, fade (растровое затухание), dots."""
+        """Фигура-слой: rect / ellipse / triangle; заливка solid, outline, stripes, fade (растровое затухание), dots, gradient."""
         W = max(8, int(wpx))
         H = max(4, int(round(W * float(ly.get("aspect", 0.6) or 0.6))))
         S = 2
@@ -860,6 +902,9 @@ class ZineGraphicEngine:
                 dp.line([(t, H2), (t + H2, 0)], fill=255, width=max(1, int(sp / 2)))
                 t += sp
             mask = ImageChops.multiply(shape, pat)
+        elif fill == "gradient":  # плавное затухание сверху вниз: альфа 1 -> 0
+            ramp = np.tile(np.linspace(255, 0, H2, dtype=np.float32)[:, None], (1, W2))
+            mask = ImageChops.multiply(shape, Image.fromarray(ramp.astype(np.uint8), "L"))
         elif fill in ("fade", "dots"):
             pat = Image.new("L", (W2, H2), 0)
             dp = ImageDraw.Draw(pat)

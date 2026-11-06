@@ -132,6 +132,8 @@ class InteractivePanZoomCanvas(tk.Canvas):
         self.on_layer_press = None
         self.on_layer_move = None
         self.layer_frame = None
+        self.show_grid = False
+        self.grid_margin = 0.06
         self._layer_drag = None
 
         self.bind("<ButtonPress-2>", self._start_pan)
@@ -283,6 +285,24 @@ class InteractivePanZoomCanvas(tk.Canvas):
                 self.pan_x - 1, self.pan_y - 1, self.pan_x + img.width * z, self.pan_y + img.height * z,
                 outline="#2a2a2a",
             )
+        if self.show_grid and img is not None:
+            z, m = self.zoom_scale, self.grid_margin
+            L, T = self.pan_x, self.pan_y
+            Wz, Hz = img.width * z, img.height * z
+            mm = m * Wz
+            for x in (L + mm, L + Wz - mm):
+                self.create_line(x, T, x, T + Hz, fill="#e0301e", dash=(5, 4))
+            for y in (T + mm, T + Hz - mm):
+                self.create_line(L, y, L + Wz, y, fill="#e0301e", dash=(5, 4))
+            self.create_line(L + Wz / 2, T, L + Wz / 2, T + Hz, fill="#1e90e0")
+            self.create_line(L, T + Hz / 2, L + Wz, T + Hz / 2, fill="#1e90e0")
+            for t in (1 / 3, 2 / 3):
+                self.create_line(L + Wz * t, T, L + Wz * t, T + Hz, fill="#1e90e0", dash=(2, 4))
+                self.create_line(L, T + Hz * t, L + Wz, T + Hz * t, fill="#1e90e0", dash=(2, 4))
+            for i in range(1, 10):
+                k = 10 if i == 5 else 6
+                self.create_line(L + Wz * i / 10, T, L + Wz * i / 10, T + k, fill="#888888")
+                self.create_line(L, T + Hz * i / 10, L + k, T + Hz * i / 10, fill="#888888")
         if self.layer_frame and img is not None:
             fcx, fcy, fw, fh = self.layer_frame
             z = self.zoom_scale

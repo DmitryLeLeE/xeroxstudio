@@ -379,6 +379,8 @@ class XeroxZineStudioApp:
         f.add_command(label="Экспорт разделения красок для ризографа (ZIP)...", command=self.export_separations)
         f.add_command(label="Экспорт книги в PDF...", command=self.export_multipage_pdf)
         f.add_command(label="Экспорт PDF для печати (A4, поля 10 мм)...", command=self.export_pdf_a4)
+        f.add_command(label="Плакат A3 из листов A4...", command=lambda: self.export_poster_tiles("A3"))
+        f.add_command(label="Плакат A2 из листов A4...", command=lambda: self.export_poster_tiles("A2"))
         f.add_command(label="Экспорт 8-page мини-зина (A4)...", command=self.export_mini_zine)
         f.add_command(label="Экспорт буклета на скрепку, A4 (PDF)...", command=lambda: self.export_booklet("a4"))
         f.add_command(label="Экспорт буклета на скрепку, Letter (PDF)...", command=lambda: self.export_booklet("letter"))
@@ -583,9 +585,10 @@ class XeroxZineStudioApp:
         for text, what in (("Копия", "copy"), ("Удалить", "delete"), ("👁 Скрыть", "hide"), ("⇋ Отразить", "flip"), ("↑", "up"), ("↓", "down")):
             make_button(rowl2, text, lambda w=what: self._layer_action(w)).pack(side=tk.LEFT, padx=(0, 3))
         self.ly_vars = {"x": tk.DoubleVar(value=50), "y": tk.DoubleVar(value=50), "size": tk.DoubleVar(value=20), "rot": tk.DoubleVar(value=0), "opacity": tk.DoubleVar(value=100),
-                        "warp_k": tk.DoubleVar(value=50), "sx": tk.DoubleVar(value=100), "shadow": tk.DoubleVar(value=0)}
+                        "warp_k": tk.DoubleVar(value=50), "sx": tk.DoubleVar(value=100), "shadow": tk.DoubleVar(value=0),
+                        "track": tk.DoubleVar(value=0), "lead": tk.DoubleVar(value=100)}
         for key, text, lo, hi in (("x", "Позиция X (%)", 0, 100), ("y", "Позиция Y (%)", 0, 100), ("size", "Размер (% ширины)", 4, 100), ("rot", "Поворот (°)", -180, 180), ("opacity", "Непрозрачность слоя (%)", 10, 100),
-                                ("warp_k", "Сила искажения (%)", 5, 100), ("sx", "Растяжение текста (%)", 40, 300), ("shadow", "Жёсткая тень (%)", 0, 100)):
+                                ("warp_k", "Сила искажения (%)", 5, 100), ("sx", "Растяжение текста (%)", 40, 300), ("track", "Интервал между буквами (%)", -10, 60), ("lead", "Интервал между строками (%)", 70, 200), ("shadow", "Жёсткая тень (%)", 0, 100)):
             self.ly_vars[key].trace_add("write", lambda *a, k=key: self._layer_var_changed(k))
             LabeledSlider(c, text, self.ly_vars[key], lo, hi, res=1, default=self.ly_vars[key].get()).pack(fill=tk.X, pady=1)
         self.ly_text = tk.StringVar()
@@ -625,8 +628,8 @@ class XeroxZineStudioApp:
         ttk.Combobox(c, textvariable=self.ly_shape, values=["rect", "ellipse", "triangle"], state="readonly", font=FONT).pack(fill=tk.X, pady=(0, 3))
         self.ly_fill = tk.StringVar(value="solid")
         self.ly_fill.trace_add("write", lambda *a: self._layer_var_changed("fill"))
-        self._label(c, "Заливка фигуры (solid / outline / stripes / fade / dots)")
-        ttk.Combobox(c, textvariable=self.ly_fill, values=["solid", "outline", "stripes", "fade", "dots"], state="readonly", font=FONT).pack(fill=tk.X, pady=(0, 3))
+        self._label(c, "Заливка фигуры (solid / outline / stripes / fade / gradient / dots)")
+        ttk.Combobox(c, textvariable=self.ly_fill, values=["solid", "outline", "stripes", "fade", "gradient", "dots"], state="readonly", font=FONT).pack(fill=tk.X, pady=(0, 3))
         self.ly_vars["aspect"] = tk.DoubleVar(value=60)
         self.ly_vars["aspect"].trace_add("write", lambda *a: self._layer_var_changed("aspect"))
         LabeledSlider(c, "Высота фигуры (% ширины)", self.ly_vars["aspect"], 3, 200, res=1, default=60).pack(fill=tk.X, pady=1)
@@ -693,6 +696,7 @@ class XeroxZineStudioApp:
         make_button(hud, "💾  PNG", self.export_png, kind="primary").pack(fill=tk.X, pady=2)
         make_button(hud, "🎲  Remix", self.apply_surprise, kind="pink").pack(fill=tk.X, pady=2)
         make_button(hud, "⛶  Вписать", lambda: self.viewport.fit_to_view(), kind="secondary").pack(fill=tk.X, pady=2)
+        make_button(hud, "▦  Сетка (поля, трети)", self._toggle_grid, kind="secondary").pack(fill=tk.X, pady=2)
         zoom = tk.Frame(hud, bg=VIEW_BG)
         zoom.pack(fill=tk.X, pady=2)
         make_button(zoom, "1:1", lambda: self.viewport.reset_100_percent(), kind="secondary", padx=8).pack(side=tk.LEFT)
@@ -865,8 +869,8 @@ class XeroxZineStudioApp:
         else:
             lines = str(ly.get("text", "")).strip().splitlines() or [""]
             fpx = max(8, size * W * 0.5)
-            bw = (max(len(x) for x in lines) * fpx * 0.62 + fpx * 0.6) * float(ly.get("sx", 1.0) or 1.0)
-            bh = len(lines) * fpx * 1.15 + fpx * 0.6
+            bw = (max(len(x) for x in lines) * fpx * (0.62 + float(ly.get("track", 0) or 0)) + fpx * 0.6) * float(ly.get("sx", 1.0) or 1.0)
+            bh = len(lines) * fpx * 1.15 * float(ly.get("lead", 1.0) or 1.0) + fpx * 0.6
             if (ly.get("warp") or "none") != "none":
                 bh *= 1 + 0.9 * float(ly.get("warp_k", 0.5) if ly.get("warp_k") is not None else 0.5)
         rot = math.radians(float(ly.get("rot", 0)))
@@ -895,8 +899,33 @@ class XeroxZineStudioApp:
         ly = self.layers[idx]
         return float(ly.get("x", 0.5)), float(ly.get("y", 0.5))
 
+    def _snap_to_grid(self, ly, nx, ny):
+        """Прилипание центра слоя к полям, центру и третям листа (только когда сетка включена), порог 1.2% ширины."""
+        img = self.viewport.current_image
+        if img is None or not self.viewport.show_grid:
+            return nx, ny
+        cx, cy, fw, fh = self._layer_box(ly, img.width, img.height)
+        th, mg = 0.012, self.viewport.grid_margin
+        my = mg * img.width / img.height
+        for axis, v, half, marg in ((0, nx, fw / 2, mg), (1, ny, fh / 2, my)):
+            best = None
+            for t in (0.5, 1 / 3, 2 / 3, marg + half, 1 - marg - half):
+                if abs(v - t) < th and (best is None or abs(v - t) < abs(v - best)):
+                    best = t
+            if best is not None:
+                if axis == 0:
+                    nx = best
+                else:
+                    ny = best
+        return nx, ny
+
+    def _toggle_grid(self):
+        self.viewport.show_grid = not self.viewport.show_grid
+        self.viewport.redraw()
+
     def _layer_move(self, idx, nx, ny):
         ly = self.layers[idx]
+        nx, ny = self._snap_to_grid(ly, nx, ny)
         ly["x"], ly["y"] = round(nx, 4), round(ny, 4)
         self._load_layer_controls()
         self._update_layer_frame()
@@ -928,6 +957,8 @@ class XeroxZineStudioApp:
                 self.ly_vars["warp_k"].set(round(float(ly.get("warp_k", 0.5) if ly.get("warp_k") is not None else 0.5) * 100))
                 self.ly_vars["sx"].set(round(float(ly.get("sx", 1.0) or 1.0) * 100))
                 self.ly_vars["shadow"].set(round(float(ly.get("shadow", 0) or 0) * 100))
+                self.ly_vars["track"].set(round(float(ly.get("track", 0) or 0) * 100))
+                self.ly_vars["lead"].set(round(float(ly.get("lead", 1.0) or 1.0) * 100))
                 self.ly_vars["opacity"].set(round(float(ly.get("opacity", 1.0) if ly.get("opacity") is not None else 1.0) * 100))
                 self.ly_text.set(ly.get("text", ""))
                 self.ly_color.set(ly.get("color", "ink"))
@@ -957,6 +988,10 @@ class XeroxZineStudioApp:
             ly["shadow"] = float(self.ly_vars["shadow"].get()) / 100.0
         elif key == "sx":
             ly["sx"] = float(self.ly_vars["sx"].get()) / 100.0
+        elif key == "track":
+            ly["track"] = float(self.ly_vars["track"].get()) / 100.0
+        elif key == "lead":
+            ly["lead"] = float(self.ly_vars["lead"].get()) / 100.0
         elif key == "opacity":
             ly["opacity"] = float(self.ly_vars["opacity"].get()) / 100.0
         elif key == "text":
@@ -1027,7 +1062,16 @@ class XeroxZineStudioApp:
             return
         cw, ch = config.CANVAS_FORMATS.get(v["format"], (1000, 1500))
         src = self.images.get(self.cur_img_key)
+        img_key = self.cur_img_key
         out = []
+        cr = [float(x) for x in (self.crop or [0.0, 0.0, 1.0, 1.0])]
+        if src is not None and (cr[0] > 0 or cr[1] > 0 or cr[2] < 1 or cr[3] < 1):
+            # кадрирование страницы переносим в само фото слоя: иначе на слоях окажется весь кадр, а не то, что видно на листе
+            H0, W0 = src.shape[:2]
+            x1, y1, x2, y2 = round(cr[0] * W0), round(cr[1] * H0), round(cr[2] * W0), round(cr[3] * H0)
+            if x2 - x1 >= 8 and y2 - y1 >= 8:
+                img_key = self._new_img_key()
+                src = self.images[img_key] = np.ascontiguousarray(src[y1:y2, x1:x2])
         if src is not None and v["layout"] != "free":
             pa = src.shape[1] / src.shape[0]
             boxes = self.engine._layout_boxes(v["layout"], cw, ch, int(v["rows"]), int(v["edge_y"] * 0.4), 1.0)
@@ -1035,7 +1079,7 @@ class XeroxZineStudioApp:
             mask_w = min(720, max(src.shape[0], src.shape[1]))
             for bx, by, bw, bh in boxes:
                 size = max(0.1, min(bw, bh * pa) / cw)
-                out.append({"type": "bitmap", "img": self.cur_img_key, "x": (bx + bw / 2) / cw, "y": (by + bh / 2) / ch,
+                out.append({"type": "bitmap", "img": img_key, "x": (bx + bw / 2) / cw, "y": (by + bh / 2) / ch,
                             "size": size, "rot": 0, "color": "ink", "opacity": 1.0, "backing": True, "torn": True,
                             "dot": min(14, max(2, round(float(v["dot_size"]) * mask_w / (size * cw)))),
                             "contrast": min(3.0, max(0.8, float(v["contrast"]))), "cov": round(cov, 3), "cutout": False})
@@ -1704,6 +1748,29 @@ class XeroxZineStudioApp:
             return pdf_writer.write_pdf(path, sheets(), dpi=300.0)
 
         self._run_job("PDF для печати", work, lambda n: self.toast.show(f"✓ PDF A4 ({n} стр.) готов к печати"))
+
+    def export_poster_tiles(self, paper):
+        """Плакат A3/A2/A1: текущая страница рендерится в размер листа и режется на листы A4 с нахлёстом 10 мм."""
+        path = self._ask_save("export", defaultextension=".pdf", filetypes=[("PDF", "*.pdf")], initialfile=f"zine_poster_{paper}.pdf")
+        if not path:
+            return
+        st, img = self._snapshot_state(), self.cv_img
+        bw, bh = config.CANVAS_FORMATS.get(st.get("format"), (1000, 1500))
+
+        def work(progress):
+            progress("Рендеринг плаката…", 0.05)
+            size = imposition.poster_size_px(paper, bw, bh)
+            poster = self.engine.render_zine_page(img, st, out_size=size)[0]
+            plan = imposition.tile_plan(*poster.size)
+
+            def sheets():
+                for i, t in enumerate(plan["tiles"]):
+                    progress(f"Лист {i + 1} из {len(plan['tiles'])}…", 0.2 + 0.8 * i / len(plan["tiles"]))
+                    yield imposition.tile_sheet(poster, plan, t, f"Xerox Zine · {paper}")
+
+            return pdf_writer.write_pdf(path, sheets(), dpi=300.0)
+
+        self._run_job(f"Плакат {paper}", work, lambda n: self.toast.show(f"✓ Плакат {paper}: {n} листов A4, склей по уголкам с нахлёстом 10 мм"))
 
     def export_booklet(self, paper):
         label = "Letter" if paper == "letter" else "A4"

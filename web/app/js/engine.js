@@ -436,6 +436,10 @@ function drawShape(c, ly, W, color) {
   };
   path();
   if (fill === "solid") c.fill();
+  else if (fill === "gradient") {
+    const g = c.createLinearGradient(0, 0, 0, H); g.addColorStop(0, color); g.addColorStop(1, color.replace("rgb(", "rgba(").replace(")", ",0)"));
+    c.fillStyle = g; c.fill();
+  }
   else if (fill === "outline") { c.save(); c.clip(); c.lineWidth = 2 * Math.max(2, W * 0.02); path(); c.stroke(); c.restore(); }
   else {
     c.save(); c.clip();
@@ -489,16 +493,21 @@ function drawLayers(canvas, st, paper, ink, masks = {}) {
       const sx = clamp(Number(ly.sx) || 1, 0.4, 3), warp = ly.warp && ly.warp !== "none" ? ly.warp : null, wk = clamp(ly.warp_k == null ? 0.5 : Number(ly.warp_k), 0, 1);
       if (sx !== 1) c.scale(sx, 1);
       if (ly.style === "ransom") { drawRansom(c, text, fpx, color, cols.paper, cols.ink2); c.restore(); continue; }
-      const lines = text.split("\n"), pad = fpx * 0.3, lh = fpx * 1.15;
+      const lines = text.split("\n"), pad = fpx * 0.3, trk = clamp(Number(ly.track) || 0, -0.2, 1) * fpx, lh = fpx * 1.15 * (ly.lead ? clamp(Number(ly.lead), 0.6, 2.5) : 1);
       c.font = fontSpec(ly.font || "Arial Black", fpx); c.textBaseline = "top"; c.textAlign = "left";
-      const tw = Math.max(...lines.map((l) => c.measureText(l).width)), th = lh * lines.length, bw = tw + 2 * pad, bh = th + 2 * pad;
+      const lineW = (l) => (trk ? [...l].reduce((a, ch) => a + c.measureText(ch).width, 0) + trk * Math.max(0, [...l].length - 1) : c.measureText(l).width);
+      const putLine = (cc, l, x, y, stroke) => {
+        if (!trk) { if (stroke) cc.strokeText(l, x, y); cc.fillText(l, x, y); return; }
+        for (const ch of l) { if (stroke) cc.strokeText(ch, x, y); cc.fillText(ch, x, y); x += cc.measureText(ch).width + trk; }
+      };
+      const tw = Math.max(...lines.map(lineW)), th = lh * lines.length, bw = tw + 2 * pad, bh = th + 2 * pad;
       const style = ly.style || "box";
       const paint = (cc) => {
         cc.font = fontSpec(ly.font || "Arial Black", fpx); cc.textBaseline = "top"; cc.textAlign = "left";
         if (style === "box") { cc.fillStyle = cols.paper; cc.fillRect(-bw / 2, -bh / 2, bw, bh); cc.fillStyle = color; }
         else if (style === "tape") { cc.fillStyle = color; cc.fillRect(-bw / 2, -bh / 2, bw, bh); cc.fillStyle = cols.paper; }
         else { cc.fillStyle = color; cc.strokeStyle = cols.paper; cc.lineWidth = Math.max(2, fpx * 0.16); cc.lineJoin = "round"; }
-        lines.forEach((l, i) => { const y = -bh / 2 + pad + i * lh; if (style === "plain") cc.strokeText(l, -bw / 2 + pad, y); cc.fillText(l, -bw / 2 + pad, y); });
+        lines.forEach((l, i) => putLine(cc, l, -bw / 2 + pad, -bh / 2 + pad + i * lh, style === "plain"));
       };
       if (!warp) paint(c);
       else {

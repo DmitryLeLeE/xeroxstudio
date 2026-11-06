@@ -4407,6 +4407,180 @@ export const CFG = {
     "size": 0.14
    }
   ],
+  "Манифест: плотный шрифт": [
+   {
+    "type": "shape",
+    "shape": "rect",
+    "fill": "solid",
+    "aspect": 0.02,
+    "size": 0.84,
+    "x": 0.5,
+    "y": 0.1,
+    "color": "ink"
+   },
+   {
+    "type": "text",
+    "text": "МЫ НЕ\nПРОСИЛИ\nТИШИНЫ",
+    "text_en": "WE DID NOT\nASK FOR\nSILENCE",
+    "preset": "Растянутый плакат",
+    "x": 0.5,
+    "y": 0.4,
+    "size": 0.222,
+    "style": "plain",
+    "lead": 0.8,
+    "track": -0.03,
+    "sx": 1.0
+   },
+   {
+    "type": "text",
+    "text": "ЗИН · ВЫПУСК 01",
+    "text_en": "ZINE · ISSUE 01",
+    "preset": "Лента Dymo",
+    "x": 0.5,
+    "y": 0.9,
+    "size": 0.121,
+    "track": 0.2
+   }
+  ],
+  "Плакат с широкой разрядкой": [
+   {
+    "type": "bitmap",
+    "photo": true,
+    "x": 0.5,
+    "y": 0.44,
+    "size": 0.86,
+    "rot": 0
+   },
+   {
+    "type": "shape",
+    "shape": "rect",
+    "fill": "gradient",
+    "aspect": 0.4,
+    "size": 1.0,
+    "x": 0.5,
+    "y": 0.8,
+    "rot": 180,
+    "color": "ink"
+   },
+   {
+    "type": "text",
+    "text": "НОЧНОЙ ГОРОД",
+    "text_en": "NIGHT CITY",
+    "preset": "Машинопись",
+    "x": 0.5,
+    "y": 0.88,
+    "size": 0.13,
+    "style": "plain",
+    "color": "paper",
+    "track": 0.35
+   }
+  ],
+  "Депрессивный постер": [
+   {
+    "type": "shape",
+    "shape": "rect",
+    "fill": "fade",
+    "aspect": 0.7,
+    "size": 1.0,
+    "x": 0.5,
+    "y": 0.28,
+    "color": "ink"
+   },
+   {
+    "type": "bitmap",
+    "photo": true,
+    "x": 0.5,
+    "y": 0.5,
+    "size": 0.7,
+    "rot": 0,
+    "blend": "multiply"
+   },
+   {
+    "type": "text",
+    "text": "всё нормально\nпросто пусто",
+    "text_en": "it's fine\njust empty",
+    "preset": "Машинопись",
+    "x": 0.5,
+    "y": 0.86,
+    "size": 0.164,
+    "lead": 1.4,
+    "track": 0.05
+   }
+  ],
+  "Лайнап фестиваля": [
+   {
+    "type": "shape",
+    "shape": "ellipse",
+    "fill": "stripes",
+    "aspect": 1.0,
+    "size": 0.7,
+    "x": 0.5,
+    "y": 0.28,
+    "color": "ink2"
+   },
+   {
+    "type": "text",
+    "text": "ПОДВАЛ\nФЕСТ",
+    "text_en": "BASEMENT\nFEST",
+    "preset": "Растянутый плакат",
+    "x": 0.5,
+    "y": 0.28,
+    "size": 0.144,
+    "lead": 0.85
+   },
+   {
+    "type": "text",
+    "text": "КАБЕЛЬ · ШУМ\nОСТАНОВКА · ТРАМВАЙ\nНОЧНАЯ СМЕНА",
+    "text_en": "CABLE · NOISE\nBUS STOP · TRAM\nNIGHT SHIFT",
+    "preset": "Машинопись",
+    "x": 0.5,
+    "y": 0.68,
+    "size": 0.107,
+    "lead": 1.5,
+    "track": 0.1
+   },
+   {
+    "type": "shape",
+    "shape": "rect",
+    "fill": "solid",
+    "aspect": 0.05,
+    "size": 0.84,
+    "x": 0.5,
+    "y": 0.92,
+    "color": "ink"
+   }
+  ],
+  "Градиентная обложка": [
+   {
+    "type": "shape",
+    "shape": "rect",
+    "fill": "gradient",
+    "aspect": 0.8,
+    "size": 1.0,
+    "x": 0.5,
+    "y": 0.4,
+    "color": "ink"
+   },
+   {
+    "type": "bitmap",
+    "photo": true,
+    "x": 0.5,
+    "y": 0.55,
+    "size": 0.7,
+    "rot": 0,
+    "blend": "screen"
+   },
+   {
+    "type": "text",
+    "text": "ОБЛОЖКА",
+    "text_en": "COVER",
+    "preset": "Панк-плашка",
+    "x": 0.5,
+    "y": 0.1,
+    "size": 0.261,
+    "track": 0.15
+   }
+  ],
   "Афиша": [
    {
     "type": "bitmap",

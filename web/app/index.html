@@ -62,6 +62,7 @@
         <button type="button" data-act="del" data-ru-title="Удалить (Delete)" data-en-title="Delete (Delete key)">🗑</button>
       </div>
       <div class="ghosts" id="layerGhosts" aria-hidden="true"></div>
+      <svg class="grid-ov" id="gridOv" aria-hidden="true" hidden></svg>
       <div class="layer-sel" id="layerSel" hidden></div>
       <input type="file" id="fileObj" accept="image/*" multiple hidden>
       <canvas id="preview" role="img" aria-label="Zine page preview"></canvas>
@@ -82,6 +83,7 @@
         </div>
       </div>
       <button class="btn sm toggle" id="btnLayersMode" aria-pressed="false" data-ru="<b class='ico'>◫</b><span class='lbl'>Слои</span>" data-en="<b class='ico'>◫</b><span class='lbl'>Layers</span>" data-ru-title="Режим слоёв (L): лист разбирается на объекты, любой можно двигать" data-en-title="Layers mode (L): the sheet splits into objects you can drag"></button>
+      <button class="btn sm toggle" id="btnGrid" aria-pressed="false" data-ru="<b class='ico'>▦</b><span class='lbl'>Сетка</span>" data-en="<b class='ico'>▦</b><span class='lbl'>Grid</span>" data-ru-title="Направляющие: поля, центр, трети и линейка по краям. Слои прилипают к ним (Alt отключает)" data-en-title="Guides: margins, centre, thirds and edge rulers. Layers snap to them (Alt disables)"></button>
       <button class="btn sm toggle" id="btnCompare" aria-pressed="false" data-ru="<b class='ico'>⇔</b><span class='lbl'>До/после</span>" data-en="<b class='ico'>⇔</b><span class='lbl'>Before/after</span>" data-ru-title="Сравнить с исходным фото: тяните разделитель по листу" data-en-title="Compare with the original photo: drag the divider across the sheet"></button>
       <button class="btn sm" id="btnFit" data-ru="<b class='ico'>⛶</b><span class='lbl'>Вписать</span>" data-en="<b class='ico'>⛶</b><span class='lbl'>Fit</span>" data-ru-title="Вписать лист в экран" data-en-title="Fit the sheet to the screen"></button>
       <div class="hud-zoom hide-xs">

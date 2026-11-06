@@ -791,7 +791,23 @@ function applyView() {
   preview.style.transform = `translate(${V.tx}px, ${V.ty}px)`;
   preview.classList.toggle("px", V.zoom * (window.devicePixelRatio || 1) > 2.2);
   $("#zoomLbl").textContent = `${Math.round(V.zoom * 100)}%`;
-  updateLayerSel();
+  updateLayerSel(); drawGrid();
+}
+// направляющие: поля, центр, трети и линейка по краям листа (только на экране, в экспорт не попадают)
+const GRID = { on: false, m: 0.06 };
+try { GRID.on = localStorage.getItem("zine.grid") === "1"; } catch { /* ignore */ }
+function drawGrid() {
+  const svg = $("#gridOv"); if (!svg) return;
+  svg.hidden = !GRID.on; $("#btnGrid")?.setAttribute("aria-pressed", String(GRID.on));
+  if (!GRID.on) return;
+  const [bw, bh] = baseSize(), pw = bw * V.zoom, ph = bh * V.zoom, X = V.tx, Y = V.ty, NS = "http://www.w3.org/2000/svg";
+  svg.textContent = "";
+  const ln = (x1, y1, x2, y2, cls) => { const l = document.createElementNS(NS, "line"); l.setAttribute("x1", x1); l.setAttribute("y1", y1); l.setAttribute("x2", x2); l.setAttribute("y2", y2); l.setAttribute("class", cls); svg.append(l); };
+  const m = GRID.m * pw;
+  ln(X + m, Y, X + m, Y + ph, "g-m"); ln(X + pw - m, Y, X + pw - m, Y + ph, "g-m"); ln(X, Y + m, X + pw, Y + m, "g-m"); ln(X, Y + ph - m, X + pw, Y + ph - m, "g-m");
+  ln(X + pw / 2, Y, X + pw / 2, Y + ph, "g-c"); ln(X, Y + ph / 2, X + pw, Y + ph / 2, "g-c");
+  for (const t of [1 / 3, 2 / 3]) { ln(X + pw * t, Y, X + pw * t, Y + ph, "g-t"); ln(X, Y + ph * t, X + pw, Y + ph * t, "g-t"); }
+  for (let i = 1; i < 10; i++) { const k = i === 5 ? 10 : 6; ln(X + (pw * i) / 10, Y, X + (pw * i) / 10, Y + k, "g-r"); ln(X, Y + (ph * i) / 10, X + k, Y + (ph * i) / 10, "g-r"); }
 }
 function fitView() {
   const [bw, bh] = baseSize(), r = vp.getBoundingClientRect();
@@ -884,8 +900,10 @@ const layerBox = (ly) => {
   if (ly.type === "shape") return [ly.size, ly.size * (Number(ly.aspect) || 0.6)];
   const lines = String(ly.text || " ").split("\n"), fpx = ly.size * 0.5, n = Math.max(...lines.map((l) => l.length), 1);
   const wp = ly.warp && ly.warp !== "none" ? 1 + 0.9 * (ly.warp_k == null ? 0.5 : ly.warp_k) : 1;
-  return [(n * fpx * 0.6 + 0.6 * fpx) * (ly.sx || 1), (1.15 * fpx * lines.length + 0.6 * fpx) * wp];
+  const tr = Number(ly.track) || 0, ld = ly.lead ? Number(ly.lead) : 1;
+  return [(n * fpx * (0.6 + tr) + 0.6 * fpx) * (ly.sx || 1), (1.15 * ld * fpx * lines.length + 0.6 * fpx) * wp];
 };
+$("#btnGrid")?.addEventListener("click", () => { GRID.on = !GRID.on; try { localStorage.setItem("zine.grid", GRID.on ? "1" : "0"); } catch { /* ignore */ } drawGrid(); toast(GRID.on ? T("Сетка включена: слои прилипают к полям, центру и третям. Alt — без прилипания.", "Grid on: layers snap to margins, centre and thirds. Alt = no snapping.") : T("Сетка выключена.", "Grid off."), "ok", 2500); });
 const layerSel = $("#layerSel");
 for (const [cls, label] of [["nw", "Scale"], ["ne", "Scale"], ["se", "Scale"], ["sw", "Scale"], ["rot", "Rotate"]]) {
   const h = document.createElement("i"); h.className = `lh lh-${cls}`; h.dataset.h = cls === "rot" ? "rot" : "scale"; h.setAttribute("aria-hidden", "true"); layerSel.append(h);
@@ -934,6 +952,7 @@ const SHAPE_PRESETS = () => [
   [T("Кольцо", "Ring"), { shape: "ellipse", fill: "outline", aspect: 1, size: 0.5 }],
   [T("Треугольник", "Triangle"), { shape: "triangle", fill: "solid", aspect: 0.9, size: 0.4 }],
   [T("Растровое затухание", "Halftone fade"), { shape: "rect", fill: "fade", aspect: 0.55, size: 0.95 }],
+  [T("Градиентная плашка", "Gradient block"), { shape: "rect", fill: "gradient", aspect: 0.5, size: 1 }],
   [T("Диагональные полосы", "Diagonal stripes"), { shape: "rect", fill: "stripes", aspect: 0.4, size: 0.8 }],
   [T("Точки", "Dots"), { shape: "rect", fill: "dots", aspect: 0.5, size: 0.7 }],
 ];
@@ -1156,10 +1175,14 @@ function refreshLayersUI() {
       ed.append(mkSelect(T("Искажение", "Distortion"), CFG.WARPS.map(([ru, v]) => [v, ru]), () => ly.warp || "none", (v) => (ly.warp = v)));
       if (ly.warp && ly.warp !== "none") ed.append(mkRange(T("Сила искажения", "Distortion strength"), 0.05, 1, 0.05, () => (ly.warp_k == null ? 0.5 : ly.warp_k), (v) => (ly.warp_k = v)));
       ed.append(mkRange(T("Растяжение по ширине", "Horizontal stretch"), 0.4, 3, 0.05, () => ly.sx || 1, (v) => (ly.sx = v)));
+      if (ly.style !== "ransom") {
+        ed.append(mkRange(T("Интервал между буквами", "Letter spacing"), -0.1, 0.6, 0.01, () => ly.track || 0, (v) => (ly.track = v)));
+        ed.append(mkRange(T("Интервал между строками", "Line spacing"), 0.7, 2, 0.05, () => ly.lead || 1, (v) => (ly.lead = v)));
+      }
     }
     if (ly.type === "shape") {
       ed.append(mkSelect(T("Фигура", "Shape"), [["rect", T("Прямоугольник", "Rectangle")], ["ellipse", T("Овал", "Ellipse")], ["triangle", T("Треугольник", "Triangle")]], () => ly.shape || "rect", (v) => (ly.shape = v)));
-      ed.append(mkSelect(T("Заливка", "Fill"), [["solid", T("Сплошная", "Solid")], ["outline", T("Контур", "Outline")], ["stripes", T("Полосы", "Stripes")], ["fade", T("Растровое затухание", "Halftone fade")], ["dots", T("Точки", "Dots")]], () => ly.fill || "solid", (v) => (ly.fill = v)));
+      ed.append(mkSelect(T("Заливка", "Fill"), [["solid", T("Сплошная", "Solid")], ["outline", T("Контур", "Outline")], ["stripes", T("Полосы", "Stripes")], ["fade", T("Растровое затухание", "Halftone fade")], ["gradient", T("Плавный градиент", "Smooth gradient")], ["dots", T("Точки", "Dots")]], () => ly.fill || "solid", (v) => (ly.fill = v)));
       ed.append(mkRange(T("Высота фигуры", "Shape height"), 0.03, 2, 0.01, () => Number(ly.aspect) || 0.6, (v) => (ly.aspect = v)));
     }
     ed.append(mkRange(T("Размер", "Size"), 0.04, 1, 0.01, () => ly.size, (v) => (ly.size = v)));
@@ -1234,8 +1257,9 @@ function snapPos(ly, nx, ny, free) {
   let gx = null, gy = null;
   if (!free) {
     const th = SNAP, tv = SNAP / ratio;
-    for (const [v, g] of [[0.5, 0.5], [hw, 0], [1 - hw, 1]]) if (Math.abs(nx - v) < th) { nx = v; gx = g; break; }
-    for (const [v, g] of [[0.5, 0.5], [hh, 0], [1 - hh, 1]]) if (Math.abs(ny - v) < tv) { ny = v; gy = g; break; }
+    const m = GRID.m, my = m / ratio, gridX = GRID.on ? [[m + hw, m], [1 - m - hw, 1 - m], [1 / 3, 1 / 3], [2 / 3, 2 / 3]] : [], gridY = GRID.on ? [[my + hh, my], [1 - my - hh, 1 - my], [1 / 3, 1 / 3], [2 / 3, 2 / 3]] : [];
+    for (const [v, g] of [[0.5, 0.5], [hw, 0], [1 - hw, 1], ...gridX]) if (Math.abs(nx - v) < th) { nx = v; gx = g; break; }
+    for (const [v, g] of [[0.5, 0.5], [hh, 0], [1 - hh, 1], ...gridY]) if (Math.abs(ny - v) < tv) { ny = v; gy = g; break; }
   }
   const [bw, bh] = baseSize(), pw = bw * V.zoom, ph = bh * V.zoom;
   guideV.hidden = gx == null; guideH.hidden = gy == null;
@@ -2213,6 +2237,47 @@ async function exportPdfA4() {
     await sink.write(await IO.buildPdf(sheets(), 300));
   }, T(`✓ PDF A4 (${n} стр.) готов к печати`, `✓ A4 PDF (${n} page(s)) ready to print`));
 }
+// плакат крупнее A4: раскладка на листы A4 с нахлёстом (те же формулы, что imposition.tile_plan в десктопе)
+const PAPER_MM = { A3: [297, 420], A2: [420, 594], A1: [594, 841] };
+function posterPlan(paper, bw, bh, dpi = 300, marginMm = 5, overlapMm = 10) {
+  let [pw, ph] = PAPER_MM[paper]; if (bw > bh) [pw, ph] = [ph, pw];
+  const mm = dpi / 25.4, k = Math.min(pw / bw, ph / bh), W = Math.floor(bw * k * mm), H = Math.floor(bh * k * mm);
+  let best = null;
+  for (const [swm, shm] of [[210, 297], [297, 210]]) {
+    const ux = Math.floor((swm - 2 * marginMm) * mm), uy = Math.floor((shm - 2 * marginMm) * mm), ov = Math.floor(overlapMm * mm);
+    const cols = W <= ux ? 1 : Math.ceil((W - ov) / (ux - ov)), rows = H <= uy ? 1 : Math.ceil((H - ov) / (uy - ov));
+    if (!best || cols * rows < best.n) best = { n: cols * rows, sw: Math.floor(swm * mm), sh: Math.floor(shm * mm), ux, uy, ov, cols, rows };
+  }
+  const tiles = [];
+  for (let r = 0; r < best.rows; r++) for (let c = 0; c < best.cols; c++) { const x0 = c * (best.ux - best.ov), y0 = r * (best.uy - best.ov); tiles.push([r, c, x0, y0, Math.min(x0 + best.ux, W), Math.min(y0 + best.uy, H)]); }
+  return { W, H, tiles, margin: Math.floor(marginMm * mm), ...best };
+}
+async function exportPoster(paper) {
+  flushCommit();
+  const st = page(), [bw, bh] = baseSize(st), P = posterPlan(paper, bw, bh);
+  if (P.W * P.H > 90e6) { toast(T("Слишком большой плакат для браузера. Выбери A3 или A2.", "Poster is too big for the browser. Pick A3 or A2."), "err"); return; }
+  const sink = await askSave(`${S.name || "zine"}_poster_${paper}.pdf`, { mime: "application/pdf", ext: ".pdf", desc: `PDF ${paper}` });
+  if (!sink) return;
+  await job(T(`Плакат ${paper}`, `Poster ${paper}`), async (progress) => {
+    await progress(T("Рендеринг плаката…", "Rendering the poster…"), 0.05);
+    const r = await render(S.cur, { outSize: [P.W, P.H] }), src = r.canvas, m = P.margin;
+    async function* sheets() {
+      for (let i = 0; i < P.tiles.length; i++) {
+        const [row, col, x0, y0, x1, y1] = P.tiles[i];
+        await progress(T(`Лист ${i + 1} из ${P.tiles.length}…`, `Sheet ${i + 1} of ${P.tiles.length}…`), 0.2 + (0.8 * i) / P.tiles.length);
+        const sheet = E.makeCanvas(P.sw, P.sh), c = sheet.getContext("2d", { willReadFrequently: true });
+        c.fillStyle = "#fff"; c.fillRect(0, 0, P.sw, P.sh);
+        c.drawImage(src, x0, y0, x1 - x0, y1 - y0, m, m, x1 - x0, y1 - y0);
+        c.strokeStyle = "#000"; c.lineWidth = 2; const L = Math.max(6, Math.floor(m / 2)); c.beginPath();
+        for (const [cx, cy] of [[m, m], [m + x1 - x0, m], [m, m + y1 - y0], [m + x1 - x0, m + y1 - y0]]) { const dx = cx > m ? -1 : 1, dy = cy > m ? -1 : 1; c.moveTo(cx, cy); c.lineTo(cx + dx * L, cy); c.moveTo(cx, cy); c.lineTo(cx, cy + dy * L); }
+        c.stroke(); c.fillStyle = "#5a5a5a"; c.font = "22px sans-serif"; c.textBaseline = "top";
+        c.fillText(`Xerox Zine · ${paper} · ${T("ряд", "row")} ${row + 1}/${P.rows} · ${T("колонка", "col")} ${col + 1}/${P.cols}`, m, P.sh - Math.floor(m / 2) - 6);
+        yield c.getImageData(0, 0, P.sw, P.sh);
+      }
+    }
+    await sink.write(await IO.buildPdf(sheets(), 300));
+  }, T(`✓ Плакат ${paper}: ${P.tiles.length} листов A4, склей по уголкам с нахлёстом 10 мм`, `✓ ${paper} poster: ${P.tiles.length} A4 sheets, glue along the corner marks (10 mm overlap)`));
+}
 async function exportMiniZine() {
   flushCommit();
   const n = S.pages.length;
@@ -2268,6 +2333,8 @@ function menuItems() {
     [T("Разделение красок для ризографа (ZIP)", "Riso ink separations (ZIP)"), exportSeparations, "", true],
     [T("Книга в PDF", "Book as PDF"), exportPdf],
     [T("PDF для печати (A4, поля 10 мм)", "Print PDF (A4, 10 mm margins)"), exportPdfA4],
+    [T("Плакат A3 из листов A4 (PDF)", "A3 poster from A4 sheets (PDF)"), () => exportPoster("A3")],
+    [T("Плакат A2 из листов A4 (PDF)", "A2 poster from A4 sheets (PDF)"), () => exportPoster("A2")],
     [T("Мини-зин на 8 страниц (A4)", "8-page mini-zine (A4)"), exportMiniZine, "", true],
     [T("Буклет на скрепку, A4 (любое число страниц)", "Saddle-stitch booklet, A4 (any page count)"), () => exportBooklet("a4"), "", true],
     [T("Буклет на скрепку, Letter", "Saddle-stitch booklet, Letter"), () => exportBooklet("letter"), "", true],
@@ -2416,6 +2483,7 @@ document.addEventListener("keydown", (e) => {
   if (mod && !e.altKey && layersOf()[LY.sel] && /^Arrow(Up|Down)$/.test(e.key)) { e.preventDefault(); moveLayer(e.key === "ArrowUp" ? 1 : -1); return; }
   if (mod || e.altKey) return;
   if (key === "l") { setLayersMode(!LMODE); return; }
+  if (key === "g") { $("#btnGrid")?.click(); return; }
   if (key === "," || key === ".") { selectNextLayer(key === "." ? 1 : -1); return; }
   const Ls = layersOf(), sel = Ls[LY.sel];
   if (sel && /^(Delete|Backspace)$/.test(e.key)) { e.preventDefault(); flushCommit(); Ls.splice(LY.sel, 1); LY.sel = Ls.length - 1; touchLayers(); return; }
@@ -2573,7 +2641,7 @@ async function init() {
       });
     }).catch(() => {});
   }
-  window.__zine = { S, E, RC, IO, page, requestRender, commit, undo, redo, gotoPage, addPage, exportPng, remix }; // для автотестов
+  window.__zine = { posterPlan, S, E, RC, IO, page, requestRender, commit, undo, redo, gotoPage, addPage, exportPng, remix }; // для автотестов
   window.__ready = true;
 }
 init();

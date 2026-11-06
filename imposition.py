@@ -41,3 +41,59 @@ def calibration_sheet(engine):
         d.rectangle([cx - 40, cy - 1, cx + 40, cy + 1], fill=(0, 0, 0))
         d.rectangle([cx - 1, cy - 40, cx + 1, cy + 40], fill=(0, 0, 0))
     return sheet
+
+
+# ---- Плакат крупнее A4: разбивка на листы A4 с нахлёстом для склейки
+PAPER_MM = {"A3": (297, 420), "A2": (420, 594), "A1": (594, 841)}
+
+
+def poster_size_px(paper, page_w, page_h, dpi=300):
+    """Размер плаката в пикселях: страница вписывается в лист выбранного формата (портрет или альбом по пропорции страницы)."""
+    pw, ph = PAPER_MM[paper]
+    if page_w > page_h:
+        pw, ph = ph, pw
+    mm = dpi / 25.4
+    k = min(pw / page_w, ph / page_h)
+    return int(page_w * k * mm), int(page_h * k * mm)
+
+
+def tile_plan(W, H, dpi=300, margin_mm=5, overlap_mm=10):
+    """Раскладка плаката W×H px по листам A4: ориентация с меньшим числом листов, нахлёст overlap_mm для склейки.
+    -> {sheet: (w, h), margin, usable: (ux, uy), tiles: [(row, col, x0, y0, x1, y1)], rows, cols}"""
+    mm = dpi / 25.4
+    best = None
+    for sw_mm, sh_mm in ((210, 297), (297, 210)):
+        ux, uy = int((sw_mm - 2 * margin_mm) * mm), int((sh_mm - 2 * margin_mm) * mm)
+        ov = int(overlap_mm * mm)
+        cols = 1 if W <= ux else -(-(W - ov) // (ux - ov))
+        rows = 1 if H <= uy else -(-(H - ov) // (uy - ov))
+        if best is None or cols * rows < best[0]:
+            best = (cols * rows, sw_mm, sh_mm, ux, uy, ov, cols, rows)
+    _, sw_mm, sh_mm, ux, uy, ov, cols, rows = best
+    tiles = []
+    for r in range(rows):
+        for c in range(cols):
+            x0, y0 = c * (ux - ov), r * (uy - ov)
+            tiles.append((r, c, x0, y0, min(x0 + ux, W), min(y0 + uy, H)))
+    return {"sheet": (int(sw_mm * mm), int(sh_mm * mm)), "margin": int(margin_mm * mm), "usable": (ux, uy),
+            "overlap": ov, "tiles": tiles, "rows": rows, "cols": cols}
+
+
+def tile_sheet(poster, plan, tile, label=""):
+    """Один лист A4 плаката: кусок картинки на белом поле, уголки реза и подпись «ряд/колонка»."""
+    r, c, x0, y0, x1, y1 = tile
+    sw, sh = plan["sheet"]
+    m = plan["margin"]
+    sheet = Image.new("RGB", (sw, sh), (255, 255, 255))
+    sheet.paste(poster.crop((x0, y0, x1, y1)), (m, m))
+    d = ImageDraw.Draw(sheet)
+    L = max(6, m // 2)
+    for (cx, cy) in ((m, m), (m + x1 - x0, m), (m, m + y1 - y0), (m + x1 - x0, m + y1 - y0)):
+        dx = -1 if cx > m else 1
+        dy = -1 if cy > m else 1
+        d.line([(cx, cy), (cx + dx * L, cy)], fill=(0, 0, 0), width=2)
+        d.line([(cx, cy), (cx, cy + dy * L)], fill=(0, 0, 0), width=2)
+    # подпись в нижнем поле: нахлёст проходит по границе соседей, помечаем его пунктиром
+    txt = f"{label} · ряд {r + 1}/{plan['rows']} · колонка {c + 1}/{plan['cols']}"
+    d.text((m, sh - m // 2 - 6), txt, fill=(90, 90, 90))
+    return sheet

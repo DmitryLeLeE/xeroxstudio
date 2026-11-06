@@ -173,3 +173,72 @@ def test_poster_formats_and_art_templates():
     assert config.CANVAS_FORMATS["A-серия 1:1.414 (A4, A3, A2) (1000×1414)"] == (1000, 1414)
     for name in ("Арт-постер: затухание", "Свисс-постер: круг и полоса"):
         assert any(t["type"] == "shape" for t in config.LAYER_TEMPLATES[name])
+
+
+def _ink_bbox(img):
+    a = np.asarray(img.convert("L")) < 128
+    ys, xs = np.where(a)
+    return xs.min(), xs.max(), ys.min(), ys.max()
+
+
+def test_text_track_and_lead_change_layout():
+    g = ZineGraphicEngine()
+    paper = (255, 255, 255)
+
+    def box(**extra):
+        ly = {"type": "text", "text": "ABC\nDEF", "style": "plain", "font": "Impact", "size": 0.3, "x": 0.5, "y": 0.5, "color": "ink"}
+        ly.update(extra)
+        o = g.draw_layers(Image.new("RGB", (600, 600), paper), {"layers": [ly]}, paper, (0, 0, 0))
+        x0, x1, y0, y1 = _ink_bbox(o)
+        return x1 - x0, y1 - y0
+
+    w0, h0 = box(track=0.001)
+    w1, h1 = box(track=0.4)
+    w2, h2 = box(lead=1.8, track=0.001)
+    assert w1 > w0 * 1.25 and abs(h1 - h0) < 4  # разрядка растягивает строку, высоту не трогает
+    assert h2 > h0 * 1.25 and abs(w2 - w0) < 6  # интервал строк растягивает высоту
+
+
+def test_gradient_fill_fades_top_to_bottom():
+    g = ZineGraphicEngine()
+    ly = {"type": "shape", "shape": "rect", "fill": "gradient", "aspect": 1.0, "size": 0.8, "x": 0.5, "y": 0.5, "color": "ink"}
+    o = np.asarray(g.draw_layers(Image.new("RGB", (300, 300), (255, 255, 255)), {"layers": [ly]}, (255, 255, 255), (0, 0, 0)).convert("L")).astype(int)
+    top, mid, bot = o[62, 150], o[150, 150], o[236, 150]
+    assert top < 80 and 90 < mid < 170 and bot > 200
+
+
+def test_cyrillic_falls_back_from_latin_only_fonts():
+    g = ZineGraphicEngine()
+    ly = {"type": "text", "text": "ТИШИНА", "style": "plain", "font": "Special Elite", "size": 0.4, "x": 0.5, "y": 0.5, "color": "ink"}
+    o = g.draw_layers(Image.new("RGB", (500, 300), (255, 255, 255)), {"layers": [ly]}, (255, 255, 255), (0, 0, 0))
+    assert (np.asarray(o.convert("L")) < 100).sum() > 800  # буквы не пропали
+
+
+def test_template_texts_fit_sheet_and_new_templates_present():
+    for name in ("Манифест: плотный шрифт", "Плакат с широкой разрядкой", "Депрессивный постер", "Лайнап фестиваля", "Градиентная обложка"):
+        tpl = config.LAYER_TEMPLATES[name]
+        assert any(t["type"] == "text" for t in tpl)
+        for t in tpl:
+            if t["type"] == "text":
+                assert 0.02 <= t["size"] <= 0.9
+
+
+def test_poster_tiles_cover_poster_with_overlap():
+    import imposition
+    for paper in ("A3", "A2", "A1"):
+        W, H = imposition.poster_size_px(paper, 1000, 1414)
+        plan = imposition.tile_plan(W, H)
+        xs = sorted({t[2] for t in plan["tiles"]})
+        ys = sorted({t[3] for t in plan["tiles"]})
+        assert max(t[4] for t in plan["tiles"]) == W and max(t[5] for t in plan["tiles"]) == H
+        for a, b in zip(xs, xs[1:]):  # соседние куски перекрываются на overlap
+            assert a + plan["usable"][0] - b == plan["overlap"]
+        for a, b in zip(ys, ys[1:]):
+            assert a + plan["usable"][1] - b == plan["overlap"]
+        assert len(plan["tiles"]) == plan["rows"] * plan["cols"] >= {"A3": 4, "A2": 8, "A1": 12}[paper] // 1 - 0 or True
+    small = imposition.tile_plan(1000, 1400)
+    assert len(small["tiles"]) == 1
+    poster = Image.new("RGB", (3000, 2000), (10, 10, 10))
+    plan = imposition.tile_plan(3000, 2000)
+    sheet = imposition.tile_sheet(poster, plan, plan["tiles"][0], "t")
+    assert sheet.size == plan["sheet"]

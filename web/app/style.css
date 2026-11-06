@@ -607,3 +607,13 @@ html[data-theme="usa"] .hud-scale select { color: var(--fg); }
 .ctl-hint { display: block; margin: -1px 0 5px; font-size: 11px; line-height: 1.3; color: var(--muted); }
 #menuTheme { min-width: 280px; }
 #menuTheme kbd { white-space: normal; text-align: right; }
+
+/* направляющие поверх листа */
+.grid-ov { position: absolute; left: 0; top: 0; width: 100%; height: 100%; z-index: 6; pointer-events: none; overflow: visible; }
+.grid-ov[hidden] { display: none; }
+.grid-ov line { stroke-width: 1; shape-rendering: crispEdges; }
+.grid-ov .g-m { stroke: #e0301e; opacity: .75; stroke-dasharray: 5 4; }
+.grid-ov .g-c { stroke: #1e90e0; opacity: .7; }
+.grid-ov .g-t { stroke: #1e90e0; opacity: .35; stroke-dasharray: 2 4; }
+.grid-ov .g-r { stroke: #888; opacity: .9; }
+html[data-theme="dark"] .grid-ov .g-r, html[data-theme="robot"] .grid-ov .g-r { stroke: #ccc; }

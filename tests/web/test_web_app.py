@@ -759,3 +759,50 @@ def test_gutter_and_recopy_change_the_render(page_factory):
         pg.wait_for_timeout(1500)
         assert pg.evaluate("(k) => window.__zine.page()[k]", key) == 90
     assert pg.errors == []
+
+
+def test_grid_overlay_toggles_and_snaps(page_factory):
+    pg = page_factory(width=1440, height=860)
+    wait_ready(pg)
+    assert pg.evaluate("document.querySelector('#gridOv').hidden") is True
+    pg.click("#btnGrid")
+    wait_until(pg, "!document.querySelector('#gridOv').hidden && document.querySelectorAll('#gridOv line').length > 15")
+    assert pg.evaluate("document.querySelector('#btnGrid').getAttribute('aria-pressed')") == "true"
+    pg.keyboard.press("g")
+    wait_until(pg, "document.querySelector('#gridOv').hidden")
+    assert pg.errors == []
+
+
+def test_poster_plan_matches_desktop_math(page_factory):
+    import imposition
+    pg = page_factory(width=1440, height=860)
+    wait_ready(pg)
+    for paper in ("A3", "A2", "A1"):
+        js = pg.evaluate("(p) => { const P = window.__zine.posterPlan(p, 1000, 1414); return [P.W, P.H, P.tiles.length, P.sw, P.sh]; }", paper)
+        W, H = imposition.poster_size_px(paper, 1000, 1414)
+        plan = imposition.tile_plan(W, H)
+        assert js == [W, H, len(plan["tiles"]), plan["sheet"][0], plan["sheet"][1]], paper
+
+
+def test_text_track_lead_and_gradient_render_in_browser(page_factory):
+    pg = page_factory(width=1440, height=860)
+    wait_ready(pg)
+    res = pg.evaluate("""() => {
+      const E = window.__zine.E;
+      const run = (ly) => {
+        const c = document.createElement("canvas"); c.width = 600; c.height = 600;
+        const x = c.getContext("2d"); x.fillStyle = "#fff"; x.fillRect(0, 0, 600, 600);
+        E.drawLayers(c, { layers: [ly] }, [255, 255, 255], [0, 0, 0]);
+        const d = x.getImageData(0, 0, 600, 600).data; let x0 = 600, x1 = 0, y0 = 600, y1 = 0;
+        for (let y = 0; y < 600; y++) for (let xx = 0; xx < 600; xx++) if (d[(y * 600 + xx) * 4] < 128) { if (xx < x0) x0 = xx; if (xx > x1) x1 = xx; if (y < y0) y0 = y; if (y > y1) y1 = y; }
+        return { w: x1 - x0, h: y1 - y0, mid: d[(300 * 600 + 300) * 4], top: d[(100 * 600 + 300) * 4], bot: d[(500 * 600 + 300) * 4] };
+      };
+      const base = { type: "text", text: "ABC\\nDEF", style: "plain", font: "Impact", size: 0.3, x: 0.5, y: 0.5, color: "ink" };
+      const a = run(base), t = run({ ...base, track: 0.4 }), l = run({ ...base, lead: 1.8 });
+      const g = run({ type: "shape", shape: "rect", fill: "gradient", aspect: 1, size: 0.8, x: 0.5, y: 0.5, color: "ink" });
+      return { a, t, l, g };
+    }""")
+    assert res["t"]["w"] > res["a"]["w"] * 1.25 and abs(res["t"]["h"] - res["a"]["h"]) < 6
+    assert res["l"]["h"] > res["a"]["h"] * 1.25
+    assert res["g"]["top"] < 70 and 90 < res["g"]["mid"] < 170 and res["g"]["bot"] > 200
+    assert pg.errors == []

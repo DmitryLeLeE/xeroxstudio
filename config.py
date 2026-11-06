@@ -36,6 +36,7 @@ SHAPE_PRESETS = [
     ("Кольцо", {"shape": "ellipse", "fill": "outline", "aspect": 1.0, "size": 0.5}),
     ("Треугольник", {"shape": "triangle", "fill": "solid", "aspect": 0.9, "size": 0.4}),
     ("Растровое затухание", {"shape": "rect", "fill": "fade", "aspect": 0.55, "size": 0.95}),
+    ("Градиентная плашка", {"shape": "rect", "fill": "gradient", "aspect": 0.5, "size": 1.0}),
     ("Диагональные полосы", {"shape": "rect", "fill": "stripes", "aspect": 0.4, "size": 0.8}),
     ("Точки", {"shape": "rect", "fill": "dots", "aspect": 0.5, "size": 0.7}),
 ]
@@ -368,6 +369,32 @@ LAYER_TEMPLATES = {
         {"type": "shape", "shape": "rect", "fill": "solid", "aspect": 0.045, "size": 0.84, "x": 0.5, "y": 0.78, "color": "ink"},
         {"type": "text", "text": "ФОРМА СЛЕДУЕТ\nЗА ШУМОМ", "text_en": "FORM FOLLOWS\nNOISE", "preset": "Узкий столбик", "x": 0.5, "y": 0.87, "size": 0.14},
     ],
+    "Манифест: плотный шрифт": [
+        {"type": "shape", "shape": "rect", "fill": "solid", "aspect": 0.02, "size": 0.84, "x": 0.5, "y": 0.1, "color": "ink"},
+        {"type": "text", "text": "МЫ НЕ\nПРОСИЛИ\nТИШИНЫ", "text_en": "WE DID NOT\nASK FOR\nSILENCE", "preset": "Растянутый плакат", "x": 0.5, "y": 0.4, "size": 0.9, "style": "plain", "lead": 0.8, "track": -0.03, "sx": 1.0},
+        {"type": "text", "text": "ЗИН · ВЫПУСК 01", "text_en": "ZINE · ISSUE 01", "preset": "Лента Dymo", "x": 0.5, "y": 0.9, "size": 0.2, "track": 0.2},
+    ],
+    "Плакат с широкой разрядкой": [
+        {"type": "bitmap", "photo": True, "x": 0.5, "y": 0.44, "size": 0.86, "rot": 0},
+        {"type": "shape", "shape": "rect", "fill": "gradient", "aspect": 0.4, "size": 1.0, "x": 0.5, "y": 0.8, "rot": 180, "color": "ink"},
+        {"type": "text", "text": "НОЧНОЙ ГОРОД", "text_en": "NIGHT CITY", "preset": "Машинопись", "x": 0.5, "y": 0.88, "size": 0.4, "style": "plain", "color": "paper", "track": 0.35},
+    ],
+    "Депрессивный постер": [
+        {"type": "shape", "shape": "rect", "fill": "fade", "aspect": 0.7, "size": 1.0, "x": 0.5, "y": 0.28, "color": "ink"},
+        {"type": "bitmap", "photo": True, "x": 0.5, "y": 0.5, "size": 0.7, "rot": 0, "blend": "multiply"},
+        {"type": "text", "text": "всё нормально\nпросто пусто", "text_en": "it's fine\njust empty", "preset": "Машинопись", "x": 0.5, "y": 0.86, "size": 0.45, "lead": 1.4, "track": 0.05},
+    ],
+    "Лайнап фестиваля": [
+        {"type": "shape", "shape": "ellipse", "fill": "stripes", "aspect": 1.0, "size": 0.7, "x": 0.5, "y": 0.28, "color": "ink2"},
+        {"type": "text", "text": "ПОДВАЛ\nФЕСТ", "text_en": "BASEMENT\nFEST", "preset": "Растянутый плакат", "x": 0.5, "y": 0.28, "size": 0.8, "lead": 0.85},
+        {"type": "text", "text": "КАБЕЛЬ · ШУМ\nОСТАНОВКА · ТРАМВАЙ\nНОЧНАЯ СМЕНА", "text_en": "CABLE · NOISE\nBUS STOP · TRAM\nNIGHT SHIFT", "preset": "Машинопись", "x": 0.5, "y": 0.68, "size": 0.5, "lead": 1.5, "track": 0.1},
+        {"type": "shape", "shape": "rect", "fill": "solid", "aspect": 0.05, "size": 0.84, "x": 0.5, "y": 0.92, "color": "ink"},
+    ],
+    "Градиентная обложка": [
+        {"type": "shape", "shape": "rect", "fill": "gradient", "aspect": 0.8, "size": 1.0, "x": 0.5, "y": 0.4, "color": "ink"},
+        {"type": "bitmap", "photo": True, "x": 0.5, "y": 0.55, "size": 0.7, "rot": 0, "blend": "screen"},
+        {"type": "text", "text": "ОБЛОЖКА", "text_en": "COVER", "preset": "Панк-плашка", "x": 0.5, "y": 0.1, "size": 0.7, "track": 0.15},
+    ],
     "Афиша": [
         {"type": "bitmap", "photo": True, "x": 0.5, "y": 0.42, "size": 0.84, "rot": -2},
         {"type": "text", "text": "ЖИВОЙ ЗВУК", "text_en": "LIVE NOISE", "preset": "Арка-вывеска", "x": 0.5, "y": 0.1, "size": 0.2},
@@ -470,8 +497,9 @@ def _fit_template_texts():
             if t.get("type") != "text":
                 continue
             longest = max(max(len(x) for x in str(t.get(k, "")).split("\n")) for k in ("text", "text_en"))
-            sx = float(TEXT_PRESETS.get(t.get("preset"), {}).get("sx", 1.0))
-            t["size"] = round(min(t["size"], 0.9 / ((0.375 * longest + 0.3) * sx)), 3)
+            sx = float(t.get("sx", TEXT_PRESETS.get(t.get("preset"), {}).get("sx", 1.0)))
+            per = 0.375 + 0.5 * max(0.0, float(t.get("track", 0)))  # трекинг расширяет строку
+            t["size"] = round(min(t["size"], 0.9 / ((per * longest + 0.3) * sx)), 3)
 
 
 _fit_template_texts()
