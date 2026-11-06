@@ -806,3 +806,18 @@ def test_text_track_lead_and_gradient_render_in_browser(page_factory):
     assert res["l"]["h"] > res["a"]["h"] * 1.25
     assert res["g"]["top"] < 70 and 90 < res["g"]["mid"] < 170 and res["g"]["bot"] > 200
     assert pg.errors == []
+
+
+def test_landing_and_guide_share_the_app_themes(page_factory):
+    pg = page_factory(path="/", width=1280, height=800)
+    pg.wait_for_selector("#theme")
+    assert pg.evaluate("document.documentElement.dataset.theme") == "usa"
+    pg.select_option("#theme", "robot")
+    assert pg.evaluate("document.documentElement.dataset.theme") == "robot"
+    assert pg.evaluate("JSON.parse(localStorage.getItem('zine.theme'))") == "robot"
+    assert pg.evaluate("getComputedStyle(document.body).backgroundColor") == "rgb(5, 6, 5)"
+    pg.goto(pg.url.split("?")[0].rstrip("/") + "/guide/")
+    pg.wait_for_selector("#theme")
+    assert pg.evaluate("document.documentElement.dataset.theme") == "robot"
+    assert pg.evaluate("document.querySelector('#theme').value") == "robot"
+    assert pg.errors == []
