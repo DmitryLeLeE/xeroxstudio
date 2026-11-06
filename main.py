@@ -568,6 +568,10 @@ class XeroxZineStudioApp:
         make_button(rowl, "＋ Надпись", self._add_text_layer).pack(side=tk.LEFT, padx=(0, 3))
         make_button(rowl, "＋ Стикер…", self._add_sticker_layer).pack(side=tk.LEFT, padx=3)
         make_button(rowl, "＋ Фото…", self._add_photo_layer).pack(side=tk.LEFT, padx=3)
+        shp_cb = ttk.Combobox(c, values=[n for n, _ in config.SHAPE_PRESETS], state="readonly", font=FONT)
+        shp_cb.set("◼ Добавить фигуру…")
+        shp_cb.pack(fill=tk.X, pady=(3, 0))
+        shp_cb.bind("<<ComboboxSelected>>", lambda e: (self._add_shape_layer(shp_cb.current()), shp_cb.set("◼ Добавить фигуру…"), shp_cb.selection_clear()))
         make_button(c, "⤢ Разобрать лист на слои", self._explode_to_layers, kind="primary").pack(fill=tk.X, pady=(3, 0))
         rowa = tk.Frame(c, bg=PANEL2)
         rowa.pack(fill=tk.X, pady=(3, 0))
@@ -610,6 +614,22 @@ class XeroxZineStudioApp:
         tp_cb = ttk.Combobox(c, values=list(config.LAYER_TEMPLATES), state="readonly", font=FONT)
         tp_cb.pack(fill=tk.X, pady=(0, 3))
         tp_cb.bind("<<ComboboxSelected>>", lambda e: (self._apply_layer_template(tp_cb.get()), tp_cb.set(""), tp_cb.selection_clear()))
+
+        self.ly_blend = tk.StringVar(value="normal")
+        self.ly_blend.trace_add("write", lambda *a: self._layer_var_changed("blend"))
+        self._label(c, "Наложение на лист (обычное / multiply / screen / difference)")
+        ttk.Combobox(c, textvariable=self.ly_blend, values=["normal", "multiply", "screen", "difference"], state="readonly", font=FONT).pack(fill=tk.X, pady=(0, 3))
+        self.ly_shape = tk.StringVar(value="rect")
+        self.ly_shape.trace_add("write", lambda *a: self._layer_var_changed("shape"))
+        self._label(c, "Фигура (rect / ellipse / triangle)")
+        ttk.Combobox(c, textvariable=self.ly_shape, values=["rect", "ellipse", "triangle"], state="readonly", font=FONT).pack(fill=tk.X, pady=(0, 3))
+        self.ly_fill = tk.StringVar(value="solid")
+        self.ly_fill.trace_add("write", lambda *a: self._layer_var_changed("fill"))
+        self._label(c, "Заливка фигуры (solid / outline / stripes / fade / dots)")
+        ttk.Combobox(c, textvariable=self.ly_fill, values=["solid", "outline", "stripes", "fade", "dots"], state="readonly", font=FONT).pack(fill=tk.X, pady=(0, 3))
+        self.ly_vars["aspect"] = tk.DoubleVar(value=60)
+        self.ly_vars["aspect"].trace_add("write", lambda *a: self._layer_var_changed("aspect"))
+        LabeledSlider(c, "Высота фигуры (% ширины)", self.ly_vars["aspect"], 3, 200, res=1, default=60).pack(fill=tk.X, pady=1)
 
         self.ly_style = tk.StringVar(value="box")
         self.ly_style.trace_add("write", lambda *a: self._layer_var_changed("style"))
@@ -683,7 +703,7 @@ class XeroxZineStudioApp:
         tk.Label(ex, text="Экспорт", bg=VIEW_BG, fg=MUTED, font=FONT_SMALL).pack(side=tk.LEFT)
         self.export_scale = tk.StringVar(value=self.settings.get("export_scale", "2×"))
         self.export_scale.trace_add("write", lambda *a: self.settings.set("export_scale", self.export_scale.get()))
-        ttk.Combobox(ex, textvariable=self.export_scale, values=["1×", "2×", "3×"], width=4, state="readonly", font=FONT).pack(side=tk.RIGHT)
+        ttk.Combobox(ex, textvariable=self.export_scale, values=["1×", "2×", "3×", "4×", "6×"], width=4, state="readonly", font=FONT).pack(side=tk.RIGHT)
         self.hud = hud
         hud.lift()
 
@@ -821,6 +841,8 @@ class XeroxZineStudioApp:
                 lb.insert(tk.END, f"{i + 1}. {off}✦ {name}")
             elif ly.get("type") == "bitmap":
                 lb.insert(tk.END, f"{i + 1}. {off}▣ Фото")
+            elif ly.get("type") == "shape":
+                lb.insert(tk.END, f"{i + 1}. {off}◼ Фигура ({ly.get('fill', 'solid')})")
             else:
                 lb.insert(tk.END, f"{i + 1}. {off}Aa «{str(ly.get('text', '')).splitlines()[0][:22] if ly.get('text') else 'пусто'}»")
         if self.layers:
@@ -910,6 +932,10 @@ class XeroxZineStudioApp:
                 self.ly_text.set(ly.get("text", ""))
                 self.ly_color.set(ly.get("color", "ink"))
                 self.ly_style.set(ly.get("style", "box"))
+                self.ly_blend.set(ly.get("blend", "normal"))
+                self.ly_shape.set(ly.get("shape", "rect"))
+                self.ly_fill.set(ly.get("fill", "solid"))
+                self.ly_vars["aspect"].set(round(float(ly.get("aspect", 0.6) or 0.6) * 100))
         finally:
             self._layer_loading = False
 
@@ -939,6 +965,14 @@ class XeroxZineStudioApp:
             ly["color"] = self.ly_color.get()
         elif key == "style":
             ly["style"] = self.ly_style.get()
+        elif key == "blend":
+            ly["blend"] = self.ly_blend.get()
+        elif key == "shape":
+            ly["shape"] = self.ly_shape.get()
+        elif key == "fill":
+            ly["fill"] = self.ly_fill.get()
+        elif key == "aspect":
+            ly["aspect"] = float(self.ly_vars["aspect"].get()) / 100.0
         self.preset_var.set(PRESET_HINT)
         self.schedule_render()
 
@@ -950,6 +984,10 @@ class XeroxZineStudioApp:
             self._set_fly("s5")
         self._refresh_layers_ui()
         self.schedule_render()
+
+    def _add_shape_layer(self, idx):
+        if 0 <= idx < len(config.SHAPE_PRESETS):
+            self._new_layer(type="shape", color="ink", **config.SHAPE_PRESETS[idx][1])
 
     def _add_text_layer(self):
         text = simpledialog.askstring("Новая надпись", "Текст:", parent=self.root)
@@ -1059,7 +1097,7 @@ class XeroxZineStudioApp:
                 if has_photo:
                     out.append(dict({"type": "bitmap", "img": self.cur_img_key, "x": 0.5, "y": 0.5, "size": 0.8, "rot": 0, "color": "ink", "opacity": 1.0,
                                      "backing": True, "torn": True, "dot": 5, "contrast": 1.6, "cutout": False}, **t))
-            elif t.get("type") == "sticker":
+            elif t.get("type") in ("sticker", "shape"):
                 out.append(dict({"color": "ink", "rot": 0, "opacity": 1.0}, **t))
             else:
                 ly = {"type": "text", "sticker": "star", "color": "ink", "style": "box", "font": "Arial Black", "opacity": 1.0, "rot": 0}

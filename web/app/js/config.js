@@ -21,6 +21,22 @@ export const CFG = {
   "4:5 Instagram (1080×1350)": [
    1080,
    1350
+  ],
+  "A-серия 1:1.414 (A4, A3, A2) (1000×1414)": [
+   1000,
+   1414
+  ],
+  "A-серия горизонт (1414×1000)": [
+   1414,
+   1000
+  ],
+  "Афиша 11×17 дюймов (1000×1545)": [
+   1000,
+   1545
+  ],
+  "16:9 Широкий экран (1600×900)": [
+   1600,
+   900
   ]
  },
  "RISO_PALETTES": {
@@ -4310,6 +4326,87 @@ export const CFG = {
   }
  },
  "LAYER_TEMPLATES": {
+  "Арт-постер: затухание": [
+   {
+    "type": "bitmap",
+    "photo": true,
+    "x": 0.5,
+    "y": 0.4,
+    "size": 0.9,
+    "rot": 0
+   },
+   {
+    "type": "shape",
+    "shape": "rect",
+    "fill": "fade",
+    "aspect": 0.5,
+    "size": 1.0,
+    "x": 0.5,
+    "y": 0.78,
+    "rot": 180,
+    "color": "ink"
+   },
+   {
+    "type": "text",
+    "text": "ТИШИНА\nГРОМЧЕ",
+    "text_en": "SILENCE\nIS LOUDER",
+    "preset": "Растянутый плакат",
+    "x": 0.5,
+    "y": 0.84,
+    "size": 0.129,
+    "color": "paper"
+   },
+   {
+    "type": "shape",
+    "shape": "rect",
+    "fill": "solid",
+    "aspect": 0.012,
+    "size": 0.84,
+    "x": 0.5,
+    "y": 0.955,
+    "color": "ink"
+   }
+  ],
+  "Свисс-постер: круг и полоса": [
+   {
+    "type": "shape",
+    "shape": "ellipse",
+    "fill": "solid",
+    "aspect": 1.0,
+    "size": 0.62,
+    "x": 0.5,
+    "y": 0.4,
+    "color": "ink2"
+   },
+   {
+    "type": "bitmap",
+    "photo": true,
+    "x": 0.5,
+    "y": 0.4,
+    "size": 0.56,
+    "rot": 0,
+    "blend": "multiply"
+   },
+   {
+    "type": "shape",
+    "shape": "rect",
+    "fill": "solid",
+    "aspect": 0.045,
+    "size": 0.84,
+    "x": 0.5,
+    "y": 0.78,
+    "color": "ink"
+   },
+   {
+    "type": "text",
+    "text": "ФОРМА СЛЕДУЕТ\nЗА ШУМОМ",
+    "text_en": "FORM FOLLOWS\nNOISE",
+    "preset": "Узкий столбик",
+    "x": 0.5,
+    "y": 0.87,
+    "size": 0.14
+   }
+  ],
   "Афиша": [
    {
     "type": "bitmap",

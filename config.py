@@ -21,7 +21,24 @@ CANVAS_FORMATS = {
     "9:16 Stories / Обои (1080×1920)": (1080, 1920),
     "3:4 Принт (1200×1600)": (1200, 1600),
     "4:5 Instagram (1080×1350)": (1080, 1350),
+    "A-серия 1:1.414 (A4, A3, A2) (1000×1414)": (1000, 1414),
+    "A-серия горизонт (1414×1000)": (1414, 1000),
+    "Афиша 11×17 дюймов (1000×1545)": (1000, 1545),
+    "16:9 Широкий экран (1600×900)": (1600, 900),
 }
+
+# Заготовки фигур-слоёв (то же в вебе, SHAPE_PRESETS в app.js)
+SHAPE_PRESETS = [
+    ("Плашка", {"shape": "rect", "fill": "solid", "aspect": 0.5, "size": 0.6}),
+    ("Полоса", {"shape": "rect", "fill": "solid", "aspect": 0.07, "size": 0.9}),
+    ("Рамка", {"shape": "rect", "fill": "outline", "aspect": 1.3, "size": 0.8}),
+    ("Круг", {"shape": "ellipse", "fill": "solid", "aspect": 1.0, "size": 0.4}),
+    ("Кольцо", {"shape": "ellipse", "fill": "outline", "aspect": 1.0, "size": 0.5}),
+    ("Треугольник", {"shape": "triangle", "fill": "solid", "aspect": 0.9, "size": 0.4}),
+    ("Растровое затухание", {"shape": "rect", "fill": "fade", "aspect": 0.55, "size": 0.95}),
+    ("Диагональные полосы", {"shape": "rect", "fill": "stripes", "aspect": 0.4, "size": 0.8}),
+    ("Точки", {"shape": "rect", "fill": "dots", "aspect": 0.5, "size": 0.7}),
+]
 
 RISO_PALETTES = {
     "Classic B&W (Xerox)": ((255, 255, 255), (10, 10, 10)),
@@ -339,6 +356,18 @@ TEXT_PRESETS = {
 }
 # Шаблоны свободного листа. photo=True: фото страницы как слой. Координаты и размер - доли ширины листа.
 LAYER_TEMPLATES = {
+    "Арт-постер: затухание": [
+        {"type": "bitmap", "photo": True, "x": 0.5, "y": 0.4, "size": 0.9, "rot": 0},
+        {"type": "shape", "shape": "rect", "fill": "fade", "aspect": 0.5, "size": 1.0, "x": 0.5, "y": 0.78, "rot": 180, "color": "ink"},
+        {"type": "text", "text": "ТИШИНА\nГРОМЧЕ", "text_en": "SILENCE\nIS LOUDER", "preset": "Растянутый плакат", "x": 0.5, "y": 0.84, "size": 0.2, "color": "paper"},
+        {"type": "shape", "shape": "rect", "fill": "solid", "aspect": 0.012, "size": 0.84, "x": 0.5, "y": 0.955, "color": "ink"},
+    ],
+    "Свисс-постер: круг и полоса": [
+        {"type": "shape", "shape": "ellipse", "fill": "solid", "aspect": 1.0, "size": 0.62, "x": 0.5, "y": 0.4, "color": "ink2"},
+        {"type": "bitmap", "photo": True, "x": 0.5, "y": 0.4, "size": 0.56, "rot": 0, "blend": "multiply"},
+        {"type": "shape", "shape": "rect", "fill": "solid", "aspect": 0.045, "size": 0.84, "x": 0.5, "y": 0.78, "color": "ink"},
+        {"type": "text", "text": "ФОРМА СЛЕДУЕТ\nЗА ШУМОМ", "text_en": "FORM FOLLOWS\nNOISE", "preset": "Узкий столбик", "x": 0.5, "y": 0.87, "size": 0.14},
+    ],
     "Афиша": [
         {"type": "bitmap", "photo": True, "x": 0.5, "y": 0.42, "size": 0.84, "rot": -2},
         {"type": "text", "text": "ЖИВОЙ ЗВУК", "text_en": "LIVE NOISE", "preset": "Арка-вывеска", "x": 0.5, "y": 0.1, "size": 0.2},

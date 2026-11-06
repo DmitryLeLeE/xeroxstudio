@@ -760,6 +760,8 @@ class ZineGraphicEngine:
                     loc = self._bitmap_layer(ly, size * w, color, paper_rgb, li)
                     if loc is None:
                         continue
+                elif ly.get("type") == "shape":
+                    loc = self._shape_image(ly, size * w, color)
                 else:
                     text = str(ly.get("text", "")).strip()
                     if not text:
@@ -799,10 +801,84 @@ class ZineGraphicEngine:
                 top = Image.new("RGBA", (w, h), (0, 0, 0, 0))
                 top.paste(loc, (px, py), loc)
                 layer = Image.alpha_composite(layer, top)
-                base = Image.alpha_composite(base, layer)
+                blend = ly.get("blend", "normal")
+                base = self._blend_over(base, layer, blend) if blend in ("multiply", "screen", "difference") else Image.alpha_composite(base, layer)
             except Exception:
                 continue
         return base.convert("RGB")
+
+    @staticmethod
+    def _blend_over(base, layer, mode):
+        """Режимы наложения слоя на лист: multiply, screen, difference (как globalCompositeOperation в canvas)."""
+        b = np.asarray(base.convert("RGB"), dtype=np.float32)
+        top = np.asarray(layer, dtype=np.float32)
+        l, a = top[..., :3], top[..., 3:4] / 255.0
+        if mode == "multiply":
+            m = b * l / 255.0
+        elif mode == "screen":
+            m = 255.0 - (255.0 - b) * (255.0 - l) / 255.0
+        else:
+            m = np.abs(b - l)
+        out = b * (1.0 - a) + m * a
+        return Image.fromarray(np.clip(out + 0.5, 0, 255).astype(np.uint8), "RGB").convert("RGBA")
+
+    @staticmethod
+    def _shape_image(ly, wpx, color):
+        """Фигура-слой: rect / ellipse / triangle; заливка solid, outline, stripes, fade (растровое затухание), dots."""
+        W = max(8, int(wpx))
+        H = max(4, int(round(W * float(ly.get("aspect", 0.6) or 0.6))))
+        S = 2
+        W2, H2 = W * S, H * S
+        kind, fill = ly.get("shape", "rect"), ly.get("fill", "solid")
+        shape = Image.new("L", (W2, H2), 0)
+        d = ImageDraw.Draw(shape)
+        if kind == "ellipse":
+            d.ellipse([0, 0, W2 - 1, H2 - 1], fill=255)
+        elif kind == "triangle":
+            d.polygon([(W2 / 2, 0), (W2 - 1, H2 - 1), (0, H2 - 1)], fill=255)
+        else:
+            d.rectangle([0, 0, W2 - 1, H2 - 1], fill=255)
+        mask = shape
+        if fill == "outline":
+            lw = max(2, int(W2 * 0.02))  # обводка шириной 2*lw по краю, обрезанная фигурой: внутрь уходит lw (как clip+stroke в canvas)
+            ring = Image.new("L", (W2, H2), 0)
+            dr = ImageDraw.Draw(ring)
+            if kind == "ellipse":
+                dr.ellipse([0, 0, W2 - 1, H2 - 1], outline=255, width=2 * lw)
+            elif kind == "triangle":
+                pts = [(W2 / 2, 0), (W2 - 1, H2 - 1), (0, H2 - 1), (W2 / 2, 0)]
+                dr.line(pts, fill=255, width=2 * lw, joint="curve")
+            else:
+                dr.rectangle([0, 0, W2 - 1, H2 - 1], outline=255, width=2 * lw)
+            mask = ImageChops.multiply(shape, ring)
+        elif fill == "stripes":
+            pat = Image.new("L", (W2, H2), 0)
+            dp = ImageDraw.Draw(pat)
+            sp = W2 * 0.06
+            t = -float(H2)
+            while t < W2 + H2:
+                dp.line([(t, H2), (t + H2, 0)], fill=255, width=max(1, int(sp / 2)))
+                t += sp
+            mask = ImageChops.multiply(shape, pat)
+        elif fill in ("fade", "dots"):
+            pat = Image.new("L", (W2, H2), 0)
+            dp = ImageDraw.Draw(pat)
+            step = max(5.0, W * 0.022) * S
+            j, y = 0, 0.0
+            while y <= H2:
+                r = step * (0.72 * (1.0 - y / H2) if fill == "fade" else 0.36)
+                if r >= 0.8:
+                    x = (j % 2) * step / 2
+                    while x <= W2:
+                        dp.ellipse([x - r, y - r, x + r, y + r], fill=255)
+                        x += step
+                y += step
+                j += 1
+            mask = ImageChops.multiply(shape, pat)
+        mask = mask.resize((W, H), Image.LANCZOS)
+        out = Image.new("RGBA", (W, H), tuple(color) + (255,))
+        out.putalpha(mask)
+        return out
 
     @staticmethod
     def add_paper(out, amount, seed, s=1.0):

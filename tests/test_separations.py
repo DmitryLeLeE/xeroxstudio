@@ -37,7 +37,7 @@ def test_ransom_layer_and_all_stickers_render_in_python():
     import engine
     from PIL import Image
     import stickers
-    g = engine.ZineGraphicEngine()
+    g = ZineGraphicEngine()
     st = dict(config.DEFAULT_STATE)
     st["layers"] = [{"type": "text", "text": "НЕТ БОГОВ\nNO GODS", "x": 0.5, "y": 0.5, "size": 0.2, "rot": -5, "color": "ink", "style": "ransom"}]
     st["layers"] += [{"type": "sticker", "sticker": name, "x": 0.5, "y": 0.5, "size": 0.2, "rot": 0, "color": "ink"} for name in stickers.STICKERS]
@@ -53,7 +53,7 @@ def test_photo_layer_hidden_opacity_and_project_roundtrip(tmp_path):
     import config
     import engine
     import project_io
-    g = engine.ZineGraphicEngine()
+    g = ZineGraphicEngine()
     rng = np.random.default_rng(3)
     photo = (rng.integers(0, 255, (60, 90, 1), dtype=np.uint8).repeat(3, axis=2))
     g.layer_images = {"p1": photo}
@@ -84,7 +84,7 @@ def test_text_warp_stretch_and_copier_mechanics_python():
     from PIL import Image
     import config
     import engine
-    g = engine.ZineGraphicEngine()
+    g = ZineGraphicEngine()
     img = Image.new("RGB", (600, 900), (240, 235, 220))
     base = {"type": "text", "text": "ИСКАЖЕНИЕ", "x": 0.5, "y": 0.5, "size": 0.2, "style": "box", "color": "ink"}
     st = dict(config.DEFAULT_STATE)
@@ -119,7 +119,7 @@ def test_free_sheet_with_layers_renders_in_python():
     import numpy as np
     import config
     import engine
-    g = engine.ZineGraphicEngine()
+    g = ZineGraphicEngine()
     photo = np.random.default_rng(2).integers(0, 255, (120, 80, 3), dtype=np.uint8)
     g.layer_images = {"p": photo}
     st = dict(config.DEFAULT_STATE, layout="free", txt_top="", txt_bottom="")
@@ -135,7 +135,7 @@ def test_layer_shadow_and_new_stickers_python():
     import engine
     import stickers
     from PIL import Image
-    g = engine.ZineGraphicEngine()
+    g = ZineGraphicEngine()
     img = Image.new("RGB", (600, 900), (240, 235, 220))
     st = dict(config.DEFAULT_STATE)
     base = {"type": "sticker", "sticker": "rocket", "x": 0.5, "y": 0.5, "size": 0.3, "color": "ink"}
@@ -147,3 +147,29 @@ def test_layer_shadow_and_new_stickers_python():
         assert name in stickers.STICKERS
         loc = g._sticker_image(name, 80, (10, 10, 10), (240, 235, 220))
         assert loc.getbbox() is not None, name
+
+
+def test_shape_layers_all_fills_render_and_blend_multiply_darkens():
+    import numpy as np
+    from PIL import Image
+    g = ZineGraphicEngine()
+    paper, ink = (240, 235, 220), (10, 10, 10)
+    for shape in ("rect", "ellipse", "triangle"):
+        for fill in ("solid", "outline", "stripes", "fade", "dots"):
+            ly = {"type": "shape", "shape": shape, "fill": fill, "x": 0.5, "y": 0.5, "size": 0.7, "aspect": 0.6, "color": "ink"}
+            out = np.asarray(g.draw_layers(Image.new("RGB", (400, 600), paper), {"layers": [ly]}, paper, ink))
+            assert (out[..., 0] < 120).sum() > 200, (shape, fill)
+    base = Image.new("RGB", (300, 300), (200, 120, 60))
+    ly = {"type": "shape", "shape": "rect", "fill": "solid", "x": 0.5, "y": 0.5, "size": 0.6, "aspect": 0.6, "color": "paper"}
+    plain = np.asarray(g.draw_layers(base, {"layers": [ly]}, (255, 255, 255), ink)).astype(int)
+    mult = np.asarray(g.draw_layers(base, {"layers": [dict(ly, blend="multiply")]}, (255, 255, 255), ink)).astype(int)
+    scr = np.asarray(g.draw_layers(base, {"layers": [dict(ly, blend="screen", color="ink")]}, (255, 255, 255), (10, 10, 10))).astype(int)
+    assert abs(mult[150, 150] - np.array([200, 120, 60])).max() <= 1  # белое в multiply не меняет лист
+    assert plain[150, 150].min() > 240
+    assert (scr[150, 150] - np.array([200, 120, 60])).max() <= 12  # почти чёрное в screen почти не меняет
+
+
+def test_poster_formats_and_art_templates():
+    assert config.CANVAS_FORMATS["A-серия 1:1.414 (A4, A3, A2) (1000×1414)"] == (1000, 1414)
+    for name in ("Арт-постер: затухание", "Свисс-постер: круг и полоса"):
+        assert any(t["type"] == "shape" for t in config.LAYER_TEMPLATES[name])

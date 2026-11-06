@@ -18,6 +18,8 @@ const MAX_SIDE = TOUCH ? 3072 : 4096; // длинная сторона загр�
 const EN = {
   "2:3 Постер (1000×1500)": "2:3 Poster (1000×1500)", "1:1 Квадрат / Обложка (1200×1200)": "1:1 Square / Cover (1200×1200)",
   "9:16 Stories / Обои (1080×1920)": "9:16 Stories / Wallpaper (1080×1920)", "3:4 Принт (1200×1600)": "3:4 Print (1200×1600)", "4:5 Instagram (1080×1350)": "4:5 Instagram (1080×1350)",
+  "A-серия 1:1.414 (A4, A3, A2) (1000×1414)": "A series 1:1.414 (A4, A3, A2) (1000×1414)", "A-серия горизонт (1414×1000)": "A series landscape (1414×1000)",
+  "Афиша 11×17 дюймов (1000×1545)": "Poster 11×17 in (1000×1545)", "16:9 Широкий экран (1600×900)": "16:9 Widescreen (1600×900)",
   staggered: "Staggered (zigzag)", column: "Column (room for text)", contact_sheet: "Contact sheet (frames)", center_hero: "Hero + copies",
   column_right: "Column on the right", diagonal: "Diagonal cascade", pile: "Pile (overlapping collage)", two_columns: "Two columns",
   mosaic: "Mosaic (one big + small)", duo: "Diptych (two large)", triptych: "Triptych (three strips)", ribbon: "Ribbon (a row of frames)", full_page: "Full page",
@@ -879,6 +881,7 @@ const layerBox = (ly) => {
   // размеры в долях ширины листа (как в движке)
   if (ly.type === "sticker") return [ly.size, ly.size];
   if (ly.type === "bitmap") { const c = S.images.get(ly.img)?.canvas; return [ly.size, ly.size * (c ? c.height / c.width : 1)]; }
+  if (ly.type === "shape") return [ly.size, ly.size * (Number(ly.aspect) || 0.6)];
   const lines = String(ly.text || " ").split("\n"), fpx = ly.size * 0.5, n = Math.max(...lines.map((l) => l.length), 1);
   const wp = ly.warp && ly.warp !== "none" ? 1 + 0.9 * (ly.warp_k == null ? 0.5 : ly.warp_k) : 1;
   return [(n * fpx * 0.6 + 0.6 * fpx) * (ly.sx || 1), (1.15 * fpx * lines.length + 0.6 * fpx) * wp];
@@ -923,9 +926,21 @@ function addLayer(proto) {
     toast(T("Тяните слой по листу. Двойной клик по тексту — править, Delete — убрать.", "Drag the layer on the sheet. Double-click a text to edit, Delete to remove."), "ok", 5000);
   }
 }
+const SHAPE_PRESETS = () => [
+  [T("Плашка", "Block"), { shape: "rect", fill: "solid", aspect: 0.5, size: 0.6 }],
+  [T("Полоса", "Bar"), { shape: "rect", fill: "solid", aspect: 0.07, size: 0.9 }],
+  [T("Рамка", "Frame"), { shape: "rect", fill: "outline", aspect: 1.3, size: 0.8 }],
+  [T("Круг", "Circle"), { shape: "ellipse", fill: "solid", aspect: 1, size: 0.4 }],
+  [T("Кольцо", "Ring"), { shape: "ellipse", fill: "outline", aspect: 1, size: 0.5 }],
+  [T("Треугольник", "Triangle"), { shape: "triangle", fill: "solid", aspect: 0.9, size: 0.4 }],
+  [T("Растровое затухание", "Halftone fade"), { shape: "rect", fill: "fade", aspect: 0.55, size: 0.95 }],
+  [T("Диагональные полосы", "Diagonal stripes"), { shape: "rect", fill: "stripes", aspect: 0.4, size: 0.8 }],
+  [T("Точки", "Dots"), { shape: "rect", fill: "dots", aspect: 0.5, size: 0.7 }],
+];
 function layerName(ly) {
   if (ly.type === "sticker") return `✦ ${(CFG.STICKERS[ly.sticker] || {})[LANG === "ru" ? "ru" : "en"] || ly.sticker}`;
   if (ly.type === "bitmap") return `▣ ${T("Фото", "Photo")}`;
+  if (ly.type === "shape") return `◼ ${(SHAPE_PRESETS().find((p) => p[1].shape === ly.shape && p[1].fill === ly.fill) || [T("Фигура", "Shape")])[0]}`;
   return `Aa “${String(ly.text || "").split("\n")[0].slice(0, 22) || T("пусто", "empty")}”`;
 }
 const photoLayer = (key, extra = {}) => ({ type: "bitmap", img: key, x: 0.5, y: 0.5, size: 0.8, rot: 0, color: "ink", opacity: 1, backing: true, torn: true, dot: 5, contrast: 1.6, cutout: false, ...extra });
@@ -1032,7 +1047,7 @@ function applyTemplate(name) {
   for (const t of tpl) {
     const { photo, preset, text_en, ...rest } = t;
     if (photo) { if (st.img) L.push(photoLayer(st.img, rest)); continue; }
-    if (rest.type === "sticker") { L.push({ opacity: 1, color: "ink", rot: 0, ...rest }); continue; }
+    if (rest.type === "sticker" || rest.type === "shape") { L.push({ opacity: 1, color: "ink", rot: 0, ...rest }); continue; }
     L.push({ type: "text", sticker: "star", color: "ink", style: "box", font: "Arial Black", opacity: 1, rot: 0, ...textBase, ...(CFG.TEXT_PRESETS[preset] || {}), ...rest, text: LANG === "en" && text_en ? text_en : rest.text });
   }
   if (L.length && !st.img && tpl.some((t) => t.photo)) toast(T("Фото нет: шаблон собран без него. Загрузи фото и выбери шаблон ещё раз.", "No photo yet: the template was built without it. Load a photo and pick it again."), "ok", 4500);
@@ -1057,6 +1072,11 @@ function refreshLayersUI() {
     const b = document.createElement("button"); b.className = "btn grow"; b.textContent = text; b.addEventListener("click", fn); row.append(b);
   }
   box.append(row);
+  const shp = document.createElement("select"); shp.className = "sel wide"; shp.id = "addShape"; shp.setAttribute("aria-label", T("Добавить фигуру", "Add a shape"));
+  shp.append(new Option(T("◼ Добавить фигуру…", "◼ Add a shape…"), ""));
+  SHAPE_PRESETS().forEach(([n], i) => shp.append(new Option(n, String(i))));
+  shp.addEventListener("change", () => { if (shp.value === "") return; const pr = SHAPE_PRESETS()[Number(shp.value)][1]; shp.value = ""; addLayer({ type: "shape", color: "ink", rot: 0, ...pr }); });
+  box.append(shp);
   const wow = document.createElement("button"); wow.className = "btn pink wide"; wow.id = "btnSurprise";
   wow.textContent = T("🎲 Удиви меня: случайный шаблон + стиль", "🎲 Surprise me: random template + style");
   wow.addEventListener("click", surpriseMe); box.append(wow);
@@ -1137,9 +1157,15 @@ function refreshLayersUI() {
       if (ly.warp && ly.warp !== "none") ed.append(mkRange(T("Сила искажения", "Distortion strength"), 0.05, 1, 0.05, () => (ly.warp_k == null ? 0.5 : ly.warp_k), (v) => (ly.warp_k = v)));
       ed.append(mkRange(T("Растяжение по ширине", "Horizontal stretch"), 0.4, 3, 0.05, () => ly.sx || 1, (v) => (ly.sx = v)));
     }
+    if (ly.type === "shape") {
+      ed.append(mkSelect(T("Фигура", "Shape"), [["rect", T("Прямоугольник", "Rectangle")], ["ellipse", T("Овал", "Ellipse")], ["triangle", T("Треугольник", "Triangle")]], () => ly.shape || "rect", (v) => (ly.shape = v)));
+      ed.append(mkSelect(T("Заливка", "Fill"), [["solid", T("Сплошная", "Solid")], ["outline", T("Контур", "Outline")], ["stripes", T("Полосы", "Stripes")], ["fade", T("Растровое затухание", "Halftone fade")], ["dots", T("Точки", "Dots")]], () => ly.fill || "solid", (v) => (ly.fill = v)));
+      ed.append(mkRange(T("Высота фигуры", "Shape height"), 0.03, 2, 0.01, () => Number(ly.aspect) || 0.6, (v) => (ly.aspect = v)));
+    }
     ed.append(mkRange(T("Размер", "Size"), 0.04, 1, 0.01, () => ly.size, (v) => (ly.size = v)));
     ed.append(mkRange(T("Поворот (°)", "Rotation (°)"), -180, 180, 1, () => ly.rot || 0, (v) => (ly.rot = v)));
     ed.append(mkSelect(T("Цвет", "Colour"), [["ink", T("Краска", "Ink")], ["paper", T("Бумага", "Paper")], ["ink2", T("Вторая краска", "Second ink")], ["ink3", T("Третья краска", "Third ink")], ["ink4", T("Четвёртая краска", "Fourth ink")]], () => ly.color || "ink", (v) => (ly.color = v)));
+    ed.append(mkSelect(T("Наложение на лист", "Blend with the sheet"), [["normal", T("Обычное", "Normal")], ["multiply", T("Умножение (как печать поверх)", "Multiply (like printing over)")], ["screen", T("Осветление", "Screen")], ["difference", T("Разница (инверсия)", "Difference (invert)")]], () => ly.blend || "normal", (v) => (ly.blend = v)));
     ed.append(mkRange(T("Прозрачность", "Opacity"), 0.1, 1, 0.05, () => (ly.opacity == null ? 1 : ly.opacity), (v) => (ly.opacity = v)));
     if (ly.type === "bitmap") {
       ed.append(mkRange(T("Размер точки", "Dot size"), 2, 14, 1, () => ly.dot || 5, (v) => (ly.dot = v)));
@@ -1772,7 +1798,7 @@ document.addEventListener("visibilitychange", () => { if (document.visibilitySta
 const scaleSel = $("#expScale");
 scaleSel.value = ls.get("zine.scale", "2");
 scaleSel.addEventListener("change", () => ls.set("zine.scale", scaleSel.value));
-const exportScale = () => Number(scaleSel.value) || 2;
+const exportScale = () => { const o = scaleSel.selectedOptions[0]; if (o && o.disabled) { const ok = [...scaleSel.options].filter((x) => !x.disabled).pop(); if (ok) scaleSel.value = ok.value; } return Number(scaleSel.value) || 2; };
 // В списке масштаба показываем итоговый размер: 2× · 2000×3000 px (17×25 см при 300 dpi)
 function updateScaleLabels() {
   if (!page()) return;
@@ -1780,6 +1806,7 @@ function updateScaleLabels() {
   for (const o of scaleSel.options) {
     const k = Number(o.value), w = Math.floor(bw * k), h = Math.floor(bh * k);
     o.textContent = `${o.value}× · ${w}×${h}`;
+    o.disabled = w * h > (isPhone() ? 16e6 : 64e6); // слишком большой лист упрётся в память браузера
     o.title = `${w}×${h} px = ${(w / 300 * 2.54).toFixed(1)}×${(h / 300 * 2.54).toFixed(1)} ${T("см при 300 dpi", "cm at 300 dpi")}`;
   }
 }

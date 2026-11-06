@@ -610,7 +610,7 @@ def test_free_layout_templates_text_warp_and_mechanics(page_factory):
     wait_ready(pg)
     # шаблон собирает свободный лист: раскладка free, слои с фото и надписями
     pg.click("#rail button[data-fly=s5]")
-    pg.select_option("#layersBox select >> nth=0", "Афиша")
+    pg.select_option("#layersBox select:not(#addShape) >> nth=0", "Афиша")
     wait_until(pg, "window.__zine.page().layers.length >= 3")
     assert pg.evaluate("window.__zine.page().layout") == "free"
     kinds = pg.evaluate("window.__zine.page().layers.map(l => l.type)")
@@ -671,7 +671,7 @@ def test_shadow_align_and_new_layer_library(page_factory):
     wait_ready(pg)
     assert pg.evaluate("Object.keys(window.__zine.CFG ? window.__zine.CFG.STICKERS : {}).length") >= 0
     pg.click("#rail button[data-fly=s5]")
-    pg.select_option("#layersBox select >> nth=0", "Route 66")
+    pg.select_option("#layersBox select:not(#addShape) >> nth=0", "Route 66")
     wait_until(pg, "window.__zine.page().layers.length >= 3")
     pg.evaluate("document.querySelector('.layers-list .lname').click()")  # верхний слой
     pg.wait_for_selector(".align-row button")
@@ -683,7 +683,7 @@ def test_shadow_align_and_new_layer_library(page_factory):
     pg.evaluate("""(() => { const r = [...document.querySelectorAll('#layersBox .layer-ed input[type=range]')].find(i => i.closest('.ctl').textContent.match(/Тень|shadow/i)); r.value = 0.6; r.dispatchEvent(new Event('input')); r.dispatchEvent(new Event('change')); })()""")
     assert pg.evaluate("window.__zine.page().layers.some(l => l.shadow === 0.6)")
     # новые шаблоны есть в списке
-    opts = pg.evaluate("[...document.querySelectorAll('#layersBox select')][0].options.length")
+    opts = pg.evaluate("document.querySelector('#layersBox select:not(#addShape)').options.length")
     assert opts >= 16
     assert pg.errors == []
 

@@ -424,6 +424,39 @@ function warpCanvas(src, kind, k, bh) {
   return out;
 }
 
+/** Фигура-слой: rect / ellipse / triangle; заливка solid, outline, stripes, fade (растровое затухание), dots. Рисуется вокруг (0, 0). */
+function drawShape(c, ly, W, color) {
+  const H = Math.max(4, Math.round(W * (Number(ly.aspect) || 0.6))), kind = ly.shape || "rect", fill = ly.fill || "solid";
+  c.save(); c.translate(-W / 2, -H / 2); c.fillStyle = color; c.strokeStyle = color;
+  const path = () => {
+    c.beginPath();
+    if (kind === "ellipse") c.ellipse(W / 2, H / 2, W / 2, H / 2, 0, 0, Math.PI * 2);
+    else if (kind === "triangle") { c.moveTo(W / 2, 0); c.lineTo(W, H); c.lineTo(0, H); c.closePath(); }
+    else c.rect(0, 0, W, H);
+  };
+  path();
+  if (fill === "solid") c.fill();
+  else if (fill === "outline") { c.save(); c.clip(); c.lineWidth = 2 * Math.max(2, W * 0.02); path(); c.stroke(); c.restore(); }
+  else {
+    c.save(); c.clip();
+    if (fill === "stripes") {
+      const sp = W * 0.06; c.lineWidth = Math.max(1, sp / 2);
+      c.beginPath(); for (let t = -H; t < W + H; t += sp) { c.moveTo(t, H); c.lineTo(t + H, 0); } c.stroke();
+    } else {
+      const step = Math.max(5, W * 0.022);
+      c.beginPath();
+      for (let j = 0, y = 0; y <= H; j++, y += step) {
+        const r = step * (fill === "fade" ? 0.72 * (1 - y / H) : 0.36);
+        if (r < 0.8) continue;
+        for (let x = (j % 2) * step / 2; x <= W; x += step) { c.moveTo(x + r, y); c.arc(x, y, r, 0, Math.PI * 2); }
+      }
+      c.fill();
+    }
+    c.restore();
+  }
+  c.restore();
+}
+
 function drawLayers(canvas, st, paper, ink, masks = {}) {
   const layers = st.layers; if (!Array.isArray(layers) || !layers.length) return;
   const w = canvas.width, c = ctx2d(canvas), h = canvas.height;
@@ -436,12 +469,15 @@ function drawLayers(canvas, st, paper, ink, masks = {}) {
     c.save(); c.translate((Number(ly.x) || 0.5) * w, (Number(ly.y) || 0.5) * h); c.rotate(((Number(ly.rot) || 0) * Math.PI) / 180);
     if (ly.flipx) c.scale(-1, 1);
     c.globalAlpha = clamp(ly.opacity == null ? 1 : Number(ly.opacity), 0, 1);
+    if (ly.blend === "multiply" || ly.blend === "screen" || ly.blend === "difference") c.globalCompositeOperation = ly.blend;
     const shd = clamp(Number(ly.shadow) || 0, 0, 1);
     if (shd > 0) { c.shadowColor = cols[ly.shadow_c] || cols.ink; c.shadowOffsetX = c.shadowOffsetY = Math.round(shd * 0.035 * w); c.shadowBlur = 0; }
     if (ly.type === "sticker") {
       const px = Math.max(8, Math.floor(size * w)), off = makeCanvas(px, px), oc = ctx2d(off);
       oc.translate(px / 2, px / 2); drawSticker(oc, ly.sticker, px, color, cols.paper); wearSticker(off, px, li + 1);
       c.drawImage(off, -px / 2, -px / 2);
+    } else if (ly.type === "shape") {
+      drawShape(c, ly, Math.max(8, Math.floor(size * w)), color);
     } else if (ly.type === "bitmap") {
       const m = masks[ly.img]; if (!m) { c.restore(); continue; }
       const px = Math.max(8, Math.floor(size * w)), off = bitmapLayer(m, px, ly, color, cols.paper, li);
@@ -1162,3 +1198,6 @@ export async function renderPage(source, state, opts = {}) {
   drawLayers(result, st, paper, ink, opts.masks || {});
   return { canvas: result, bits, plate2, extraPlates, inks: { paper, ink, ink2: plate2 ? st.ink2 : null }, width: cw, height: ch };
 }
+
+// для проверки совпадения с Python-движком
+export { drawLayers };
